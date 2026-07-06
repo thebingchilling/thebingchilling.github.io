@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Bingqilin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.16.3/shaka-player.compiled.js"></script>
+<style>
+  :root {
+    /* ── Material Design 3 tonal palette (warm terracotta seed) ── */
+    --md-primary: #8a4a16; --md-on-primary: #ffffff;
+    --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+    --md-secondary: #77584a; --md-on-secondary: #ffffff;
+    --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+    --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+    --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+    --md-error: #ba1a1a; --md-on-error: #ffffff;
+    --md-error-container: #ffdad6; --md-on-error-container: #410002;
+    --md-surface: #fff8f4;
+    --md-surface-container-lowest: #ffffff;
+    --md-surface-container-low: #fdf1e6;
+    --md-surface-container: #f7ebdd;
+    --md-surface-container-high: #f1e5d6;
+    --md-surface-container-highest: #ebdfd0;
+    --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+    --md-outline: #837366; --md-outline-variant: #d6c5b5;
+    --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+
+    --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
+    --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
+    --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+
+    --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
+    --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
+    --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
+    --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
+    --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
+    --border-med: color-mix(in srgb, var(--md-outline) 55%, transparent);
+    --radius: 12px;
+    --shadow-sm: var(--el1);
+    --shadow-md: var(--el3);
+    --t: 0.2s cubic-bezier(0.2,0,0,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+  .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  body, .view { scrollbar-width: none; }
+  body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
+
+  /* ── Top app bar ── */
+  .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 1rem; background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; cursor: pointer; border-radius: 8px; padding: 0.15rem 0.3rem; margin: -0.15rem -0.3rem; transition: background var(--t); }
+  .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
+  .top-bar__brand:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .top-bar__brand--loading .top-bar__name, .top-bar__brand--loading .top-bar__sub { animation: brand-pulse 0.9s ease-in-out infinite; }
+  .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
+  .top-bar__sub { font-size: 0.68rem; color: var(--text-faint); }
+  @keyframes brand-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); }
+  .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+  .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .view { display: none; padding: 0.75rem 0.9rem 2rem; width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; }
+  .view--active { display: block; }
+  .view-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .view-meta { margin: 0; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .player-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .player-back { display: flex; align-items: center; gap: 0.35rem; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
+  .player-back:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+  .player-back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .player-back .material-icons { font-size: 18px; }
+
+  /* ── EPG: now/next on the player page ── */
+  .epg-info { margin: 0.5rem 0 0.65rem; padding: 0.7rem 0.8rem; background: var(--surface); border-radius: var(--radius); box-shadow: var(--el1); display: flex; flex-direction: column; gap: 0.55rem; }
+  .epg-row { display: flex; flex-direction: column; gap: 0.2rem; }
+  .epg-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; color: var(--primary); }
+  .epg-title { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+  .epg-time { font-size: 0.72rem; color: var(--text-faint); }
+  .epg-progress { height: 4px; border-radius: 999px; background: var(--md-surface-container-high); overflow: hidden; }
+  .epg-progress-fill { height: 100%; background: var(--md-error); border-radius: 999px; }
+  .epg-guide-btn { align-self: flex-start; display: flex; align-items: center; gap: 0.35rem; border: none; background: var(--md-primary-container); color: var(--md-on-primary-container); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; padding: 0.4rem 0.75rem; border-radius: 999px; cursor: pointer; transition: filter var(--t); }
+  .epg-guide-btn:hover { filter: brightness(0.96); }
+  .epg-guide-btn .material-icons { font-size: 16px; }
+
+  /* ── Full guide modal ── */
+  .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(20,14,8,0.5); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.hidden { display: none; }
+  .modal-panel { background: var(--md-surface-container-lowest); border-radius: 18px; width: 100%; max-width: 480px; max-height: 82vh; display: flex; flex-direction: column; box-shadow: var(--el3); overflow: hidden; }
+  .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; padding: 0.9rem 0.8rem 0.7rem 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .modal-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
+  .modal-sub { margin: 0.15rem 0 0; font-size: 0.75rem; color: var(--text-faint); }
+  .modal-body { overflow-y: auto; padding: 0.3rem 0.7rem 1rem; }
+
+  .guide-day { border-bottom: 1px solid var(--border); }
+  .guide-day:last-child { border-bottom: none; }
+  .guide-day > summary { list-style: none; cursor: pointer; padding: 0.75rem 0.3rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-weight: 500; color: var(--text); font-size: 0.88rem; }
+  .guide-day > summary::-webkit-details-marker { display: none; }
+  .guide-day__meta { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+  .guide-day__meta .material-icons { font-size: 20px; color: var(--text-faint); transition: transform var(--t); }
+  .guide-day[open] .guide-day__meta .material-icons { transform: rotate(180deg); }
+  .guide-day__count { font-size: 0.72rem; color: var(--text-faint); font-weight: 400; }
+  .guide-list { display: flex; flex-direction: column; gap: 0.15rem; padding: 0 0.2rem 0.7rem; }
+  .guide-row { display: flex; gap: 0.6rem; padding: 0.4rem; border-radius: 8px; }
+  .guide-row--live { background: var(--md-primary-container); }
+  .guide-row__time { flex-shrink: 0; width: 64px; font-size: 0.74rem; color: var(--text-faint); padding-top: 0.05rem; }
+  .guide-row--live .guide-row__time { color: var(--md-on-primary-container); font-weight: 600; }
+  .guide-row__title { font-size: 0.85rem; color: var(--text); }
+  .guide-row--live .guide-row__title { color: var(--md-on-primary-container); font-weight: 600; }
+  .guide-live-tag { display: inline-block; margin-left: 0.35rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; color: var(--md-on-error-container); background: var(--md-error-container); padding: 0.05rem 0.35rem; border-radius: 999px; vertical-align: middle; }
+
+  /* ── Tab bar (M3 segmented buttons) ── */
+  .tab-bar { display: flex; background: var(--md-surface-container-high); border-radius: 999px; padding: 4px; gap: 4px; margin-bottom: 0.7rem; }
+  .tab-btn { flex: 1; border: none; background: transparent; padding: 0.55rem 1rem; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: background var(--t), color var(--t), box-shadow var(--t); }
+  .tab-btn .material-icons { font-size: 18px; }
+  .tab-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
+  .tab-btn--active { background: var(--md-surface-container-lowest); color: var(--primary-dark); box-shadow: var(--el1); }
+  .tab-btn--active:hover { background: var(--md-surface-container-lowest); }
+  .tab-btn__count { font-size: 0.7rem; color: var(--text-faint); }
+  .tab-btn--active .tab-btn__count { color: var(--primary); }
+
+  /* ── Search bar ── */
+  .search-bar { display: flex; align-items: center; gap: 0.7rem; background: var(--md-surface-container-high); border-radius: 28px; padding: 0.6rem 1rem; border: 1px solid transparent; margin-bottom: 0.55rem; transition: background var(--t), box-shadow var(--t); }
+  .search-bar:focus-within { box-shadow: var(--el1); background: var(--md-surface-container-highest); }
+  .search-bar__icon { color: var(--md-on-surface-variant); font-size: 20px; flex-shrink: 0; }
+  .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--text); min-width: 0; }
+  .search-bar__input::placeholder { color: var(--text-faint); }
+
+  .search-status { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.55rem; min-height: 1.2em; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .search-status--error { color: var(--md-error); }
+  .retry-link { color: var(--primary); font-weight: 500; cursor: pointer; background: none; border: none; font-family: inherit; font-size: inherit; padding: 0; text-decoration: underline; }
+
+  .empty-state { text-align: center; padding: 3.5rem 1rem 2rem; color: var(--text-faint); user-select: none; }
+  .empty-state__icon { font-size: 3.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
+  .empty-state__title { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .empty-state__sub { font-size: 0.82rem; }
+
+  /* ── Results grid (square logo tiles) ── */
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 0.55rem; }
+  @media (min-width: 720px) { .results-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); } }
+  .card { background: var(--surface); border-radius: var(--radius); overflow: hidden; cursor: pointer; display: flex; flex-direction: column; border: none; box-shadow: var(--el1); transition: transform var(--t), box-shadow var(--t), background var(--t); position: relative; }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--el2); background: var(--surface2); }
+  .card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .card__img-wrap { position: relative; overflow: hidden; background: var(--bg2); aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+  .card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 16%; z-index: 1; background: var(--bg2); }
+  .card__placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 2rem; z-index: 0; }
+  .card__body { padding: 0.4rem 0.5rem 0.5rem; }
+  .card__title { font-size: 0.78rem; font-weight: 500; color: var(--text); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card__badge { position: absolute; top: 6px; left: 6px; z-index: 2; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 6px; background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); }
+
+  /* ── EPG: now-playing on cards ── */
+  .card__now { font-size: 0.68rem; color: var(--text-faint); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.1rem; }
+  .card__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(0,0,0,0.18); z-index: 2; }
+  .card__progress-fill { height: 100%; background: var(--md-error); }
+
+  /* ── Pin (favorite) toggle ── */
+  .card__pin { position: absolute; bottom: 6px; right: 6px; z-index: 3; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(20,14,8,0.42); color: rgba(255,255,255,0.85); border: none; cursor: pointer; padding: 0; transition: background var(--t), color var(--t), transform var(--t); }
+  .card__pin .material-icons { font-size: 15px; }
+  .card__pin:hover { background: rgba(20,14,8,0.65); transform: scale(1.08); }
+  .card__pin--active { background: var(--md-primary); color: var(--md-on-primary); }
+  .card__pin--active:hover { background: var(--md-primary); }
+  .card__pin:focus-visible { outline: 2px solid var(--md-on-primary-container); outline-offset: 1px; }
+
+  .grid-section-label { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin: 0.5rem 0 0.1rem; }
+  .grid-section-label:first-child { margin-top: 0; }
+  .grid-section-label .material-icons { font-size: 14px; }
+
+  /* ── Player: TV (video) ── */
+  .player-wrap { margin-top: 0.35rem; border-radius: 14px; overflow: hidden; background: #000; position: relative; padding-top: 56.25%; box-shadow: var(--el2); }
+  .player-wrap video { position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: #000; }
+  .player-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #111; color: rgba(255,255,255,0.55); font-size: 0.85rem; gap: 0.5rem; transition: opacity 0.3s; pointer-events: none; }
+  .player-overlay.hidden { opacity: 0; }
+  .player-overlay .material-icons { font-size: 2.5rem; opacity: 0.35; }
+
+  /* ── Player: Radio ── */
+  .radio-player { margin-top: 0.35rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1.4rem 1rem 1.6rem; background: var(--surface); border-radius: var(--radius); box-shadow: var(--el1); }
+  .radio-player__art { width: 42vw; height: 42vw; max-width: 190px; max-height: 190px; min-width: 120px; min-height: 120px; border-radius: 22px; overflow: hidden; background: var(--bg2); box-shadow: var(--el2); position: relative; display: flex; align-items: center; justify-content: center; }
+  .radio-player__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 12%; }
+  .radio-player__art-ph { color: var(--text-faint); font-size: 3rem; }
+  .radio-player audio { width: 100%; max-width: 360px; accent-color: var(--primary); }
+
+  .live-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; color: var(--md-on-error-container); background: var(--md-error-container); padding: 0.22rem 0.6rem; border-radius: 999px; flex-shrink: 0; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--md-error); animation: live-pulse 1.4s ease-in-out infinite; }
+  @keyframes live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ── Skeleton ── */
+  .skel { background: var(--bg2); border-radius: 8px; animation: skel-pulse 1.4s ease-in-out infinite; }
+  @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .skel-card { aspect-ratio: 1/1; border-radius: var(--radius); }
+
+  .hidden { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <div class="top-bar__brand" id="brandReload" role="button" tabindex="0" aria-label="Reload channel lists">
+      <span class="top-bar__name">🍦 Bingqilin</span>
+      <span class="top-bar__sub">tv and radio</span>
+    </div>
+    <a href="index.html" class="icon-btn" aria-label="Movies &amp; TV shows" title="Movies &amp; TV shows" style="text-decoration:none;">
+      <span class="material-icons">video_library</span>
+    </a>
+  </header>
+
+  <main class="app-main">
+    <!-- Browse view -->
+    <section id="viewBrowse" class="view view--active" aria-label="Browse channels">
+      <div class="tab-bar" role="tablist">
+        <button class="tab-btn tab-btn--active" id="tabRadio" type="button" role="tab" aria-selected="true">
+          <span class="material-icons">radio</span>Radio <span class="tab-btn__count" id="countRadio"></span>
+        </button>
+        <button class="tab-btn" id="tabTv" type="button" role="tab" aria-selected="false">
+          <span class="material-icons">live_tv</span>TV <span class="tab-btn__count" id="countTv"></span>
+        </button>
+      </div>
+
+      <div class="search-bar" role="search">
+        <span class="material-icons search-bar__icon" aria-hidden="true">search</span>
+        <input id="searchInput" type="search" class="search-bar__input"
+          placeholder="Search channels…" autocomplete="off" aria-label="Search channels" />
+        <button id="clearBtn" class="icon-btn hidden" type="button" aria-label="Clear search">
+          <span class="material-icons" style="font-size:20px;">close</span>
+        </button>
+      </div>
+
+      <div id="searchStatus" class="search-status" role="status" aria-live="polite"></div>
+      <div id="resultsGrid" class="results-grid" role="list"></div>
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-state__icon">📻</div>
+        <div class="empty-state__title">No channels found</div>
+        <div class="empty-state__sub">Try a different search term</div>
+      </div>
+    </section>
+
+    <!-- Player view -->
+    <section id="viewPlayer" class="view" aria-label="Player">
+      <div class="player-header-row">
+        <button id="backFromPlayer" class="player-back" type="button" aria-label="Back">
+          <span class="material-icons">arrow_back</span><span id="backFromPlayerLabel">Back</span>
+        </button>
+        <span id="liveBadge" class="live-badge"><span class="live-dot"></span>LIVE</span>
+      </div>
+      <h2 id="playerTitle" class="view-title" style="margin:0 0 0.15rem;"></h2>
+      <p id="playerMeta" class="view-meta" style="margin:0 0 0.4rem;"></p>
+
+      <div id="epgInfo" class="epg-info hidden">
+        <div id="epgNowRow" class="epg-row hidden">
+          <span class="epg-label">NOW</span>
+          <span id="epgNowTitle" class="epg-title"></span>
+          <div class="epg-progress"><div id="epgProgressFill" class="epg-progress-fill" style="width:0%"></div></div>
+          <span id="epgNowTime" class="epg-time"></span>
+        </div>
+        <div id="epgNextRow" class="epg-row hidden">
+          <span class="epg-label">NEXT</span>
+          <span id="epgNextTitle" class="epg-title"></span>
+          <span id="epgNextTime" class="epg-time"></span>
+        </div>
+        <button id="viewGuideBtn" class="epg-guide-btn" type="button">
+          <span class="material-icons">calendar_month</span>Full guide
+        </button>
+      </div>
+
+      <div id="tvPlayerWrap" class="player-wrap hidden">
+        <div id="playerOverlay" class="player-overlay">
+          <span class="material-icons">live_tv</span>
+          <span id="playerOverlayText">Loading stream…</span>
+        </div>
+        <video id="videoEl" controls playsinline></video>
+      </div>
+
+      <div id="radioPlayerWrap" class="radio-player hidden">
+        <div class="radio-player__art">
+          <img id="radioLogo" src="" alt="" />
+          <div id="radioArtPh" class="radio-player__art-ph"><span class="material-icons">radio</span></div>
+        </div>
+        <audio id="audioEl" controls preload="none"></audio>
+      </div>
+
+      <p id="playerError" class="search-status search-status--error hidden"></p>
+    </section>
+  </main>
+</div>
+
+<div id="guideModal" class="modal-overlay hidden">
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
+    <div class="modal-header">
+      <div>
+        <h3 id="guideModalTitle" class="modal-title"></h3>
+        <p id="guideModalSub" class="modal-sub"></p>
+      </div>
+      <button id="guideModalClose" class="icon-btn" type="button" aria-label="Close guide">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div id="guideModalBody" class="modal-body"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* The old raw-tv.m3u8 / raw-radio.m3u8 endpoints send no CORS headers at
+   all, so browser fetch() is blocked (a local player like VLC ignores
+   CORS entirely, which is why it worked there but not here). The .json
+   endpoints below are served with `access-control-allow-origin: *`. */
+const TV_URL = "https://i.mjh.nz/nz/tv.json";
+const RADIO_URL = "https://i.mjh.nz/nz/radio.json";
+const EPG_URL = "https://raw.githubusercontent.com/matthuisman/i.mjh.nz/refs/heads/master/nz/epg.xml";
+
+const state = { tv: [], radio: [], tab: "radio", query: "", loading: true, error: null, pinned: { tv: new Set(), radio: new Set() }, epg: new Map() };
+let currentHls = null;
+let searchDebounce = null;
+
+/* ═══════════ Pinned-channel storage ═══════════
+   Prefers the Claude artifact key-value store (window.storage) when present
+   so pins sync across sessions there; falls back to localStorage so pinning
+   still works once this file is downloaded and self-hosted as a real app. */
+const PinStore = (() => {
+  const hasWS = typeof window !== "undefined" && window.storage && typeof window.storage.get === "function";
+  const hasLS = (() => {
+    try { const k = "__pin_test__"; localStorage.setItem(k, "1"); localStorage.removeItem(k); return true; }
+    catch (e) { return false; }
+  })();
+
+  async function get(key) {
+    if (hasWS) {
+      try { const r = await window.storage.get(key); return r ? r.value : null; }
+      catch (e) { return null; } // key not found yet, or storage unavailable
+    }
+    if (hasLS) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+    return null;
+  }
+  async function set(key, value) {
+    if (hasWS) { try { await window.storage.set(key, value); return true; } catch (e) { return false; } }
+    if (hasLS) { try { localStorage.setItem(key, value); return true; } catch (e) { return false; } }
+    return false;
+  }
+  return { get, set };
+})();
+
+async function loadPinned() {
+  for (const kind of ["tv", "radio"]) {
+    const raw = await PinStore.get(`pinned-${kind}`);
+    if (raw) {
+      try {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) state.pinned[kind] = new Set(arr);
+      } catch (e) { /* ignore corrupt data */ }
+    }
+  }
+}
+
+function savePinned(kind) {
+  PinStore.set(`pinned-${kind}`, JSON.stringify([...state.pinned[kind]]));
+}
+
+function togglePin(kind, id) {
+  const set = state.pinned[kind];
+  if (set.has(id)) set.delete(id); else set.add(id);
+  savePinned(kind);
+  renderGrid();
+}
+
+/* ═══════════ JSON channel-map parsing ═══════════
+   Each endpoint returns an object keyed by channel id, e.g.
+   { "mjh-al-jazeera": { name, logo, chno, mjh_master, manifest, license_url, ... }, ... }
+   We flatten that into the { name, attrs, url } shape the rest of the app expects. */
+function parseChannelMap(data, kind) {
+  const channels = [];
+  for (const [id, c] of Object.entries(data || {})) {
+    const url = c.mjh_master || "";
+    if (!url) continue; // skip entries with nothing playable
+    const attrs = {
+      "tvg-logo": c.logo || ""
+    };
+    if (c.chno !== undefined && c.chno !== null && c.chno !== "") {
+      attrs["tvg-chno"] = String(c.chno);
+    }
+    // DASH channels (manifest: "mpd") are Widevine-DRM protected. They're played
+    // back with Shaka Player (MSE/EME + a DASH client), not hls.js — see
+    // loadDrmStream(). This needs a Widevine-capable browser (Chrome, Edge,
+    // Firefox, or Android/desktop Chromium-based browsers); Safari/iOS use
+    // FairPlay instead of Widevine and can't play these.
+    const isDrm = c.manifest === "mpd" && !!c.license_url;
+    channels.push({ id, name: c.name || "Unknown channel", attrs, url, drm: isDrm, licenseUrl: c.license_url || null });
+  }
+  const chno = c => (c.attrs["tvg-chno"] !== undefined ? Number(c.attrs["tvg-chno"]) : Infinity);
+  channels.sort((a, b) => (kind === "tv" ? chno(a) - chno(b) : 0) || a.name.localeCompare(b.name));
+  return channels;
+}
+
+async function loadChannels(url, kind) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+  const data = await res.json();
+  return parseChannelMap(data, kind);
+}
+
+/* ═══════════ EPG (TV guide) ═══════════
+   XMLTV format: <programme channel="id" start="YYYYMMDDHHMMSS +ZZZZ" stop="...">
+   Parsed lazily/in the background since the feed is a large (~8MB) file and
+   shouldn't hold up showing the channel list. */
+function parseXmltvDate(s) {
+  const m = s && s.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*([+-]\d{4})?$/);
+  if (!m) return null;
+  const [, y, mo, d, h, mi, se, tz] = m;
+  const offset = tz ? `${tz.slice(0, 3)}:${tz.slice(3)}` : "Z";
+  const date = new Date(`${y}-${mo}-${d}T${h}:${mi}:${se}${offset}`);
+  return isNaN(date) ? null : date;
+}
+
+async function loadEpg(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("EPG HTTP " + res.status);
+  const text = await res.text();
+  const xml = new DOMParser().parseFromString(text, "text/xml");
+  const map = new Map();
+  const nodes = xml.getElementsByTagName("programme");
+  for (const node of nodes) {
+    const channel = node.getAttribute("channel");
+    const start = parseXmltvDate(node.getAttribute("start"));
+    const stop = parseXmltvDate(node.getAttribute("stop"));
+    const titleEl = node.getElementsByTagName("title")[0];
+    const title = titleEl ? titleEl.textContent.trim() : "";
+    if (!channel || !start || !stop || !title) continue;
+    if (!map.has(channel)) map.set(channel, []);
+    map.get(channel).push({ start, stop, title });
+  }
+  for (const arr of map.values()) arr.sort((a, b) => a.start - b.start);
+  return map;
+}
+
+function fetchEpgInBackground() {
+  loadEpg(EPG_URL).then(map => {
+    state.epg = map;
+    renderGrid();
+    if ($("viewPlayer").classList.contains("view--active")) updateEpgPanel();
+  }).catch(() => { /* guide is a nice-to-have; ignore failures silently */ });
+}
+
+function nowNextFor(channelId) {
+  const list = state.epg.get(channelId);
+  if (!list || !list.length) return null;
+  const now = new Date();
+  let current = null, next = null;
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].start <= now && now < list[i].stop) { current = list[i]; next = list[i + 1] || null; break; }
+    if (list[i].start > now) { next = list[i]; break; }
+  }
+  return { current, next };
+}
+
+function fmtTime(d) { return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+
+async function init() {
+  state.loading = true; state.error = null;
+  renderStatus(); renderGrid();
+  try {
+    const [tv, radio] = await Promise.all([loadChannels(TV_URL, "tv"), loadChannels(RADIO_URL, "radio"), loadPinned()]);
+    state.tv = tv; state.radio = radio; state.loading = false;
+  } catch (err) {
+    state.loading = false;
+    state.error = (err && err.message) ? err.message : "Failed to load channel lists.";
+  }
+  $("countRadio").textContent = state.radio.length ? `(${state.radio.length})` : "";
+  $("countTv").textContent = state.tv.length ? `(${state.tv.length})` : "";
+  renderStatus(); renderGrid();
+  if (!state.error) fetchEpgInBackground();
+}
+
+/* ═══════════ Rendering ═══════════ */
+function currentList() { return state.tab === "tv" ? state.tv : state.radio; }
+
+function filteredList() {
+  const q = state.query.trim().toLowerCase();
+  let list = currentList();
+  if (q) list = list.filter(c => c.name.toLowerCase().includes(q));
+  const pins = state.pinned[state.tab];
+  if (!pins || pins.size === 0) return list;
+  const pinned = [], rest = [];
+  for (const c of list) (pins.has(c.id) ? pinned : rest).push(c);
+  return pinned.concat(rest);
+}
+
+function renderStatus() {
+  const statusEl = $("searchStatus");
+  if (state.loading) {
+    statusEl.className = "search-status";
+    statusEl.textContent = "Loading channels…";
+    return;
+  }
+  if (state.error) {
+    statusEl.className = "search-status search-status--error";
+    statusEl.innerHTML = "";
+    statusEl.append(document.createTextNode(state.error + " "));
+    const retry = document.createElement("button");
+    retry.className = "retry-link"; retry.type = "button"; retry.textContent = "Retry";
+    retry.addEventListener("click", init);
+    statusEl.append(retry);
+    return;
+  }
+  const n = filteredList().length;
+  const total = currentList().length;
+  statusEl.className = "search-status";
+  statusEl.textContent = state.query
+    ? `${n} of ${total} channel${total === 1 ? "" : "s"}`
+    : `${total} channel${total === 1 ? "" : "s"}`;
+}
+
+function renderGrid() {
+  const grid = $("resultsGrid");
+  const empty = $("emptyState");
+
+  if (state.loading) {
+    grid.innerHTML = Array.from({ length: 12 }).map(() =>
+      `<div class="skel skel-card" aria-hidden="true"></div>`
+    ).join("");
+    empty.classList.add("hidden");
+    return;
+  }
+
+  const list = filteredList();
+  empty.classList.toggle("hidden", list.length !== 0 || !!state.error);
+
+  if (state.error) { grid.innerHTML = ""; return; }
+
+  const kind = state.tab;
+  const pins = state.pinned[kind];
+  const pinnedCount = pins ? list.filter(c => pins.has(c.id)).length : 0;
+  const showSections = !state.query && pinnedCount > 0 && pinnedCount < list.length;
+
+  grid.innerHTML = list.map((c, i) => {
+    const logo = c.attrs["tvg-logo"] || "";
+    const chno = c.attrs["tvg-chno"];
+    const icon = state.tab === "tv" ? "live_tv" : "radio";
+    const isPinned = !!(pins && pins.has(c.id));
+    let sectionLabel = "";
+    if (showSections && i === 0) sectionLabel = `<div class="grid-section-label"><span class="material-icons">push_pin</span>Pinned</div>`;
+    if (showSections && i === pinnedCount) sectionLabel = `<div class="grid-section-label">All channels</div>`;
+
+    let nowHtml = "", progressHtml = "";
+    if (kind === "tv") {
+      const nn = nowNextFor(c.id);
+      if (nn && nn.current) {
+        nowHtml = `<div class="card__now">${escapeHtml(nn.current.title)}</div>`;
+        const pct = Math.min(100, Math.max(0, ((Date.now() - nn.current.start) / (nn.current.stop - nn.current.start)) * 100));
+        progressHtml = `<div class="card__progress"><div class="card__progress-fill" style="width:${pct.toFixed(1)}%"></div></div>`;
+      }
+    }
+
+    return `${sectionLabel}
+      <div class="card" tabindex="0" role="listitem" data-idx="${i}" aria-label="${escapeHtml(c.name)}">
+        <div class="card__img-wrap">
+          ${chno ? `<span class="card__badge">${escapeHtml(chno)}</span>` : ""}
+          ${logo ? `<img class="card__img" loading="lazy" src="${escapeAttr(logo)}" alt="" onerror="this.remove()" />` : ""}
+          <div class="card__placeholder"><span class="material-icons">${icon}</span></div>
+          <button class="card__pin ${isPinned ? "card__pin--active" : ""}" type="button" data-pin-idx="${i}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
+            <span class="material-icons">push_pin</span>
+          </button>
+          ${progressHtml}
+        </div>
+        <div class="card__body">
+          <div class="card__title">${escapeHtml(c.name)}</div>
+          ${nowHtml}
+        </div>
+      </div>`;
+  }).join("");
+
+  grid.querySelectorAll(".card").forEach(card => {
+    card.addEventListener("click", () => openPlayer(list[Number(card.dataset.idx)]));
+    card.addEventListener("keydown", e => {
+      if (e.target.closest(".card__pin")) return;
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); card.click(); }
+    });
+  });
+  grid.querySelectorAll(".card__pin").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      togglePin(kind, list[Number(btn.dataset.pinIdx)].id);
+    });
+  });
+}
+
+function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function escapeAttr(s) { return escapeHtml(s); }
+
+/* ═══════════ Tabs & search ═══════════ */
+function setTab(tab) {
+  state.tab = tab; state.query = "";
+  $("searchInput").value = ""; $("clearBtn").classList.add("hidden");
+  $("tabRadio").classList.toggle("tab-btn--active", tab === "radio");
+  $("tabRadio").setAttribute("aria-selected", tab === "radio");
+  $("tabTv").classList.toggle("tab-btn--active", tab === "tv");
+  $("tabTv").setAttribute("aria-selected", tab === "tv");
+  renderStatus(); renderGrid();
+}
+$("tabRadio").addEventListener("click", () => setTab("radio"));
+$("tabTv").addEventListener("click", () => setTab("tv"));
+
+$("searchInput").addEventListener("input", () => {
+  clearTimeout(searchDebounce);
+  const q = $("searchInput").value;
+  $("clearBtn").classList.toggle("hidden", !q);
+  searchDebounce = setTimeout(() => { state.query = q; renderStatus(); renderGrid(); }, 150);
+});
+$("clearBtn").addEventListener("click", () => {
+  $("searchInput").value = ""; $("clearBtn").classList.add("hidden");
+  state.query = ""; renderStatus(); renderGrid(); $("searchInput").focus();
+});
+
+function reload() {
+  const brand = $("brandReload");
+  brand.classList.add("top-bar__brand--loading");
+  init().finally(() => brand.classList.remove("top-bar__brand--loading"));
+}
+$("brandReload").addEventListener("click", reload);
+$("brandReload").addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reload(); }
+});
+
+/* ═══════════ Playback ═══════════ */
+const videoEl = $("videoEl");
+const audioEl = $("audioEl");
+const playerOverlay = $("playerOverlay");
+let currentShaka = null;
+
+function destroyHls() {
+  if (currentHls) { try { currentHls.destroy(); } catch (e) {} currentHls = null; }
+}
+
+function destroyShaka() {
+  if (currentShaka) { try { currentShaka.destroy(); } catch (e) {} currentShaka = null; }
+}
+
+function stopAllPlayback() {
+  destroyHls();
+  destroyShaka();
+  videoEl.pause(); videoEl.removeAttribute("src"); try { videoEl.load(); } catch (e) {}
+  audioEl.pause(); audioEl.removeAttribute("src"); try { audioEl.load(); } catch (e) {}
+}
+
+/* Turn a Shaka numeric error code/category into its human-readable enum
+   name (e.g. 1002 -> "HTTP_ERROR"), so failures are actually diagnosable
+   instead of a generic "something went wrong". */
+function shakaEnumName(map, val) {
+  for (const k in map) { if (map[k] === val) return k; }
+  return String(val);
+}
+
+function describeShakaError(err) {
+  if (!err || typeof err.code !== "number") return err && err.message ? err.message : String(err);
+  const cat = shakaEnumName(shaka.util.Error.Category, err.category);
+  const code = shakaEnumName(shaka.util.Error.Code, err.code);
+  let extra = "";
+  try { extra = err.data && err.data.length ? " — " + err.data.map(d => (typeof d === "string" ? d : JSON.stringify(d))).join(", ") : ""; } catch (e) {}
+  return `[${cat}/${code}]${extra}`;
+}
+
+/* Widevine DASH channels (manifest: "mpd" + license_url) are played back with
+   Shaka Player, which handles MSE/DASH parsing and the EME Widevine license
+   exchange for us. Three separate things have to line up for this to work,
+   and we check them in order so failures are actually diagnosable:
+     1. Secure context — EME is spec'd to refuse to run over plain file:// or
+        http://, so this app must be served over https:// (or http://localhost)
+        for DRM playback to even be attempted.
+     2. A Widevine CDM in the browser — Chrome/Edge/Firefox/Android have one;
+        Safari/iOS use FairPlay instead and can never do this.
+     3. The license server (a third-party proxy this app doesn't control)
+        actually granting a license to a browser request — it was built for
+        Kodi, so there's a real chance it 403s or blocks CORS for us. */
+async function loadDrmStream(channel, mediaEl, { onReady, onFail } = {}) {
+  destroyHls();
+  destroyShaka();
+
+  if (!window.isSecureContext) {
+    if (onFail) onFail("DRM playback needs this page to be served over https:// (or http://localhost) — it won't work opened directly from a file, or over plain http:// on a remote host.");
+    return;
+  }
+  if (!window.shaka) { if (onFail) onFail("DRM playback library (Shaka Player) failed to load — check your internet connection and that cdnjs.cloudflare.com isn't blocked."); return; }
+  shaka.polyfill.installAll();
+
+  if (!shaka.Player.isBrowserSupported()) {
+    if (onFail) onFail("This browser doesn't support the MSE/EME APIs this channel needs. Try a recent Chrome, Edge, or Firefox.");
+    return;
+  }
+
+  // Quick, isolated check for an actual Widevine CDM before touching Shaka or
+  // the license server at all — narrows "it doesn't work" down to "your
+  // browser/OS has no Widevine" vs. "the license server said no".
+  if (navigator.requestMediaKeySystemAccess) {
+    try {
+      await navigator.requestMediaKeySystemAccess("com.widevine.alpha", [{
+        initDataTypes: ["cenc"],
+        videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.42E01E"' }],
+        audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }]
+      }]);
+    } catch (e) {
+      if (onFail) onFail("This browser/device doesn't have Widevine available (common in Linux Firefox without the CDM installed, private/incognito windows, or Brave with Widevine off). Try Chrome or Edge with Widevine enabled.");
+      return;
+    }
+  }
+
+  const player = new shaka.Player();
+  currentShaka = player;
+  let reported = false;
+  const reportOnce = (msg) => { if (!reported) { reported = true; if (onFail) onFail(msg); } };
+
+  player.addEventListener("error", e => {
+    console.error("Shaka runtime error", e.detail);
+    reportOnce("Playback stopped: " + describeShakaError(e.detail));
+  });
+  player.configure({ drm: { servers: { "com.widevine.alpha": channel.licenseUrl } } });
+
+  try {
+    await player.attach(mediaEl);
+    await player.load(channel.url);
+    if (currentShaka !== player) return; // superseded by a newer load
+    if (onReady) onReady();
+    const p = mediaEl.play();
+    if (p && p.catch) p.catch(() => {});
+  } catch (err) {
+    console.error("Shaka load failed", err);
+    if (currentShaka === player) currentShaka = null;
+    reportOnce("Couldn't load this DRM-protected channel: " + describeShakaError(err));
+  }
+}
+
+function loadStream(url, mediaEl, { onWaiting, onReady, onFail } = {}) {
+  destroyHls();
+  const directAudioExt = /\.(mp3|aac|m4a|ogg|wav|flac)(\?|$)/i.test(url);
+
+  const tryDirect = () => {
+    mediaEl.src = url;
+    const p = mediaEl.play();
+    if (p && p.catch) p.catch(() => {});
+  };
+
+  if (!directAudioExt && window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ enableWorker: true, liveDurationInfinity: true });
+    currentHls = hls;
+    let fellBack = false;
+    hls.on(Hls.Events.ERROR, (evt, data) => {
+      if (data && data.fatal && !fellBack) {
+        fellBack = true;
+        try { hls.destroy(); } catch (e) {}
+        if (currentHls === hls) currentHls = null;
+        tryDirect();
+      } else if (data && data.fatal && onFail) {
+        onFail();
+      }
+    });
+    hls.once(Hls.Events.MANIFEST_PARSED, () => { if (onReady) onReady(); const p = mediaEl.play(); if (p && p.catch) p.catch(() => {}); });
+    hls.loadSource(url);
+    hls.attachMedia(mediaEl);
+  } else if (!directAudioExt && mediaEl.canPlayType && mediaEl.canPlayType("application/vnd.apple.mpegurl")) {
+    mediaEl.src = url;
+    mediaEl.addEventListener("loadedmetadata", () => { if (onReady) onReady(); const p = mediaEl.play(); if (p && p.catch) p.catch(() => {}); }, { once: true });
+  } else {
+    tryDirect();
+    if (onReady) mediaEl.addEventListener("playing", onReady, { once: true });
+  }
+}
+
+let currentPlayerChannel = null;
+let epgPanelInterval = null;
+
+function updateEpgPanel() {
+  const panel = $("epgInfo");
+  const nowRow = $("epgNowRow");
+  const nextRow = $("epgNextRow");
+  const guideBtn = $("viewGuideBtn");
+
+  if (!currentPlayerChannel || state.tab !== "tv" || !state.epg.has(currentPlayerChannel.id)) {
+    panel.classList.add("hidden");
+    return;
+  }
+  panel.classList.remove("hidden");
+  guideBtn.classList.remove("hidden");
+
+  const nn = nowNextFor(currentPlayerChannel.id);
+  if (nn && nn.current) {
+    nowRow.classList.remove("hidden");
+    $("epgNowTitle").textContent = nn.current.title;
+    const pct = Math.min(100, Math.max(0, ((Date.now() - nn.current.start) / (nn.current.stop - nn.current.start)) * 100));
+    $("epgProgressFill").style.width = pct.toFixed(1) + "%";
+    $("epgNowTime").textContent = `${fmtTime(nn.current.start)} – ${fmtTime(nn.current.stop)}`;
+  } else {
+    nowRow.classList.add("hidden");
+  }
+
+  if (nn && nn.next) {
+    nextRow.classList.remove("hidden");
+    $("epgNextTitle").textContent = nn.next.title;
+    $("epgNextTime").textContent = `${fmtTime(nn.next.start)} – ${fmtTime(nn.next.stop)}`;
+  } else {
+    nextRow.classList.add("hidden");
+  }
+}
+
+/* ═══════════ Full multi-day guide (popup) ═══════════ */
+function dayKey(d) { return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+
+function dayLabel(d) {
+  const today = new Date();
+  const diffDays = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / 86400000);
+  const md = d.toLocaleDateString([], { day: "numeric", month: "short" });
+  if (diffDays === 0) return `Today · ${md}`;
+  if (diffDays === 1) return `Tomorrow · ${md}`;
+  return `${d.toLocaleDateString([], { weekday: "long" })} · ${md}`;
+}
+
+function openGuideModal(channel) {
+  const list = state.epg.get(channel.id);
+  $("guideModalTitle").textContent = channel.name;
+  const body = $("guideModalBody");
+
+  if (!list || !list.length) {
+    $("guideModalSub").textContent = "";
+    body.innerHTML = `<p style="color:var(--text-faint); font-size:0.85rem; padding:1rem 0.3rem;">No guide data available for this channel.</p>`;
+  } else {
+    const now = new Date();
+    const groups = new Map();
+    for (const p of list) {
+      const key = dayKey(p.start);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p);
+    }
+    $("guideModalSub").textContent = `${list.length} programmes over ${groups.size} day${groups.size === 1 ? "" : "s"}`;
+    const todayKey = dayKey(now);
+    body.innerHTML = [...groups.entries()].map(([key, progs]) => `
+      <details class="guide-day" ${key === todayKey ? "open" : ""}>
+        <summary>
+          <span>${escapeHtml(dayLabel(progs[0].start))}</span>
+          <span class="guide-day__meta">
+            <span class="guide-day__count">${progs.length} shows</span>
+            <span class="material-icons">expand_more</span>
+          </span>
+        </summary>
+        <div class="guide-list">
+          ${progs.map(p => {
+            const isLive = p.start <= now && now < p.stop;
+            return `<div class="guide-row ${isLive ? "guide-row--live" : ""}">
+              <div class="guide-row__time">${fmtTime(p.start)}</div>
+              <div class="guide-row__title">${escapeHtml(p.title)}${isLive ? '<span class="guide-live-tag">LIVE</span>' : ""}</div>
+            </div>`;
+          }).join("")}
+        </div>
+      </details>`).join("");
+  }
+
+  $("guideModal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeGuideModal() {
+  $("guideModal").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+$("viewGuideBtn").addEventListener("click", () => { if (currentPlayerChannel) openGuideModal(currentPlayerChannel); });
+$("guideModalClose").addEventListener("click", closeGuideModal);
+$("guideModal").addEventListener("click", e => { if (e.target.id === "guideModal") closeGuideModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("guideModal").classList.contains("hidden")) closeGuideModal(); });
+
+function openPlayer(channel) {
+  const isTv = state.tab === "tv";
+  $("viewBrowse").classList.remove("view--active");
+  $("viewPlayer").classList.add("view--active");
+  $("backFromPlayerLabel").textContent = isTv ? "TV" : "Radio";
+
+  $("playerTitle").textContent = channel.name;
+  const bits = [];
+  if (channel.attrs["tvg-chno"]) bits.push(`Ch ${channel.attrs["tvg-chno"]}`);
+  $("playerMeta").textContent = bits.join(" · ");
+
+  currentPlayerChannel = channel;
+  clearInterval(epgPanelInterval);
+  updateEpgPanel();
+  epgPanelInterval = setInterval(updateEpgPanel, 30000);
+
+  stopAllPlayback();
+
+  $("tvPlayerWrap").classList.toggle("hidden", !isTv);
+  $("radioPlayerWrap").classList.toggle("hidden", isTv);
+  $("playerError").classList.add("hidden");
+
+  if (channel.drm) {
+    $("tvPlayerWrap").classList.remove("hidden");
+    $("radioPlayerWrap").classList.add("hidden");
+    playerOverlay.classList.remove("hidden");
+    $("playerOverlayText").textContent = "Loading DRM stream…";
+    loadDrmStream(channel, videoEl, {
+      onReady: () => playerOverlay.classList.add("hidden"),
+      onFail: (msg) => {
+        $("playerOverlayText").textContent = "Couldn't load this channel.";
+        $("playerError").textContent = msg || "This channel couldn't be played in your browser.";
+        $("playerError").classList.remove("hidden");
+      }
+    });
+    return;
+  }
+
+  if (isTv) {
+    playerOverlay.classList.remove("hidden");
+    $("playerOverlayText").textContent = "Loading stream…";
+    loadStream(channel.url, videoEl, {
+      onReady: () => playerOverlay.classList.add("hidden"),
+      onFail: () => { $("playerOverlayText").textContent = "Couldn't load this channel."; }
+    });
+    videoEl.addEventListener("playing", () => playerOverlay.classList.add("hidden"), { once: true });
+    videoEl.addEventListener("error", () => {
+      $("playerError").textContent = "This channel couldn't be played in your browser.";
+      $("playerError").classList.remove("hidden");
+    }, { once: true });
+  } else {
+    const logo = channel.attrs["tvg-logo"] || "";
+    const logoImg = $("radioLogo"), logoPh = $("radioArtPh");
+    if (logo) { logoImg.src = logo; logoImg.classList.remove("hidden"); logoImg.onerror = () => { logoImg.classList.add("hidden"); logoPh.classList.remove("hidden"); }; logoPh.classList.add("hidden"); }
+    else { logoImg.classList.add("hidden"); logoPh.classList.remove("hidden"); }
+    loadStream(channel.url, audioEl, {
+      onFail: () => { $("playerError").textContent = "Couldn't load this station."; $("playerError").classList.remove("hidden"); }
+    });
+    audioEl.addEventListener("error", () => {
+      $("playerError").textContent = "This station couldn't be played in your browser.";
+      $("playerError").classList.remove("hidden");
+    }, { once: true });
+  }
+}
+
+$("backFromPlayer").addEventListener("click", () => {
+  stopAllPlayback();
+  clearInterval(epgPanelInterval);
+  currentPlayerChannel = null;
+  closeGuideModal();
+  $("viewPlayer").classList.remove("view--active");
+  $("viewBrowse").classList.add("view--active");
+});
+
+/* ═══════════ Init ═══════════ */
+init();
+</script>
+</body>
+</html>
