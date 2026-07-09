@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html> 
 <html lang="en">
 <head>
@@ -280,6 +281,15 @@
   .radio-player__art { width: 42vw; height: 42vw; max-width: 190px; max-height: 190px; min-width: 120px; min-height: 120px; border-radius: 22px; overflow: hidden; background: var(--bg2); box-shadow: var(--el2); position: relative; display: flex; align-items: center; justify-content: center; }
   .radio-player__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 12%; }
   .radio-player__art-ph { color: var(--text-faint); font-size: 3rem; }
+  /* A big, obvious play/pause button drives playback — the native <audio>
+     element below is kept controls-less and used purely as the playback
+     engine, since relying on the native control bar alone left nothing
+     obviously clickable once autoplay was blocked by the browser. */
+  .radio-play-btn { width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--md-primary); color: var(--md-on-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--el2); transition: transform var(--t), filter var(--t); flex-shrink: 0; }
+  .radio-play-btn:hover { filter: brightness(1.05); transform: scale(1.04); }
+  .radio-play-btn:active { transform: scale(0.97); }
+  .radio-play-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 3px; }
+  .radio-play-btn .material-icons { font-size: 32px; }
   .radio-player audio { width: 100%; max-width: 360px; accent-color: var(--primary); }
 
   .live-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; color: var(--md-on-error-container); background: var(--md-error-container); padding: 0.22rem 0.6rem; border-radius: 999px; flex-shrink: 0; }
@@ -291,12 +301,15 @@
   @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
   .skel-card { aspect-ratio: 1/1; border-radius: var(--radius); }
 
-  /* ── DRM channels: greyed out, non-interactive ── */
-  .card--drm { opacity: 0.42; cursor: not-allowed; }
-  .card--drm:hover { transform: none; box-shadow: var(--el1); background: var(--surface); }
+  /* ── DRM channels: can't be played here, but still clickable — tapping
+     one opens its programme guide (EPG) instead of attempting playback. ── */
+  .card--drm { opacity: 0.62; cursor: pointer; }
+  .card--drm:hover { transform: translateY(-2px); box-shadow: var(--el2); background: var(--surface2); }
   .card--drm .card__pin { display: none; }
   .card__drm-badge { position: absolute; top: 6px; right: 6px; z-index: 2; display: flex; align-items: center; gap: 0.15rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.03em; padding: 0.1rem 0.4rem; border-radius: 6px; background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); }
   .card__drm-badge .material-icons { font-size: 11px; }
+  .card__drm-guide-hint { position: absolute; bottom: 6px; right: 6px; z-index: 2; display: flex; align-items: center; gap: 0.15rem; font-size: 0.6rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 6px; background: rgba(20,14,8,0.55); color: #fff; }
+  .card__drm-guide-hint .material-icons { font-size: 12px; }
 
   /* ── Shared buttons (M3 filled / outlined / danger) ── */
   .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
@@ -349,7 +362,7 @@
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div style="display:flex; align-items:center; gap:0.4rem;">
-      <a href="index.html" class="switch-app-btn" target="_blank" rel="noopener noreferrer" aria-label="Switch to Movies &amp; TV shows (opens in a new tab)" title="Movies &amp; TV shows">
+      <a href="/" class="switch-app-btn" aria-label="Switch to Movies &amp; TV shows" title="Movies &amp; TV shows">
         <span class="material-icons">video_library</span><span>Movies &amp; TV</span>
       </a>
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
@@ -435,7 +448,10 @@
           <img id="radioLogo" src="" alt="" />
           <div id="radioArtPh" class="radio-player__art-ph"><span class="material-icons">radio</span></div>
         </div>
-        <audio id="audioEl" controls preload="none"></audio>
+        <button id="radioPlayBtn" class="radio-play-btn" type="button" aria-label="Play">
+          <span class="material-icons" id="radioPlayIcon">play_arrow</span>
+        </button>
+        <audio id="audioEl" preload="none"></audio>
       </div>
 
       <p id="playerError" class="search-status search-status--error hidden"></p>
@@ -1004,19 +1020,21 @@ function renderGrid() {
       }
     }
 
-    // DRM-protected channels are greyed out and non-interactive — third-party
-    // Widevine license servers referenced by arbitrary imported playlists
-    // frequently won't grant a browser a licence, so we don't pretend they play.
-    const drmLabel = c.drm ? ` — DRM protected, can't be played here` : "";
+    // DRM-protected channels can't be played here — third-party Widevine
+    // license servers referenced by arbitrary imported playlists frequently
+    // won't grant a browser a licence — but the card stays clickable so the
+    // programme guide (EPG) is still reachable; it just opens the guide
+    // modal directly instead of attempting playback.
+    const drmLabel = c.drm ? ` — DRM protected, can't be played here, shows programme guide` : "";
 
     return `${sectionLabel}
-      <div class="card ${c.drm ? "card--drm" : ""}" ${c.drm ? "" : 'tabindex="0"'} role="listitem" data-idx="${i}" aria-label="${escapeHtml(c.name)}${drmLabel}" ${c.drm ? 'aria-disabled="true"' : ""}>
+      <div class="card ${c.drm ? "card--drm" : ""}" tabindex="0" role="listitem" data-idx="${i}" aria-label="${escapeHtml(c.name)}${drmLabel}">
         <div class="card__img-wrap">
           ${chno ? `<span class="card__badge">${escapeHtml(chno)}</span>` : ""}
           ${c.drm ? `<span class="card__drm-badge"><span class="material-icons">lock</span>DRM</span>` : ""}
           ${logo ? `<img class="card__img" loading="lazy" src="${escapeAttr(logo)}" alt="" onerror="this.remove()" />` : ""}
           <div class="card__placeholder"><span class="material-icons">${icon}</span></div>
-          ${c.drm ? "" : `<button class="card__pin ${isPinned ? "card__pin--active" : ""}" type="button" data-pin-idx="${i}" data-channel-id="${escapeAttr(c.id)}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
+          ${c.drm ? `<span class="card__drm-guide-hint"><span class="material-icons">calendar_month</span>Guide</span>` : `<button class="card__pin ${isPinned ? "card__pin--active" : ""}" type="button" data-pin-idx="${i}" data-channel-id="${escapeAttr(c.id)}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
             <span class="material-icons">push_pin</span>
           </button>`}
           ${progressHtml}
@@ -1032,6 +1050,15 @@ function renderGrid() {
     card.addEventListener("click", () => openPlayer(list[Number(card.dataset.idx)]));
     card.addEventListener("keydown", e => {
       if (e.target.closest(".card__pin")) return;
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); card.click(); }
+    });
+  });
+  // DRM channels can't be played, but tapping/activating one opens its
+  // programme guide (EPG) — same modal as the "Full guide" button in the
+  // normal player view, just reachable straight from the grid.
+  grid.querySelectorAll(".card--drm").forEach(card => {
+    card.addEventListener("click", () => openGuideModal(list[Number(card.dataset.idx)]));
+    card.addEventListener("keydown", e => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); card.click(); }
     });
   });
@@ -1168,8 +1195,21 @@ configClearBtn.addEventListener("click", async () => {
 /* ═══════════ Playback ═══════════ */
 const videoEl = $("videoEl");
 const audioEl = $("audioEl");
+const radioPlayBtn = $("radioPlayBtn");
+const radioPlayIcon = $("radioPlayIcon");
 const playerOverlay = $("playerOverlay");
 let currentShaka = null;
+
+function setRadioPlayIcon(playing) {
+  radioPlayIcon.textContent = playing ? "pause" : "play_arrow";
+  radioPlayBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
+}
+radioPlayBtn.addEventListener("click", () => {
+  if (audioEl.paused) { const p = audioEl.play(); if (p && p.catch) p.catch(() => {}); }
+  else audioEl.pause();
+});
+audioEl.addEventListener("play", () => setRadioPlayIcon(true));
+audioEl.addEventListener("pause", () => setRadioPlayIcon(false));
 
 function destroyHls() {
   if (currentHls) { try { currentHls.destroy(); } catch (e) {} currentHls = null; }
@@ -1464,6 +1504,7 @@ function openPlayer(channel) {
     const logoImg = $("radioLogo"), logoPh = $("radioArtPh");
     if (logo) { logoImg.src = logo; logoImg.classList.remove("hidden"); logoImg.onerror = () => { logoImg.classList.add("hidden"); logoPh.classList.remove("hidden"); }; logoPh.classList.add("hidden"); }
     else { logoImg.classList.add("hidden"); logoPh.classList.remove("hidden"); }
+    setRadioPlayIcon(false);
     loadStream(channel.url, audioEl, {
       onFail: () => { $("playerError").textContent = "Couldn't load this station."; $("playerError").classList.remove("hidden"); }
     });
@@ -1485,7 +1526,10 @@ $("backFromPlayer").addEventListener("click", () => {
 
 /* ═══════════ Init ═══════════ */
 try {
-  const cleaned = location.protocol === "file:" ? location.pathname : location.pathname.replace(/live\.html$/i, "");
+  // Normalises "…/live.html" to the clean "…/live" route (this page's
+  // canonical address bar path — see index.html's cleanPath() for the
+  // matching root-page normalisation, which strips "index.html" entirely).
+  const cleaned = location.protocol === "file:" ? location.pathname : location.pathname.replace(/live\.html$/i, "live");
   if (cleaned !== location.pathname) history.replaceState(null, "", cleaned + location.search + location.hash);
 } catch (e) { /* pushState unavailable in this context — leave the URL as-is */ }
 init();
