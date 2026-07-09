@@ -67,6 +67,12 @@
   .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
   .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+  /* ── Switch-app button (bigger, labeled — links to the sister movies/TV app) ── */
+  .switch-app-btn { display: inline-flex; align-items: center; gap: 0.4rem; height: 40px; padding: 0 0.9rem 0 0.7rem; border-radius: 999px; border: 1px solid var(--md-outline-variant); background: var(--md-surface-container-high); color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; text-decoration: none; cursor: pointer; white-space: nowrap; transition: background var(--t), color var(--t), border-color var(--t); }
+  .switch-app-btn:hover { background: var(--md-surface-container-highest); color: var(--text); border-color: var(--md-outline); }
+  .switch-app-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .switch-app-btn .material-icons { font-size: 19px; }
+
   main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .view { display: none; padding: 0.75rem 0.9rem 2rem; width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; }
   .view--active { display: block; }
@@ -196,6 +202,51 @@
   @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
   .skel-card { aspect-ratio: 1/1; border-radius: var(--radius); }
 
+  /* ── DRM channels: greyed out, non-interactive ── */
+  .card--drm { opacity: 0.42; cursor: not-allowed; }
+  .card--drm:hover { transform: none; box-shadow: var(--el1); background: var(--surface); }
+  .card--drm .card__pin { display: none; }
+  .card__drm-badge { position: absolute; top: 6px; right: 6px; z-index: 2; display: flex; align-items: center; gap: 0.15rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.03em; padding: 0.1rem 0.4rem; border-radius: 6px; background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); }
+  .card__drm-badge .material-icons { font-size: 11px; }
+
+  /* ── Shared buttons (M3 filled / outlined / danger) ── */
+  .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+  .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+  .btn--primary:hover { box-shadow: var(--el1); filter: brightness(1.06); }
+  .btn--primary:active { box-shadow: none; filter: brightness(0.94); }
+  .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
+  .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
+  .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); box-shadow: none; }
+  .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .btn--sm { padding: 0.32rem 0.8rem; font-size: 0.8rem; }
+  .btn:disabled { opacity: 0.38; cursor: not-allowed; filter: none !important; box-shadow: none !important; }
+
+  /* ── Settings sheet (M3 modal bottom sheet) ── */
+  .settings { position: fixed; inset: 0; z-index: 110; display: flex; align-items: flex-end; justify-content: center; }
+  .settings.hidden { display: none; }
+  .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); }
+  .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem 1rem 1.25rem; animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; }
+  .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
+  @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+  .settings__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 500; color: var(--text); }
+  .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+  .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
+  .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
+
+  /* ── Config import/export ── */
+  .config-area { display: flex; flex-direction: column; gap: 0.5rem; }
+  .config-textarea-wrap { position: relative; }
+  .config-textarea { width: 100%; min-height: 130px; border: 1px solid var(--md-outline); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.78rem; font-family: 'DM Sans', monospace, sans-serif; background: var(--bg); color: var(--text); outline: none; resize: vertical; line-height: 1.55; transition: border-color var(--t), box-shadow var(--t); }
+  .config-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+  .config-textarea::placeholder { color: var(--text-faint); }
+  .config-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+  .config-feedback { font-size: 0.76rem; flex: 1; min-width: 0; }
+  .config-feedback--ok  { color: #146c2e; }
+  .config-feedback--err { color: var(--md-error); }
+
+  .empty-state__import-btn { margin-top: 0.9rem; }
+
   .hidden { display: none !important; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 </style>
@@ -207,9 +258,14 @@
       <span class="top-bar__name">🍦 Bingqilin</span>
       <span class="top-bar__sub">tv and radio</span>
     </div>
-    <a href="index.html" class="icon-btn" aria-label="Movies &amp; TV shows" title="Movies &amp; TV shows" style="text-decoration:none;">
-      <span class="material-icons">video_library</span>
-    </a>
+    <div style="display:flex; align-items:center; gap:0.4rem;">
+      <a href="index.html" class="switch-app-btn" aria-label="Switch to Movies &amp; TV shows" title="Movies &amp; TV shows">
+        <span class="material-icons">video_library</span><span>Movies &amp; TV</span>
+      </a>
+      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Import channels &amp; guide" title="Import channels &amp; guide">
+        <span class="material-icons">settings</span>
+      </button>
+    </div>
   </header>
 
   <main class="app-main">
@@ -237,8 +293,11 @@
       <div id="resultsGrid" class="results-grid" role="list"></div>
       <div id="emptyState" class="empty-state hidden">
         <div class="empty-state__icon">📻</div>
-        <div class="empty-state__title">No channels found</div>
-        <div class="empty-state__sub">Try a different search term</div>
+        <div class="empty-state__title" id="emptyStateTitle">No channels found</div>
+        <div class="empty-state__sub" id="emptyStateSub">Try a different search term</div>
+        <button id="emptyStateImportBtn" class="btn btn--primary empty-state__import-btn hidden" type="button">
+          <span class="material-icons" style="font-size:16px;">add</span>Import channels
+        </button>
       </div>
     </section>
 
@@ -291,6 +350,52 @@
   </main>
 </div>
 
+<!-- Settings sheet: import your own TV/Radio playlists (M3U8 or JSON) + EPG -->
+<div id="settingsSheet" class="settings hidden" role="dialog" aria-modal="true" aria-label="Import channels and guide">
+  <div id="settingsBackdrop" class="settings__backdrop"></div>
+  <div class="settings__panel">
+    <div class="settings__header">
+      <h2 class="settings__title">Import channels</h2>
+      <button id="settingsClose" class="icon-btn" type="button" aria-label="Close">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="settings__section">
+      <p class="settings__hint">
+        This app ships with no built-in channels. Paste your own playlist URLs below.
+        Format: <code>key: value</code>, one per line. Keys: <code>tv</code>, <code>radio</code>, <code>epg</code>.
+        <code>tv</code> and <code>radio</code> can each point at an M3U8 playlist <em>or</em> a JSON channel list —
+        the format is auto-detected. JSON can be an id-keyed object (<code>{"id":{"name","url","logo","chno"}}</code>)
+        or a flat array (<code>[{"name","url","logo","chno"}]</code>); a <code>license_url</code>/<code>licenseUrl</code>
+        field or <code>"drm": true</code> marks a channel as DRM-protected.
+        <code>epg</code> is an XMLTV guide URL — if your M3U8's <code>#EXTM3U</code> header already has a
+        <code>url-tvg</code>/<code>x-tvg-url</code>, you can leave <code>epg</code> blank and it'll be picked up automatically.
+        Lines starting with <code>#</code> are ignored.
+      </p>
+      <div class="config-area">
+        <div class="config-textarea-wrap">
+          <textarea id="configTextarea" class="config-textarea"
+            placeholder="tv: https://example.com/tv.m3u8&#10;radio: https://example.com/radio.json&#10;epg: https://example.com/epg.xml"
+            spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+        </div>
+        <div class="config-actions">
+          <span id="configFeedback" class="config-feedback" role="status" aria-live="polite"></span>
+          <button id="configImportBtn" class="btn btn--primary btn--sm" type="button">
+            <span class="material-icons" style="font-size:15px;">download</span>Import &amp; load
+          </button>
+          <button id="configExportBtn" class="btn btn--ghost btn--sm" type="button">
+            <span class="material-icons" style="font-size:15px;">upload</span>Export
+          </button>
+          <button id="configClearBtn" class="btn btn--danger btn--sm" type="button">
+            <span class="material-icons" style="font-size:15px;">delete_outline</span>Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="guideModal" class="modal-overlay hidden">
   <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
     <div class="modal-header">
@@ -310,21 +415,18 @@
 "use strict";
 const $ = id => document.getElementById(id);
 
-/* The old raw-tv.m3u8 / raw-radio.m3u8 endpoints send no CORS headers at
-   all, so browser fetch() is blocked (a local player like VLC ignores
-   CORS entirely, which is why it worked there but not here). The .json
-   endpoints below are served with `access-control-allow-origin: *`. */
-const TV_URL = "https://i.mjh.nz/nz/tv.json";
-const RADIO_URL = "https://i.mjh.nz/nz/radio.json";
-const EPG_URL = "https://raw.githubusercontent.com/matthuisman/i.mjh.nz/refs/heads/master/nz/epg.xml";
+/* No channels ship with this app — the person imports their own TV/Radio
+   playlists (M3U8 or JSON, auto-detected) and optionally an XMLTV EPG url
+   via the Settings sheet. See loadStoredConfig / parseChannelsAuto below. */
 
-const state = { tv: [], radio: [], tab: "radio", query: "", loading: true, error: null, pinned: { tv: new Set(), radio: new Set() }, epg: new Map() };
+const state = { tv: [], radio: [], tab: "radio", query: "", loading: true, error: null, pinned: { tv: new Set(), radio: new Set() }, epg: new Map(), configured: false };
 let currentHls = null;
 let searchDebounce = null;
+let config = { tv: "", radio: "", epg: "" };
 
-/* ═══════════ Pinned-channel storage ═══════════
+/* ═══════════ Local storage (pins + imported playlist config) ═══════════
    Prefers the Claude artifact key-value store (window.storage) when present
-   so pins sync across sessions there; falls back to localStorage so pinning
+   so data syncs across sessions there; falls back to localStorage so it
    still works once this file is downloaded and self-hosted as a real app. */
 const PinStore = (() => {
   const hasWS = typeof window !== "undefined" && window.storage && typeof window.storage.get === "function";
@@ -346,7 +448,12 @@ const PinStore = (() => {
     if (hasLS) { try { localStorage.setItem(key, value); return true; } catch (e) { return false; } }
     return false;
   }
-  return { get, set };
+  async function del(key) {
+    if (hasWS) { try { await window.storage.delete(key); return true; } catch (e) { return false; } }
+    if (hasLS) { try { localStorage.removeItem(key); return true; } catch (e) { return false; } }
+    return false;
+  }
+  return { get, set, delete: del };
 })();
 
 async function loadPinned() {
@@ -372,39 +479,151 @@ function togglePin(kind, id) {
   renderGrid();
 }
 
-/* ═══════════ JSON channel-map parsing ═══════════
-   Each endpoint returns an object keyed by channel id, e.g.
-   { "mjh-al-jazeera": { name, logo, chno, mjh_master, manifest, license_url, ... }, ... }
-   We flatten that into the { name, attrs, url } shape the rest of the app expects. */
-function parseChannelMap(data, kind) {
+/* ═══════════ M3U8 playlist parsing ═══════════
+   Standard extended-M3U format:
+     #EXTM3U url-tvg="https://.../epg.xml"
+     #EXTINF:-1 tvg-id="bbc1" tvg-logo="https://logo.png" tvg-chno="1" group-title="News",BBC One
+     #KODIPROP:inputstream.adaptive.license_type=com.widevine.alpha
+     #KODIPROP:inputstream.adaptive.license_key=https://license.example/proxy
+     https://stream.example/master.m3u8
+   #KODIPROP lines (a common IPTV-playlist convention) mark the channel
+   directly above the URL as DRM-protected; those channels are shown
+   greyed out in the grid (see renderGrid) since arbitrary third-party
+   license servers frequently won't grant a browser a licence anyway. */
+function parseM3U8(text, kind) {
+  const lines = String(text || "").split(/\r?\n/);
   const channels = [];
-  for (const [id, c] of Object.entries(data || {})) {
-    const url = c.mjh_master || "";
-    if (!url) continue; // skip entries with nothing playable
-    const attrs = {
-      "tvg-logo": c.logo || ""
-    };
-    if (c.chno !== undefined && c.chno !== null && c.chno !== "") {
-      attrs["tvg-chno"] = String(c.chno);
+  let pending = null, pendingDrm = null, headerTvgUrl = "", autoIdx = 0;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    if (line.startsWith("#EXTM3U")) {
+      const m = line.match(/(?:url-tvg|x-tvg-url)="([^"]*)"/i);
+      if (m) headerTvgUrl = m[1].split(",")[0].trim();
+      continue;
     }
-    // DASH channels (manifest: "mpd") are Widevine-DRM protected. They're played
-    // back with Shaka Player (MSE/EME + a DASH client), not hls.js — see
-    // loadDrmStream(). This needs a Widevine-capable browser (Chrome, Edge,
-    // Firefox, or Android/desktop Chromium-based browsers); Safari/iOS use
-    // FairPlay instead of Widevine and can't play these.
-    const isDrm = c.manifest === "mpd" && !!c.license_url;
-    channels.push({ id, name: c.name || "Unknown channel", attrs, url, drm: isDrm, licenseUrl: c.license_url || null });
+    if (line.startsWith("#EXTINF")) {
+      const comma = line.indexOf(",");
+      const attrPart = comma !== -1 ? line.slice(0, comma) : line;
+      const name = comma !== -1 ? line.slice(comma + 1).trim() : "";
+      const attrs = {};
+      const attrRe = /([\w-]+)="([^"]*)"/g;
+      let m;
+      while ((m = attrRe.exec(attrPart))) attrs[m[1].toLowerCase()] = m[2];
+      pending = { attrs, name: name || attrs["tvg-name"] || "" };
+      continue;
+    }
+    if (line.startsWith("#KODIPROP")) {
+      const m = line.match(/#KODIPROP:([\w.]+)=(.*)$/);
+      if (m) {
+        pendingDrm = pendingDrm || {};
+        const key = m[1].trim(), val = m[2].trim();
+        if (key === "inputstream.adaptive.license_type") pendingDrm.type = val;
+        if (key === "inputstream.adaptive.license_key") pendingDrm.key = val;
+      }
+      continue;
+    }
+    if (line.startsWith("#")) continue; // ignore other tags (#EXTVLCOPT, #EXTGRP, etc.)
+
+    // Anything else is a stream URL, closing out the preceding #EXTINF entry.
+    const url = line;
+    if (!pending) pending = { attrs: {}, name: "" };
+    const attrs = pending.attrs;
+    const id = attrs["tvg-id"] || attrs["tvg-name"] || `${kind}-${autoIdx++}-${url}`;
+    const isDrm = !!(pendingDrm && pendingDrm.type);
+    const licenseUrl = isDrm && pendingDrm.key && /^https?:\/\//i.test(pendingDrm.key) ? pendingDrm.key.split("|")[0] : null;
+    channels.push({
+      id,
+      name: pending.name || "Unknown channel",
+      attrs: { "tvg-logo": attrs["tvg-logo"] || "", "tvg-chno": attrs["tvg-chno"] || "" },
+      url,
+      drm: isDrm,
+      licenseUrl
+    });
+    pending = null; pendingDrm = null;
   }
-  const chno = c => (c.attrs["tvg-chno"] !== undefined ? Number(c.attrs["tvg-chno"]) : Infinity);
+
+  const chno = c => (c.attrs["tvg-chno"] !== "" && c.attrs["tvg-chno"] !== undefined ? Number(c.attrs["tvg-chno"]) : Infinity);
   channels.sort((a, b) => (kind === "tv" ? chno(a) - chno(b) : 0) || a.name.localeCompare(b.name));
-  return channels;
+  return { channels, tvgUrl: headerTvgUrl };
+}
+
+/* ═══════════ JSON playlist parsing ═══════════
+   Accepts two common shapes:
+     1. An id-keyed object (e.g. the i.mjh.nz format):
+        { "bbc1": { name, logo, chno, mjh_master, manifest, license_url }, ... }
+     2. A flat array of channel objects:
+        [ { id, name, url, logo, chno, drm, licenseUrl }, ... ]
+   Field names are matched loosely (name/title, url/stream/link/mjh_master,
+   logo/icon/tvg-logo, chno/number/channel/tvg-chno, license_url/licenseUrl)
+   so playlists exported from different tools tend to just work. A channel
+   is treated as DRM-protected if it carries a `drm: true` flag, or any
+   kind of license-url field (with or without an explicit manifest type). */
+function parseChannelsJSON(text, kind) {
+  const data = JSON.parse(text);
+  const entries = Array.isArray(data)
+    ? data.map((c, i) => [c && (c.id ?? c.tvg_id ?? c["tvg-id"]) != null ? String(c.id ?? c.tvg_id ?? c["tvg-id"]) : `${kind}-${i}`, c])
+    : Object.entries(data || {});
+
+  const channels = [];
+  for (const [id, c] of entries) {
+    if (!c || typeof c !== "object") continue;
+    const url = c.url || c.stream || c.link || c.source || c.mjh_master || "";
+    if (!url) continue; // skip entries with nothing playable
+    const name = c.name || c.title || c.tvg_name || c["tvg-name"] || "Unknown channel";
+    const logo = c.logo || c.icon || c.tvg_logo || c["tvg-logo"] || "";
+    const chnoRaw = c.chno ?? c.number ?? c.channel ?? c.tvg_chno ?? c["tvg-chno"];
+    const chnoStr = (chnoRaw !== undefined && chnoRaw !== null && chnoRaw !== "") ? String(chnoRaw) : "";
+    const licenseUrl = c.licenseUrl || c.license_url || c.license || null;
+    const isDrm = c.drm === true || c.drm === "true" || !!licenseUrl;
+    channels.push({
+      id: String(id),
+      name,
+      attrs: { "tvg-logo": logo, "tvg-chno": chnoStr },
+      url,
+      drm: isDrm,
+      licenseUrl: isDrm ? (licenseUrl || null) : null
+    });
+  }
+  const chno = c => (c.attrs["tvg-chno"] !== "" ? Number(c.attrs["tvg-chno"]) : Infinity);
+  channels.sort((a, b) => (kind === "tv" ? chno(a) - chno(b) : 0) || a.name.localeCompare(b.name));
+  // Some JSON exports carry their own EPG reference at the top level.
+  const tvgUrl = (data && !Array.isArray(data) && (data.epg || data.tvgUrl || data.epg_url)) || "";
+  return { channels, tvgUrl };
+}
+
+/* Auto-detects whether a fetched playlist is JSON or M3U8 and parses it
+   with whichever parser fits, so people can import either format without
+   picking one up front. */
+function parseChannelsAuto(text, kind) {
+  const trimmed = String(text || "").trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    return parseChannelsJSON(trimmed, kind);
+  }
+  if (/^#EXTM3U/i.test(trimmed)) {
+    return parseM3U8(trimmed, kind);
+  }
+  // No clear signal (e.g. a bare list of #EXTINF lines with no header,
+  // or JSON served with odd leading whitespace/BOM) — try both before
+  // giving up, M3U8 first since it's the more common IPTV format.
+  try {
+    const m3u = parseM3U8(trimmed, kind);
+    if (m3u.channels.length) return m3u;
+  } catch (e) { /* fall through */ }
+  try {
+    return parseChannelsJSON(trimmed, kind);
+  } catch (e) {
+    throw new Error("Unrecognized playlist format — expected M3U8 or JSON.");
+  }
 }
 
 async function loadChannels(url, kind) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
-  const data = await res.json();
-  return parseChannelMap(data, kind);
+  const text = await res.text();
+  return parseChannelsAuto(text, kind);
 }
 
 /* ═══════════ EPG (TV guide) ═══════════
@@ -420,10 +639,7 @@ function parseXmltvDate(s) {
   return isNaN(date) ? null : date;
 }
 
-async function loadEpg(url) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("EPG HTTP " + res.status);
-  const text = await res.text();
+function parseXmltvText(text) {
   const xml = new DOMParser().parseFromString(text, "text/xml");
   const map = new Map();
   const nodes = xml.getElementsByTagName("programme");
@@ -441,8 +657,28 @@ async function loadEpg(url) {
   return map;
 }
 
-function fetchEpgInBackground() {
-  loadEpg(EPG_URL).then(map => {
+/* Accepts either a direct XMLTV url, or (since some IPTV M3U8 playlists
+   carry their EPG reference in the #EXTM3U header instead of a separate
+   file) an M3U8 url — in which case we follow its url-tvg/x-tvg-url. */
+async function loadEpgSmart(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("EPG HTTP " + res.status);
+  let text = await res.text();
+  if (/^\s*#EXTM3U/i.test(text)) {
+    const m = text.match(/(?:url-tvg|x-tvg-url)="([^"]*)"/i);
+    const tvgUrl = m ? m[1].split(",")[0].trim() : "";
+    if (!tvgUrl) throw new Error("No EPG reference found in that playlist header");
+    const res2 = await fetch(tvgUrl, { cache: "no-store" });
+    if (!res2.ok) throw new Error("EPG HTTP " + res2.status);
+    text = await res2.text();
+  }
+  return parseXmltvText(text);
+}
+
+function fetchEpgInBackground(fallbackTvgUrl) {
+  const url = (config.epg || "").trim() || fallbackTvgUrl;
+  if (!url) return;
+  loadEpgSmart(url).then(map => {
     state.epg = map;
     renderGrid();
     if ($("viewPlayer").classList.contains("view--active")) updateEpgPanel();
@@ -463,12 +699,64 @@ function nowNextFor(channelId) {
 
 function fmtTime(d) { return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
 
+/* ═══════════ Import config (paste-in TV / Radio / EPG urls) ═══════════ */
+const CONFIG_KEY = "bq-live-config";
+
+async function loadStoredConfig() {
+  const cfg = { tv: "", radio: "", epg: "" };
+  const raw = await PinStore.get(CONFIG_KEY);
+  if (raw) {
+    try { Object.assign(cfg, JSON.parse(raw)); } catch (e) { /* ignore corrupt data */ }
+  }
+  return cfg;
+}
+function saveStoredConfig(cfg) { return PinStore.set(CONFIG_KEY, JSON.stringify(cfg)); }
+function clearStoredConfig() { return PinStore.delete(CONFIG_KEY); }
+
+function parseConfigText(text) {
+  const cfg = { tv: "", radio: "", epg: "" };
+  for (let line of String(text || "").split(/\r?\n/)) {
+    line = line.trim();
+    if (!line || line.startsWith("#")) continue;
+    const idx = line.indexOf(":");
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim().toLowerCase();
+    const val = line.slice(idx + 1).trim();
+    if (key === "tv" || key === "radio" || key === "epg") cfg[key] = val;
+  }
+  return cfg;
+}
+function serialiseConfigText(cfg) {
+  const lines = [];
+  if (cfg.tv) lines.push(`tv: ${cfg.tv}`);
+  if (cfg.radio) lines.push(`radio: ${cfg.radio}`);
+  if (cfg.epg) lines.push(`epg: ${cfg.epg}`);
+  return lines.join("\n");
+}
+
 async function init() {
   state.loading = true; state.error = null;
   renderStatus(); renderGrid();
+
+  config = await loadStoredConfig();
+  state.configured = !!(config.tv || config.radio);
+
+  if (!state.configured) {
+    state.tv = []; state.radio = []; state.loading = false;
+    $("countRadio").textContent = ""; $("countTv").textContent = "";
+    renderStatus(); renderGrid();
+    return;
+  }
+
+  let tvTvgUrl = "";
   try {
-    const [tv, radio] = await Promise.all([loadChannels(TV_URL, "tv"), loadChannels(RADIO_URL, "radio"), loadPinned()]);
-    state.tv = tv; state.radio = radio; state.loading = false;
+    const jobs = [loadPinned()];
+    if (config.tv) jobs.push(loadChannels(config.tv, "tv").then(r => { state.tv = r.channels; tvTvgUrl = r.tvgUrl; }));
+    else state.tv = [];
+    if (config.radio) jobs.push(loadChannels(config.radio, "radio").then(r => { state.radio = r.channels; }));
+    else state.radio = [];
+    await Promise.all(jobs);
+    state.loading = false;
   } catch (err) {
     state.loading = false;
     state.error = (err && err.message) ? err.message : "Failed to load channel lists.";
@@ -476,7 +764,7 @@ async function init() {
   $("countRadio").textContent = state.radio.length ? `(${state.radio.length})` : "";
   $("countTv").textContent = state.tv.length ? `(${state.tv.length})` : "";
   renderStatus(); renderGrid();
-  if (!state.error) fetchEpgInBackground();
+  if (!state.error) fetchEpgInBackground(tvTvgUrl);
 }
 
 /* ═══════════ Rendering ═══════════ */
@@ -500,6 +788,11 @@ function renderStatus() {
     statusEl.textContent = "Loading channels…";
     return;
   }
+  if (!state.configured) {
+    statusEl.className = "search-status";
+    statusEl.textContent = "No playlists imported yet";
+    return;
+  }
   if (state.error) {
     statusEl.className = "search-status search-status--error";
     statusEl.innerHTML = "";
@@ -521,6 +814,9 @@ function renderStatus() {
 function renderGrid() {
   const grid = $("resultsGrid");
   const empty = $("emptyState");
+  const emptyTitle = $("emptyStateTitle");
+  const emptySub = $("emptyStateSub");
+  const emptyImportBtn = $("emptyStateImportBtn");
 
   if (state.loading) {
     grid.innerHTML = Array.from({ length: 12 }).map(() =>
@@ -530,8 +826,22 @@ function renderGrid() {
     return;
   }
 
+  if (!state.configured) {
+    grid.innerHTML = "";
+    empty.classList.remove("hidden");
+    emptyTitle.textContent = "No channels imported";
+    emptySub.textContent = "Add your TV and radio playlist URLs (M3U8 or JSON) to get started";
+    emptyImportBtn.classList.remove("hidden");
+    return;
+  }
+  emptyImportBtn.classList.add("hidden");
+
   const list = filteredList();
   empty.classList.toggle("hidden", list.length !== 0 || !!state.error);
+  if (list.length === 0 && !state.error) {
+    emptyTitle.textContent = "No channels found";
+    emptySub.textContent = "Try a different search term";
+  }
 
   if (state.error) { grid.innerHTML = ""; return; }
 
@@ -550,7 +860,7 @@ function renderGrid() {
     if (showSections && i === pinnedCount) sectionLabel = `<div class="grid-section-label">All channels</div>`;
 
     let nowHtml = "", progressHtml = "";
-    if (kind === "tv") {
+    if (kind === "tv" && !c.drm) {
       const nn = nowNextFor(c.id);
       if (nn && nn.current) {
         nowHtml = `<div class="card__now">${escapeHtml(nn.current.title)}</div>`;
@@ -559,15 +869,21 @@ function renderGrid() {
       }
     }
 
+    // DRM-protected channels are greyed out and non-interactive — third-party
+    // Widevine license servers referenced by arbitrary imported playlists
+    // frequently won't grant a browser a licence, so we don't pretend they play.
+    const drmLabel = c.drm ? ` — DRM protected, can't be played here` : "";
+
     return `${sectionLabel}
-      <div class="card" tabindex="0" role="listitem" data-idx="${i}" aria-label="${escapeHtml(c.name)}">
+      <div class="card ${c.drm ? "card--drm" : ""}" ${c.drm ? "" : 'tabindex="0"'} role="listitem" data-idx="${i}" aria-label="${escapeHtml(c.name)}${drmLabel}" ${c.drm ? 'aria-disabled="true"' : ""}>
         <div class="card__img-wrap">
           ${chno ? `<span class="card__badge">${escapeHtml(chno)}</span>` : ""}
+          ${c.drm ? `<span class="card__drm-badge"><span class="material-icons">lock</span>DRM</span>` : ""}
           ${logo ? `<img class="card__img" loading="lazy" src="${escapeAttr(logo)}" alt="" onerror="this.remove()" />` : ""}
           <div class="card__placeholder"><span class="material-icons">${icon}</span></div>
-          <button class="card__pin ${isPinned ? "card__pin--active" : ""}" type="button" data-pin-idx="${i}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
+          ${c.drm ? "" : `<button class="card__pin ${isPinned ? "card__pin--active" : ""}" type="button" data-pin-idx="${i}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
             <span class="material-icons">push_pin</span>
-          </button>
+          </button>`}
           ${progressHtml}
         </div>
         <div class="card__body">
@@ -577,7 +893,7 @@ function renderGrid() {
       </div>`;
   }).join("");
 
-  grid.querySelectorAll(".card").forEach(card => {
+  grid.querySelectorAll(".card:not(.card--drm)").forEach(card => {
     card.addEventListener("click", () => openPlayer(list[Number(card.dataset.idx)]));
     card.addEventListener("keydown", e => {
       if (e.target.closest(".card__pin")) return;
@@ -627,6 +943,86 @@ function reload() {
 $("brandReload").addEventListener("click", reload);
 $("brandReload").addEventListener("keydown", e => {
   if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reload(); }
+});
+
+/* ═══════════ Settings sheet: import channel playlists ═══════════ */
+const settingsSheet = $("settingsSheet");
+const settingsBackdrop = $("settingsBackdrop");
+const settingsBtn = $("settingsBtn");
+const settingsClose = $("settingsClose");
+const configTextarea = $("configTextarea");
+const configImportBtn = $("configImportBtn");
+const configExportBtn = $("configExportBtn");
+const configClearBtn = $("configClearBtn");
+const configFeedback = $("configFeedback");
+
+function setConfigFeedback(msg, ok) {
+  configFeedback.textContent = msg;
+  configFeedback.className = "config-feedback" + (ok === true ? " config-feedback--ok" : ok === false ? " config-feedback--err" : "");
+}
+
+function openSettings() {
+  configTextarea.value = serialiseConfigText(config);
+  setConfigFeedback("", null);
+  settingsSheet.classList.remove("hidden");
+  settingsSheet.removeAttribute("aria-hidden");
+  setTimeout(() => settingsClose.focus(), 50);
+}
+function closeSettings() {
+  settingsSheet.classList.add("hidden");
+  settingsSheet.setAttribute("aria-hidden", "true");
+  settingsBtn.focus();
+}
+settingsBtn.addEventListener("click", openSettings);
+settingsClose.addEventListener("click", closeSettings);
+settingsBackdrop.addEventListener("click", closeSettings);
+settingsSheet.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeSettings(); return; }
+  if (e.key === "Tab") {
+    const f = [...settingsSheet.querySelectorAll("button,select,input,textarea,[tabindex]:not([tabindex='-1'])")].filter(el => !el.disabled);
+    if (!f.length) return;
+    const inTrap = f.includes(document.activeElement);
+    if (!inTrap) { e.preventDefault(); f[0].focus(); return; }
+    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  }
+});
+
+$("emptyStateImportBtn").addEventListener("click", openSettings);
+
+configImportBtn.addEventListener("click", async () => {
+  const parsed = parseConfigText(configTextarea.value);
+  if (!parsed.tv && !parsed.radio) {
+    setConfigFeedback("Add at least a tv: or radio: playlist url.", false);
+    return;
+  }
+  configImportBtn.disabled = true;
+  setConfigFeedback("Loading…", null);
+  await saveStoredConfig(parsed);
+  await init();
+  configImportBtn.disabled = false;
+  if (state.error) {
+    setConfigFeedback(state.error, false);
+  } else {
+    const n = state.tv.length + state.radio.length;
+    setConfigFeedback(`Imported — ${n} channel${n === 1 ? "" : "s"} loaded.`, true);
+  }
+});
+
+configExportBtn.addEventListener("click", () => {
+  const text = serialiseConfigText(config);
+  if (!text) { setConfigFeedback("Nothing imported yet to export.", false); return; }
+  configTextarea.value = text;
+  configTextarea.select();
+  setConfigFeedback("Copied to textarea — select all and copy.", true);
+});
+
+configClearBtn.addEventListener("click", async () => {
+  if (!confirm("Remove your imported playlists?")) return;
+  await clearStoredConfig();
+  configTextarea.value = "";
+  setConfigFeedback("Cleared.", true);
+  await init();
 });
 
 /* ═══════════ Playback ═══════════ */
