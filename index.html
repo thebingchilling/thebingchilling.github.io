@@ -1,9 +1,20 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Bingqilin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    // Runs before first paint so a saved manual Light/Dark choice applies
+    // immediately instead of flashing the system-default theme first.
+    // "System" (no saved choice) intentionally does nothing here — the
+    // @media (prefers-color-scheme) CSS handles that case with zero JS.
+    try {
+      var t = localStorage.getItem("bq_theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -41,13 +52,97 @@
       --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
       --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
       --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
-      --border-med: color-mix(in srgb, var(--md-outline) 55%, transparent);
       --radius: 12px;
-      --shadow-sm: var(--el1);
-      --shadow-md: var(--el3);
       --t: 0.2s cubic-bezier(0.2,0,0,1);
     }
+    /* Lets native UI (text selection, form-control chrome, etc.) pick a
+       sensible light/dark rendering to match — independent of, and in
+       addition to, the custom-styled elements re-themed above. */
+    :root { color-scheme: light dark; }
+    /* ── Dark mode: follows the OS/browser setting automatically.
+       Only the token layer below is redefined — every component rule in
+       this stylesheet is already built on these variables, so nothing
+       else needs to change for the whole app to re-theme. ── */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-primary: #ffb77c; --md-on-primary: #4a2800;
+        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+        --md-error: #ffb4ab; --md-on-error: #690005;
+        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+        --md-surface: #17120d;
+        --md-surface-container-lowest: #100c08;
+        --md-surface-container-low: #201a14;
+        --md-surface-container: #241e18;
+        --md-surface-container-high: #2f2822;
+        --md-surface-container-highest: #3a332c;
+        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+        --primary-dark: #ffcda0;
+        --text-faint: #a89686;
+      }
+      .config-feedback--ok { color: #6fdb8f; }
+    }
+    /* ── Manual theme override (Settings → Appearance). An explicit choice
+       always wins over system preference, in either direction, because an
+       attribute selector has higher specificity than the bare :root the
+       media query above targets. "System" = no attribute = the media query
+       above is the sole decider, exactly as before. ── */
+    :root[data-theme="dark"] {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+    }
+    :root[data-theme="dark"] .config-feedback--ok { color: #6fdb8f; }
+    :root[data-theme="light"] {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #fff8f4;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+      --primary-dark: #632f00;
+      --text-faint: #8a7a6d;
+    }
+    :root[data-theme="light"] .config-feedback--ok { color: #146c2e; }
     *, *::before, *::after { box-sizing: border-box; }
+    /* Baseline box-model for icon spans, defined locally rather than relying
+       solely on the external Google Fonts stylesheet — if that request fails
+       (offline, blocked, slow network) icons still lay out sanely instead of
+       appearing as oversized/misaligned raw text. The webfont + actual glyph
+       mapping still comes from the Google stylesheet when it does load. */
+    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
     html, body { margin: 0; padding: 0; height: 100%; }
     body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
     .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
@@ -59,7 +154,6 @@
     .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; cursor: pointer; border-radius: 8px; padding: 0.1rem 0.3rem; margin: -0.1rem -0.3rem; transition: background var(--t); user-select: none; }
     .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
     .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
-    .top-bar__sub { font-size: 0.68rem; color: var(--text-faint); }
 
     /* ── Shared buttons (M3 icon button / filled / outlined / danger) ── */
     .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); }
@@ -71,6 +165,12 @@
     .switch-app-btn:hover { background: var(--md-surface-container-highest); color: var(--text); border-color: var(--md-outline); }
     .switch-app-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .switch-app-btn .material-icons { font-size: 19px; }
+    @media (max-width: 400px) {
+      /* Top bar carries 3 controls on the right now — trim the link to
+         an icon on the narrowest phones so nothing crowds or wraps. */
+      .switch-app-btn { padding: 0 0.65rem; }
+      .switch-app-btn span:not(.material-icons) { display: none; }
+    }
     .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
     .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
     .btn--primary:hover { box-shadow: var(--el1); filter: brightness(1.06); }
@@ -116,7 +216,8 @@
     .search-bar__icon { color: var(--md-on-surface-variant); font-size: 22px; flex-shrink: 0; }
     .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--text); }
     .search-bar__input::placeholder { color: var(--text-faint); }
-    .search-status { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem; min-height: 1.2em; }
+    .search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+    .search-status { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem; min-height: 1.2em; display: flex; align-items: center; gap: 0.5rem; }
     .search-status--error { color: var(--md-error); }
     .empty-state { text-align: center; padding: 3.5rem 1rem 2rem; color: var(--text-faint); user-select: none; }
     .empty-state__icon { font-size: 3.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
@@ -142,54 +243,72 @@
     .card:hover .card__ext-btn, .card:focus-within .card__ext-btn { opacity: 1; }
     .card__ext-btn:hover { transform: scale(1.12); filter: brightness(1.15); }
     .card__ext-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; opacity: 1; }
+    @media (hover: none) { .card__ext-btn { opacity: 1; } } /* no hover on touch — show it outright instead of hiding it forever */
 
     /* ── Detail ── */
     .detail-body { background: var(--surface); border-radius: var(--radius); border: none; box-shadow: var(--el1); overflow: hidden; }
-    .detail-hero { position: relative; min-height: 140px; background: var(--bg2); overflow: hidden; }
-    .detail-hero__backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
-    .detail-hero__scrim { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(20,10,4,0.72) 100%); }
-    .detail-hero__content { position: relative; display: flex; gap: 0.85rem; align-items: flex-end; padding: 1rem 0.9rem 0.9rem; }
-    .detail-hero__poster { flex: 0 0 80px; border-radius: 10px; overflow: hidden; box-shadow: var(--el2); border: none; }
-    .detail-hero__poster img { width: 100%; display: block; }
-    .detail-hero__poster-ph { width: 80px; aspect-ratio: 2/3; background: var(--bg2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 1.8rem; border-radius: 10px; }
-    .detail-hero__info { flex: 1; min-width: 0; }
-    .detail-hero__title { margin: 0 0 0.2rem; font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 600; color: #fff; line-height: 1.25; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-    .detail-hero__tagline { margin: 0 0 0.35rem; font-size: 0.78rem; color: rgba(255,255,255,0.65); font-style: italic; }
     .detail-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-    .detail-tag { font-size: 0.68rem; font-weight: 500; padding: 0.15rem 0.55rem; border-radius: 6px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); white-space: nowrap; }
     .detail-content { padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; }
     .detail-section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.25rem; }
     .overview { margin: 0; font-size: 0.84rem; line-height: 1.6; color: var(--text-muted); }
-    @media (min-width: 520px) { .detail-hero__poster { flex: 0 0 100px; } .detail-hero__poster-ph { width: 100px; } .detail-hero__title { font-size: 1.3rem; } }
+    .overview--error { color: var(--md-error); }
 
-    /* ── Play-hero (movies) ── */
-    .play-hero { position: relative; overflow: hidden; background: var(--bg2); min-height: 140px; }
-    .play-hero__backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform 0.4s ease; }
-    .play-hero:focus-within .play-hero__backdrop { transform: scale(1.03); }
-    .play-hero__scrim { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(10,5,2,0.82) 100%); transition: opacity 0.25s; }
-    .play-hero__inner { position: relative; display: flex; gap: 0.85rem; align-items: flex-end; padding: 1rem 0.9rem 0.85rem; }
-    .play-hero__poster { flex: 0 0 80px; border-radius: 10px; overflow: hidden; box-shadow: var(--el2); border: none; }
-    .play-hero__poster img { width: 100%; display: block; }
-    .play-hero__poster-ph { width: 80px; aspect-ratio: 2/3; background: var(--bg2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 1.8rem; border-radius: 10px; }
-    .play-hero__info { flex: 1; min-width: 0; }
-    .play-hero__title { margin: 0 0 0.2rem; font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 600; color: #fff; line-height: 1.25; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-    .play-hero__tagline { margin: 0 0 0.35rem; font-size: 0.78rem; color: rgba(255,255,255,0.65); font-style: italic; }
-    .play-hero__tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.15rem; }
-    .play-hero__tag { font-size: 0.68rem; font-weight: 500; padding: 0.15rem 0.55rem; border-radius: 6px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); white-space: nowrap; }
-    @media (min-width: 520px) { .play-hero__poster { flex: 0 0 100px; } .play-hero__poster-ph { width: 100px; } .play-hero__title { font-size: 1.3rem; } }
+    /* ── Series panel (no banner — poster + key facts, same idea as the
+       movie panel, just without a Play button: TV plays via season/episode
+       selection below instead of one immediate action). ── */
+    .series-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text"; gap: 0.9rem; }
+    .series-panel__poster { grid-area: poster; width: 120px; border-radius: 12px; overflow: hidden; box-shadow: var(--el1); }
+    .series-panel__poster img { width: 100%; display: block; }
+    .series-panel__poster-ph { grid-area: poster; width: 120px; aspect-ratio: 2/3; border-radius: 12px; background: var(--bg2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 1.8rem; }
+    .series-panel__text { grid-area: text; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    .series-panel__tagline { margin: 0; font-size: 0.83rem; color: var(--text-muted); font-style: italic; line-height: 1.4; }
+    .series-panel__overview { margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); }
+    @media (min-width: 640px) {
+      .series-panel { grid-template-columns: 130px 1fr; grid-template-areas: "poster text"; align-items: start; gap: 1.4rem; }
+      .series-panel__poster, .series-panel__poster-ph { width: 130px; }
+    }
 
-    /* ── Play button: full-width, generous tap target ── */
+    /* ── Movie panel: poster, blurb, and the Play button as one unit —
+       stacked on narrow screens, a single row on wider ones. ── */
+    .movie-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text" "play"; gap: 0.9rem; }
+    .movie-panel__poster { grid-area: poster; width: 120px; border-radius: 12px; overflow: hidden; box-shadow: var(--el1); }
+    .movie-panel__poster img { width: 100%; display: block; }
+    .movie-panel__poster-ph { grid-area: poster; width: 120px; aspect-ratio: 2/3; border-radius: 12px; background: var(--bg2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 1.8rem; }
+    .movie-panel__text { grid-area: text; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    .movie-panel__tagline { margin: 0; font-size: 0.83rem; color: var(--text-muted); font-style: italic; line-height: 1.4; }
+    .movie-panel__overview { margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); }
+    .movie-panel__play { grid-area: play; }
+    .meta-tag { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 500; padding: 0.18rem 0.6rem; border-radius: 6px; background: var(--md-surface-container-high); color: var(--text-muted); white-space: nowrap; }
+    @media (min-width: 640px) {
+      .movie-panel { grid-template-columns: 130px 1fr auto; grid-template-areas: "poster text play"; align-items: start; gap: 1.4rem; }
+      .movie-panel__poster, .movie-panel__poster-ph { width: 130px; }
+      .movie-panel__play.play-btn { width: auto; min-width: 190px; align-self: center; padding-left: 1.6rem; padding-right: 1.6rem; }
+    }
+
+    /* ── Play button: full-width by default (mobile), auto-width in the
+       desktop row above. Icon is inline SVG (not the Material Icons
+       webfont) so it still renders correctly even if that font fails. ── */
     .play-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; background: var(--primary); color: var(--on-primary); border: none; border-radius: 14px; padding: 0.9rem 1rem; font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: var(--el2); transition: filter 0.18s, box-shadow 0.18s, transform 0.05s; }
     .play-btn:hover { filter: brightness(1.06); box-shadow: var(--el3); }
     .play-btn:active { transform: scale(0.99); filter: brightness(0.94); }
     .play-btn:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
-    .play-btn .material-icons { font-size: 22px; }
+    .play-btn__icon { flex-shrink: 0; }
 
     /* ── Skeleton ── */
     .detail-skeleton { padding: 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; }
     .skel { background: var(--bg2); border-radius: 8px; animation: skel-pulse 1.4s ease-in-out infinite; }
     @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-    .skel-hero { height: 140px; border-radius: 0; margin: -0.9rem -0.9rem 0; }
+    .skel-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text" "play"; gap: 0.9rem; }
+    .skel-panel--tv { grid-template-areas: "poster" "text"; }
+    .skel-panel-poster { grid-area: poster; width: 120px; aspect-ratio: 2/3; border-radius: 12px; }
+    .skel-panel-lines { grid-area: text; display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.2rem; }
+    .skel-panel-play { grid-area: play; height: 48px; border-radius: 14px; }
+    @media (min-width: 640px) {
+      .skel-panel { grid-template-columns: 130px 1fr 190px; grid-template-areas: "poster text play"; gap: 1.4rem; align-items: start; }
+      .skel-panel--tv { grid-template-columns: 130px 1fr; grid-template-areas: "poster text"; }
+      .skel-panel-poster { width: 130px; }
+      .skel-panel-play { align-self: center; }
+    }
     .skel-line { height: 14px; }
     .skel-line--short { width: 40%; }
     .skel-line--med { width: 65%; }
@@ -266,9 +385,6 @@
     .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
     .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
     .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
-    .settings__row { display: flex; align-items: center; gap: 0.5rem; }
-    .settings__row input[type=checkbox] { width: 1rem; height: 1rem; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
-    .settings__row label { font-size: 0.84rem; color: var(--text); cursor: pointer; }
 
     /* source cards (M3 selectable list items) */
     .source-list { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -320,12 +436,14 @@
   <header class="top-bar">
     <div class="top-bar__brand" id="topBarBrand" role="button" tabindex="0" aria-label="Go to search">
       <span class="top-bar__name">🍦 Bingqilin</span>
-      <span class="top-bar__sub">movies and TV shows</span>
     </div>
     <div style="display:flex; align-items:center; gap:0.4rem;">
-      <a href="live.html" class="switch-app-btn" aria-label="Switch to Live TV &amp; Radio" title="Live TV &amp; Radio">
+      <a href="live.html" class="switch-app-btn" target="_blank" rel="noopener noreferrer" aria-label="Switch to Live TV &amp; Radio (opens in a new tab)" title="Live TV &amp; Radio">
         <span class="material-icons">live_tv</span><span>Live TV</span>
       </a>
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
       <button id="settingsBtn" class="icon-btn" type="button" aria-label="Settings">
         <span class="material-icons">tune</span>
       </button>
@@ -363,6 +481,9 @@
           <h2 id="detailTitle" class="view-title"></h2>
           <p id="detailMeta" class="view-meta"></p>
         </div>
+        <button id="shareDetailBtn" class="share-btn" type="button" aria-label="Copy link">
+          <span class="material-icons">link</span><span id="shareDetailBtnLabel">Share</span>
+        </button>
       </header>
       <div id="detailBody" class="detail-body"></div>
     </section>
@@ -385,7 +506,7 @@
       <div class="player-wrap">
         <div id="playerOverlay" class="player-overlay">
           <span class="material-icons">smart_display</span>
-          <span>Loading player…</span>
+          <span id="playerOverlayText">Loading player…</span>
         </div>
         <iframe id="playerFrame" src="" loading="lazy" allowfullscreen
           referrerpolicy="no-referrer" title="Video player"></iframe>
@@ -456,7 +577,7 @@
         <div>
           <label class="source-form__label" for="sfSandbox">Sandbox (advanced)</label>
           <input type="text" id="sfSandbox" placeholder="allow-scripts allow-same-origin" autocomplete="off" />
-          <span class="source-form__hint">Leave blank to use default. Empty string disables sandbox.</span>
+          <span class="source-form__hint">Leave blank for no restrictions (default). Only fill this in if you want to sandbox this specific source, e.g. allow-scripts allow-same-origin.</span>
         </div>
         <div class="source-form__actions">
           <button id="sfCancel" class="btn btn--ghost btn--sm" type="button">Cancel</button>
@@ -555,17 +676,83 @@ function serialiseConfig(sourceList) {
 }
 
 /* ═══════════════════════════════════════════════════════
+   STORAGE
+   ─────────────────────────────────────────────────────
+   Prefers the Claude artifact key-value store (window.storage) when
+   present so sources config syncs across sessions there; falls back to
+   localStorage so it still works once this file is downloaded and
+   self-hosted as a real app. (Same pattern as live.html's PinStore.)
+═══════════════════════════════════════════════════════ */
+const Store = (() => {
+  const hasWS = typeof window !== "undefined" && window.storage && typeof window.storage.get === "function";
+  const hasLS = (() => {
+    try { const k = "__bq_test__"; localStorage.setItem(k, "1"); localStorage.removeItem(k); return true; }
+    catch (e) { return false; }
+  })();
+  async function get(key) {
+    if (hasWS) { try { const r = await window.storage.get(key); return r ? r.value : null; } catch (e) { return null; } }
+    if (hasLS) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+    return null;
+  }
+  async function set(key, value) {
+    if (hasWS) { try { await window.storage.set(key, value); return true; } catch (e) { return false; } }
+    if (hasLS) { try { localStorage.setItem(key, value); return true; } catch (e) { return false; } }
+    return false;
+  }
+  return { get, set };
+})();
+
+/* ═══════════════════════════════════════════════════════
+   THEME (top-bar toggle)
+   ─────────────────────────────────────────────────────
+   "system" = no data-theme attribute = the prefers-color-scheme media
+   query alone decides (zero JS, zero flash). "light"/"dark" set the
+   attribute, which outranks that media query via CSS specificity — see
+   the :root[data-theme] rules. A tiny synchronous script in <head> already
+   applied a saved choice before first paint; this reconciles against the
+   async Store (needed for the artifact-storage backend) and wires the UI.
+   One button cycles System → Light → Dark → System.
+═══════════════════════════════════════════════════════ */
+const THEME_KEY    = "bq_theme";
+const THEME_ORDER  = ["system", "light", "dark"];
+const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
+const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
+
+function applyTheme(pref) {
+  if (pref === "light" || pref === "dark") document.documentElement.setAttribute("data-theme", pref);
+  else document.documentElement.removeAttribute("data-theme");
+}
+function updateThemeToggleUI(pref) {
+  const icon = $("themeToggleIcon");
+  if (icon) icon.textContent = THEME_ICONS[pref] || THEME_ICONS.system;
+  const btn = $("themeToggleBtn");
+  if (btn) btn.setAttribute("aria-label", `Theme: ${THEME_LABELS[pref] || "System"} (tap to change)`);
+}
+async function initTheme() {
+  let pref = "system";
+  try { pref = localStorage.getItem(THEME_KEY) || "system"; } catch (e) {}
+  try { const stored = await Store.get(THEME_KEY); if (stored) pref = stored; } catch (e) {}
+  applyTheme(pref);
+  updateThemeToggleUI(pref);
+}
+
+/* ═══════════════════════════════════════════════════════
    SOURCES
 ═══════════════════════════════════════════════════════ */
-function sourcesLoad() {
-  try { const s = JSON.parse(localStorage.getItem("bq_sources")); if (Array.isArray(s) && s.length) return s; } catch {}
-  return [];   // No hardcoded defaults — start empty
-}
-function sourcesSave(list) { try { localStorage.setItem("bq_sources", JSON.stringify(list)); } catch {} }
+let SOURCES = [];               // populated by initSources() before first paint
+let activeSourceIdx = 0;
+function sourcesSave(list) { Store.set("bq_sources", JSON.stringify(list)); }
+function setActiveSource(i) { activeSourceIdx = i; Store.set("bq_source_idx", String(i)); }
 
-let SOURCES = sourcesLoad();
-let activeSourceIdx = Math.min(Number(localStorage.getItem("bq_source_idx") || 0), Math.max(0, SOURCES.length - 1));
-function setActiveSource(i) { activeSourceIdx = i; try { localStorage.setItem("bq_source_idx", i); } catch {} }
+async function initSources() {
+  try {
+    const raw = await Store.get("bq_sources");
+    const s = JSON.parse(raw);
+    if (Array.isArray(s) && s.length) SOURCES = s;
+  } catch (e) { /* nothing saved yet, or corrupt data — start empty */ }
+  const idxRaw = await Store.get("bq_source_idx");
+  activeSourceIdx = Math.min(Number(idxRaw || 0) || 0, Math.max(0, SOURCES.length - 1));
+}
 
 /* ═══════════════════════════════════════════════════════
    TMDB
@@ -631,6 +818,7 @@ const playerTitle      = $("playerTitle");
 const playerMeta       = $("playerMeta");
 const playerFrame      = $("playerFrame");
 const playerOverlay    = $("playerOverlay");
+const playerOverlayText = $("playerOverlayText");
 const epNav            = $("epNav");
 const epNavLabel       = $("epNavLabel");
 const prevEpBtn        = $("prevEpBtn");
@@ -642,7 +830,10 @@ const nowPlayingOverview = $("nowPlayingOverview");
 const rerollBtn        = $("rerollBtn");
 const shareBtn         = $("shareBtn");
 const shareBtnLabel    = $("shareBtnLabel");
+const shareDetailBtn      = $("shareDetailBtn");
+const shareDetailBtnLabel = $("shareDetailBtnLabel");
 const settingsBtn      = $("settingsBtn");
+const themeToggleBtn   = $("themeToggleBtn");
 const settingsSheet    = $("settingsSheet");
 const settingsBackdrop = $("settingsBackdrop");
 const settingsClose    = $("settingsClose");
@@ -701,6 +892,13 @@ function setView(name) {
 /* ═══════════════════════════════════════════════════════
    HASH ROUTING
 ═══════════════════════════════════════════════════════ */
+// Strips a trailing "index.html" so the address bar reads cleanly (e.g.
+// "example.com/" instead of "example.com/index.html"). Left untouched on
+// file:// (opening the file directly) since a bare directory path isn't
+// reloadable there the way it is on a real web server.
+function cleanPath() {
+  return location.protocol === "file:" ? location.pathname : location.pathname.replace(/index\.html$/i, "");
+}
 function pushPlayerHash() {
   const p = currentPlayer;
   if (!p.id) return;
@@ -720,7 +918,7 @@ async function handleHashRoute() {
   const id = Number(idStr);
   if (sStr && eStr && currentDetail.id === id && currentPlayer.id === id) { setView("player"); return; }
   if (!sStr && currentDetail.id === id) { setView("detail"); return; }
-  detailTitle.textContent = "Loading…"; detailMeta.textContent = ""; renderDetailSkeleton(); setView("detail");
+  detailTitle.textContent = "Loading…"; detailMeta.textContent = ""; renderDetailSkeleton(type); setView("detail");
   if (detailFetch) detailFetch.abort();
   detailFetch = new AbortController();
   try {
@@ -730,7 +928,10 @@ async function handleHashRoute() {
       const tv = await tmdbTV(id, detailFetch.signal); detailFetch = null; renderTV(tv);
       if (sStr && eStr) {
         const season = Number(sStr), episode = Number(eStr);
-        await fetchSeasonEps(id, season).catch(() => {});
+        // renderTV() just selected/loaded season 1 by default — override that
+        // with the actually deep-linked season so the grid (and its chip)
+        // reflect what's about to play, not season 1.
+        await switchToSeason(id, season).catch(() => {});
         const eps = loadedSeasons[id]?.[season] || [];
         const epData = eps.find(e => e.episode_number === episode) || null;
         loadPlayer({ mediaType: "tv", id, season, episode, label: currentDetail.title,
@@ -740,7 +941,8 @@ async function handleHashRoute() {
   } catch(err) {
     detailFetch = null;
     if (err.name === "AbortError") return;
-    detailTitle.textContent = "Error"; detailBody.innerHTML = `<p class="overview" style="color:#b3261e;padding:1rem;">Could not fetch from TMDB.</p>`;
+    detailTitle.textContent = "Error"; detailBody.innerHTML = `<p class="overview overview--error" style="padding:1rem;">Could not fetch from TMDB. <button class="btn btn--ghost btn--sm" id="retryDetailBtn">Retry</button></p>`;
+    const rb = $("retryDetailBtn"); if (rb) rb.onclick = () => handleHashRoute();
   }
 }
 window.addEventListener("popstate", handleHashRoute);
@@ -748,29 +950,33 @@ window.addEventListener("popstate", handleHashRoute);
 /* ═══════════════════════════════════════════════════════
    PLAYER
 ═══════════════════════════════════════════════════════ */
+let lastPlayerUrlError = "";
 function buildPlayerUrl({ mediaType, tmdbId, season = 1, episode = 1 }) {
-  if (!SOURCES.length) return "";
+  lastPlayerUrlError = "";
+  if (!SOURCES.length) { lastPlayerUrlError = "No player source configured — add one in Settings."; return ""; }
   const src = SOURCES[Math.max(0, Math.min(activeSourceIdx, SOURCES.length - 1))];
   const tpl = mediaType === "movie" ? src.movie_url : (src.tv_url || src.movie_url);
-  if (!tpl) return "";
+  if (!tpl) { lastPlayerUrlError = `"${src.name}" has no ${mediaType === "movie" ? "movie" : "TV"} URL configured.`; return ""; }
   const url = tpl
     .replace("{tmdb}",    encodeURIComponent(tmdbId))
     .replace("{season}",  encodeURIComponent(season))
     .replace("{episode}", encodeURIComponent(episode));
-  if (!url.startsWith("https://")) { console.warn("Blocked non-HTTPS player URL"); return ""; }
+  if (!url.startsWith("https://")) {
+    lastPlayerUrlError = "Blocked: the player source URL must be HTTPS.";
+    console.warn("Blocked non-HTTPS player URL");
+    return "";
+  }
   return url;
 }
 
+// Sandbox is opt-in: leave the field blank for no restrictions at all
+// (matches how most third-party video embeds expect to run). Fill it in
+// only if you want to lock a specific source down.
 function applySandbox() {
   const src = SOURCES[Math.max(0, Math.min(activeSourceIdx, SOURCES.length - 1))];
-  let val;
-  if (src && typeof src.sandbox === "string") {
-    val = src.sandbox;
-  } else {
-    val = "";
-  }
-  if (val == null || val === "") playerFrame.removeAttribute("sandbox");
-  else playerFrame.setAttribute("sandbox", val);
+  const raw = (src && typeof src.sandbox === "string") ? src.sandbox.trim() : "";
+  if (raw === "") playerFrame.removeAttribute("sandbox");
+  else playerFrame.setAttribute("sandbox", raw);
 }
 
 function loadPlayer({ mediaType, id, season, episode, label, extraMeta, rolledEpData = null, rollMode = null, rollSeason = null }) {
@@ -788,6 +994,8 @@ function loadPlayer({ mediaType, id, season, episode, label, extraMeta, rolledEp
       setTimeout(() => playerOverlay.classList.add("hidden"), 8000);
     }
   }
+  if (!url) playerOverlay.classList.remove("hidden");
+  playerOverlayText.textContent = url ? "Loading player…" : (lastPlayerUrlError || "Couldn't load a player for this title.");
 
   const epData = rolledEpData || (season && episode && loadedSeasons[id]?.[season]?.find(e => e.episode_number === episode)) || null;
   const epName = epData?.name || null;
@@ -822,22 +1030,36 @@ function loadPlayer({ mediaType, id, season, episode, label, extraMeta, rolledEp
 ═══════════════════════════════════════════════════════ */
 function goBackFromPlayer() {
   if (currentPlayer.mediaType === "tv" && currentDetail.id) {
+    const { season, episode } = currentPlayer;
     pushDetailHash("tv", currentDetail.id); setView("detail");
-    requestAnimationFrame(() => { viewDetail.scrollTop = detailScrollTop; });
+    requestAnimationFrame(() => {
+      // ep-{n} ids aren't unique across seasons, so only trust a match when
+      // the grid is actually showing the season we just watched — otherwise
+      // fall back to the previous generic scroll-position restore.
+      const card = (season && episode && currentSeason === season) ? document.getElementById(`ep-${episode}`) : null;
+      if (card) {
+        card.scrollIntoView({ block: "center" });
+        card.classList.add("ep-card--highlight");
+        card.addEventListener("animationend", () => card.classList.remove("ep-card--highlight"), { once: true });
+      } else {
+        viewDetail.scrollTop = detailScrollTop;
+      }
+    });
   } else {
     playerFrame.src = ""; playerFrame.title = "Video player";
     playerOverlay.classList.remove("hidden"); epNav.classList.add("hidden");
-    history.pushState(null, "", location.pathname); setView("search");
+    history.pushState(null, "", cleanPath()); setView("search");
   }
 }
 function goBackFromDetail() {
   clearTimeout(searchDebounce);
   if (detailFetch) { detailFetch.abort(); detailFetch = null; }
-  if (currentPlayer.mediaType !== "tv") {
-    playerFrame.src = ""; playerFrame.title = "Video player";
-    playerOverlay.classList.remove("hidden"); epNav.classList.add("hidden");
-  }
-  history.pushState(null, "", location.pathname); setView("search");
+  // Unlike the Player→Detail hop (goBackFromPlayer), this leaves the show
+  // entirely back to Search — always tear the iframe down so a TV episode
+  // can't keep playing audio/video in the background, unseen.
+  playerFrame.src = ""; playerFrame.title = "Video player";
+  playerOverlay.classList.remove("hidden"); epNav.classList.add("hidden");
+  history.pushState(null, "", cleanPath()); setView("search");
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -990,8 +1212,20 @@ function renderResults(items) {
 /* ═══════════════════════════════════════════════════════
    SKELETON
 ═══════════════════════════════════════════════════════ */
-function renderDetailSkeleton() {
-  detailBody.innerHTML = `<div class="detail-skeleton"><div class="skel skel-hero"></div><div class="skel skel-line skel-line--short"></div><div class="skel skel-line skel-line--med"></div><div class="skel skel-block"></div><div class="skel skel-line skel-line--full"></div><div class="skel skel-line skel-line--full"></div><div class="skel skel-line skel-line--med"></div></div>`;
+function renderDetailSkeleton(mediaType) {
+  const isMovie = mediaType === "movie";
+  const panel = `<div class="skel-panel${isMovie ? "" : " skel-panel--tv"}">
+    <div class="skel skel-panel-poster"></div>
+    <div class="skel-panel-lines">
+      <div class="skel skel-line skel-line--short"></div>
+      <div class="skel skel-line skel-line--full"></div>
+      <div class="skel skel-line skel-line--full"></div>
+      <div class="skel skel-line skel-line--med"></div>
+    </div>
+    ${isMovie ? `<div class="skel skel-panel-play"></div>` : ""}
+  </div>`;
+  const extra = isMovie ? "" : `<div class="skel skel-line skel-line--short" style="margin-top:0.3rem;"></div><div class="skel skel-block"></div>`;
+  detailBody.innerHTML = `<div class="detail-skeleton">${panel}${extra}</div>`;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1005,29 +1239,23 @@ function renderMovie(movie) {
   const tags    = [year, rt].filter(Boolean).join(" · ");
   detailTitle.textContent = title; detailMeta.textContent = tags;
 
-  const poster   = movie.poster_path   ? `https://image.tmdb.org/t/p/w342${movie.poster_path}`   : null;
-  const backdrop = movie.backdrop_path ? `https://image.tmdb.org/t/p/w780${movie.backdrop_path}` : null;
+  const poster   = movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : null;
   const tagline  = movie.tagline?.trim() || "";
-  const tagsHtml = [year, rt].filter(Boolean).map(t => `<span class="play-hero__tag">${esc(t)}</span>`).join("");
+  const tagsHtml = [year, rt].filter(Boolean).map(t => `<span class="meta-tag">${esc(t)}</span>`).join("");
 
   detailBody.innerHTML = `
-    <div class="play-hero">
-      ${backdrop ? `<img class="play-hero__backdrop" src="${esc(backdrop)}" alt="" aria-hidden="true" loading="lazy"/>` : ""}
-      <div class="play-hero__scrim"></div>
-      <div class="play-hero__inner">
-        <div class="play-hero__poster">${poster ? `<img src="${esc(poster)}" alt="${esc(title)}" loading="lazy"/>` : `<div class="play-hero__poster-ph"><span class="material-icons">movie</span></div>`}</div>
-        <div class="play-hero__info">
-          <h2 class="play-hero__title">${esc(title)}</h2>
-          ${tagline ? `<p class="play-hero__tagline">${esc(tagline)}</p>` : ""}
-          <div class="play-hero__tags">${tagsHtml}</div>
-        </div>
-      </div>
-    </div>
     <div class="detail-content">
-      <button class="play-btn" id="playMovieBtn" type="button">
-        <span class="material-icons">play_arrow</span>Play movie
-      </button>
-      <div><div class="detail-section-label">Overview</div><p class="overview">${esc(movie.overview||"No overview available.")}</p></div>
+      <div class="movie-panel">
+        ${poster ? `<div class="movie-panel__poster"><img src="${esc(poster)}" alt="${esc(title)}" loading="lazy"/></div>` : `<div class="movie-panel__poster-ph"><span class="material-icons">movie</span></div>`}
+        <div class="movie-panel__text">
+          ${tagsHtml ? `<div class="detail-tags">${tagsHtml}</div>` : ""}
+          ${tagline ? `<p class="movie-panel__tagline">${esc(tagline)}</p>` : ""}
+          <p class="movie-panel__overview">${esc(movie.overview || "No overview available.")}</p>
+        </div>
+        <button class="play-btn movie-panel__play" id="playMovieBtn" type="button">
+          <svg class="play-btn__icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>Play movie
+        </button>
+      </div>
     </div>`;
 
   $("playMovieBtn").addEventListener("click", () => loadPlayer({ mediaType:"movie", id:movie.id, label:title, extraMeta:tags }));
@@ -1047,26 +1275,25 @@ function renderTV(tv) {
   const tags       = [year, seasonsLabel].filter(Boolean).join(" · ");
   detailTitle.textContent = title; detailMeta.textContent = tags;
 
-  const poster   = tv.poster_path   ? `https://image.tmdb.org/t/p/w342${tv.poster_path}`   : null;
-  const backdrop = tv.backdrop_path ? `https://image.tmdb.org/t/p/w780${tv.backdrop_path}` : null;
+  const poster   = tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : null;
   const network  = tv.networks?.[0]?.name || "";
-  const tagsHtml = [year, seasonsLabel, network].filter(Boolean).map(t => `<span class="detail-tag">${esc(t)}</span>`).join("");
+  const tagline  = tv.tagline?.trim() || "";
+  const tagsHtml = [year, seasonsLabel, network].filter(Boolean).map(t => `<span class="meta-tag">${esc(t)}</span>`).join("");
 
   const chipsHtml = seasons.map(s =>
     `<button class="chip" type="button" data-sn="${s.season_number}" aria-pressed="false">S${s.season_number}</button>`
   ).join("");
 
   detailBody.innerHTML = `
-    <div class="detail-hero">
-      ${backdrop ? `<img class="detail-hero__backdrop" src="${esc(backdrop)}" alt="" aria-hidden="true" loading="lazy"/>` : ""}
-      <div class="detail-hero__scrim"></div>
-      <div class="detail-hero__content">
-        <div class="detail-hero__poster">${poster ? `<img src="${esc(poster)}" alt="${esc(title)}" loading="lazy"/>` : `<div class="detail-hero__poster-ph"><span class="material-icons">live_tv</span></div>`}</div>
-        <div class="detail-hero__info"><h2 class="detail-hero__title">${esc(title)}</h2><div class="detail-tags">${tagsHtml}</div></div>
-      </div>
-    </div>
     <div class="detail-content">
-      <div><div class="detail-section-label">Overview</div><p class="overview">${esc(tv.overview||"No overview available.")}</p></div>
+      <div class="series-panel">
+        ${poster ? `<div class="series-panel__poster"><img src="${esc(poster)}" alt="${esc(title)}" loading="lazy"/></div>` : `<div class="series-panel__poster-ph"><span class="material-icons">live_tv</span></div>`}
+        <div class="series-panel__text">
+          ${tagsHtml ? `<div class="detail-tags">${tagsHtml}</div>` : ""}
+          ${tagline ? `<p class="series-panel__tagline">${esc(tagline)}</p>` : ""}
+          <p class="series-panel__overview">${esc(tv.overview || "No overview available.")}</p>
+        </div>
+      </div>
       <div class="detail-extra">
         <div class="episodes-header">
           <div class="detail-section-label" style="margin-bottom:0;">Seasons</div>
@@ -1131,7 +1358,7 @@ async function loadSeason(tvId, seasonNum) {
   try { season = await tmdbSeason(tvId, seasonNum, detailFetch.signal); detailFetch = null; }
   catch(err) {
     if (err.name==="AbortError") return; detailFetch = null;
-    epGrid.innerHTML = `<p class="overview" style="color:#b3261e;">Could not load episodes. <button class="btn btn--ghost btn--sm" id="retrySeasonBtn" style="margin-left:0.5rem;">Retry</button></p>`;
+    epGrid.innerHTML = `<p class="overview overview--error">Could not load episodes. <button class="btn btn--ghost btn--sm" id="retrySeasonBtn" style="margin-left:0.5rem;">Retry</button></p>`;
     const rb = $("retrySeasonBtn"); if (rb) rb.onclick = () => loadSeason(tvId, seasonNum); return;
   }
   const eps = season.episodes || [];
@@ -1155,14 +1382,14 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
 
     const card = document.createElement("article");
     card.className = ["ep-card", !aired?"ep-card--unaired":""].filter(Boolean).join(" ");
-    card.tabIndex = 0; card.id = `ep-${ep.episode_number}`;
+    card.tabIndex = aired ? 0 : -1; card.id = `ep-${ep.episode_number}`;
     card.dataset.tvId = tvId; card.dataset.season = seasonNum; card.dataset.ep = ep.episode_number; card.dataset.aired = aired?"1":"0";
     card.setAttribute("aria-label", `S${seasonNum} E${ep.episode_number}${ep.name?" — "+ep.name:""}${aired?"":" (not yet aired)"}`);
     card.setAttribute("aria-disabled", aired?"false":"true");
 
     const imgWrap = document.createElement("div"); imgWrap.className = "ep-card__img-wrap";
     if (still) { const img=document.createElement("img"); img.className="ep-card__img"; img.src=still; img.alt=ep.name||""; img.loading="lazy"; imgWrap.appendChild(img); }
-    else { const ph=document.createElement("div"); ph.className="card__placeholder"; ph.style.cssText="position:absolute;inset:0;"; ph.innerHTML=`<span class="material-icons">live_tv</span>`; imgWrap.appendChild(ph); }
+    else { const ph=document.createElement("div"); ph.className="card__placeholder"; ph.innerHTML=`<span class="material-icons">live_tv</span>`; imgWrap.appendChild(ph); }
 
     let airLabel = "";
     if (ep.air_date) { airLabel = aired ? ep.air_date : `Airs ${new Date(ep.air_date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}`; }
@@ -1204,7 +1431,14 @@ async function doSearch(query) {
     setStatus(data.results?.length ? "" : "No results."); searchInput.focus({preventScroll:true});
   } catch(err) {
     searchFetch=null; if (err.name==="AbortError"||seq!==searchSeq) return;
-    setStatus("Could not reach TMDB. Check your connection.", true);
+    searchStatus.innerHTML = "";
+    searchStatus.className = "search-status search-status--error";
+    searchStatus.removeAttribute("aria-hidden");
+    searchStatus.append(document.createTextNode("Could not reach TMDB. Check your connection."));
+    const retry = document.createElement("button");
+    retry.className = "btn btn--ghost btn--sm"; retry.type = "button"; retry.textContent = "Retry";
+    retry.addEventListener("click", () => doSearch(query));
+    searchStatus.append(retry);
   }
 }
 
@@ -1220,8 +1454,11 @@ async function handleCardClick(e) {
   }
   const card = e.target.closest(".card"); if (!card) return;
   const id = Number(card.dataset.id), mt = card.dataset.mediaType; if (!id||!mt) return;
-  detailTitle.textContent="Loading…"; detailMeta.textContent=""; renderDetailSkeleton();
   pushDetailHash(mt, id); setView("detail");
+  await loadDetailFor(mt, id);
+}
+async function loadDetailFor(mt, id) {
+  detailTitle.textContent="Loading…"; detailMeta.textContent=""; renderDetailSkeleton(mt);
   if (detailFetch) detailFetch.abort();
   detailFetch = new AbortController();
   try {
@@ -1230,7 +1467,8 @@ async function handleCardClick(e) {
     detailFetch = null;
   } catch(err) {
     detailFetch=null; if (err.name==="AbortError") return;
-    detailTitle.textContent="Error loading details"; detailBody.innerHTML=`<p class="overview" style="color:#b3261e;padding:1rem;">Could not fetch from TMDB.</p>`;
+    detailTitle.textContent="Error loading details"; detailBody.innerHTML=`<p class="overview overview--error" style="padding:1rem;">Could not fetch from TMDB. <button class="btn btn--ghost btn--sm" id="retryDetailBtn2">Retry</button></p>`;
+    const rb = $("retryDetailBtn2"); if (rb) rb.onclick = () => loadDetailFor(mt, id);
   }
 }
 resultsGrid.addEventListener("click", handleCardClick);
@@ -1248,20 +1486,26 @@ const topBarBrand = $("topBarBrand");
 topBarBrand.addEventListener("click", () => {
   if (viewSearch.classList.contains("view--active")) return;
   clearTimeout(searchDebounce);
-  if (currentPlayer.mediaType === "movie") { playerFrame.src=""; playerOverlay.classList.remove("hidden"); epNav.classList.add("hidden"); }
-  history.pushState(null,"",location.pathname); setView("search");
+  // Jumping straight to Search leaves whatever was playing, movie or TV —
+  // always stop it rather than letting a TV episode run on unseen.
+  playerFrame.src=""; playerOverlay.classList.remove("hidden"); epNav.classList.add("hidden");
+  history.pushState(null,"",cleanPath()); setView("search");
 });
 topBarBrand.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); topBarBrand.click(); } });
 backFromDetail.addEventListener("click", goBackFromDetail);
 backFromPlayer.addEventListener("click", goBackFromPlayer);
 
-/* Share */
-shareBtn.addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(location.href); }
-  catch { const i=document.createElement("input"); i.value=location.href; document.body.appendChild(i); i.select(); document.execCommand("copy"); document.body.removeChild(i); }
-  shareBtnLabel.textContent="Copied!"; shareBtn.classList.add("share-btn--copied");
-  setTimeout(()=>{ shareBtnLabel.textContent="Share"; shareBtn.classList.remove("share-btn--copied"); }, 2000);
-});
+/* Share — same logic for the Player and Detail views' share buttons */
+function wireShareButton(btn, label) {
+  btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(location.href); }
+    catch { const i=document.createElement("input"); i.value=location.href; document.body.appendChild(i); i.select(); document.execCommand("copy"); document.body.removeChild(i); }
+    label.textContent="Copied!"; btn.classList.add("share-btn--copied");
+    setTimeout(()=>{ label.textContent="Share"; btn.classList.remove("share-btn--copied"); }, 2000);
+  });
+}
+wireShareButton(shareBtn, shareBtnLabel);
+wireShareButton(shareDetailBtn, shareDetailBtnLabel);
 
 /* / shortcut */
 document.addEventListener("keydown", e => {
@@ -1269,8 +1513,16 @@ document.addEventListener("keydown", e => {
   const tag = document.activeElement?.tagName;
   if (tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT") return;
   e.preventDefault();
-  if (!viewSearch.classList.contains("view--active")) { history.pushState(null,"",location.pathname); setView("search"); }
+  if (!viewSearch.classList.contains("view--active")) { history.pushState(null,"",cleanPath()); setView("search"); }
   searchInput.focus({preventScroll:true});
+});
+
+/* Escape: step back out of Player/Detail, same gesture Settings already uses */
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!settingsSheet.classList.contains("hidden")) return; // settings sheet handles its own Escape
+  if (viewPlayer.classList.contains("view--active")) { e.preventDefault(); goBackFromPlayer(); }
+  else if (viewDetail.classList.contains("view--active")) { e.preventDefault(); goBackFromDetail(); }
 });
 
 /* ═══════════════════════════════════════════════════════
@@ -1293,6 +1545,7 @@ function renderSourceList() {
   SOURCES.forEach((src, i) => {
     const card = document.createElement("div");
     card.className = "source-card" + (i===activeSourceIdx?" source-card--active":"");
+    card.dataset.idx = i;
     card.setAttribute("role","button"); card.tabIndex=0;
     card.setAttribute("aria-pressed", String(i===activeSourceIdx));
     card.innerHTML = `
@@ -1315,13 +1568,26 @@ function renderSourceList() {
   });
 }
 
+// renderSourceList() rebuilds the whole list, destroying whatever button was
+// just clicked/focused — restore focus to the nearest sensible equivalent
+// afterwards instead of dropping keyboard/screen-reader users back to <body>.
+function focusSourceControl(idx, action) {
+  requestAnimationFrame(() => {
+    const btn = sourceListEl.querySelector(`.source-card__btn[data-action="${action}"][data-idx="${idx}"]`);
+    if (btn) { btn.focus(); return; }
+    const card = sourceListEl.querySelector(`.source-card[data-idx="${idx}"]`);
+    if (card) { card.focus(); return; }
+    addSourceBtn.focus();
+  });
+}
+
 settingsSheet.addEventListener("click", e => {
   const btn = e.target.closest(".source-card__btn"); if (!btn||!btn.dataset.action) return;
   const action=btn.dataset.action, idx=Number(btn.dataset.idx);
-  if (action==="up" && idx>0) { [SOURCES[idx-1],SOURCES[idx]]=[SOURCES[idx],SOURCES[idx-1]]; if (activeSourceIdx===idx) setActiveSource(idx-1); else if (activeSourceIdx===idx-1) setActiveSource(idx); sourcesSave(SOURCES); renderSourceList(); }
-  else if (action==="down" && idx<SOURCES.length-1) { [SOURCES[idx],SOURCES[idx+1]]=[SOURCES[idx+1],SOURCES[idx]]; if (activeSourceIdx===idx) setActiveSource(idx+1); else if (activeSourceIdx===idx+1) setActiveSource(idx); sourcesSave(SOURCES); renderSourceList(); }
+  if (action==="up" && idx>0) { [SOURCES[idx-1],SOURCES[idx]]=[SOURCES[idx],SOURCES[idx-1]]; if (activeSourceIdx===idx) setActiveSource(idx-1); else if (activeSourceIdx===idx-1) setActiveSource(idx); sourcesSave(SOURCES); renderSourceList(); focusSourceControl(idx-1, "up"); }
+  else if (action==="down" && idx<SOURCES.length-1) { [SOURCES[idx],SOURCES[idx+1]]=[SOURCES[idx+1],SOURCES[idx]]; if (activeSourceIdx===idx) setActiveSource(idx+1); else if (activeSourceIdx===idx+1) setActiveSource(idx); sourcesSave(SOURCES); renderSourceList(); focusSourceControl(idx+1, "down"); }
   else if (action==="edit") { editingSourceIdx=idx; const s=SOURCES[idx]; sfName.value=s.name; sfMovieUrl.value=s.movie_url; sfTvUrl.value=s.tv_url||""; sfSandbox.value=s.sandbox||""; sourceFormTitle.textContent="Edit source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); }
-  else if (action==="delete") { if (SOURCES.length<=1){if(!confirm("Delete the last source? You will need to import or add a new one."))return;} SOURCES.splice(idx,1); if (activeSourceIdx>=SOURCES.length) setActiveSource(Math.max(0,SOURCES.length-1)); sourcesSave(SOURCES); renderSourceList(); }
+  else if (action==="delete") { if (SOURCES.length<=1){if(!confirm("Delete the last source? You will need to import or add a new one."))return;} SOURCES.splice(idx,1); if (activeSourceIdx>=SOURCES.length) setActiveSource(Math.max(0,SOURCES.length-1)); sourcesSave(SOURCES); renderSourceList(); if (SOURCES.length) focusSourceControl(Math.min(idx, SOURCES.length-1), "delete"); else addSourceBtn.focus(); }
 });
 
 addSourceBtn.addEventListener("click", () => { editingSourceIdx=-1; sfName.value=""; sfMovieUrl.value=""; sfTvUrl.value=""; sfSandbox.value=""; sourceFormTitle.textContent="Add source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); });
@@ -1357,11 +1623,17 @@ configImportBtn.addEventListener("click", () => {
   setConfigFeedback(`Imported ${sources.length} source${sources.length > 1 ? "s" : ""}.`, true);
 });
 
-configExportBtn.addEventListener("click", () => {
+configExportBtn.addEventListener("click", async () => {
   if (!SOURCES.length) { setConfigFeedback("No sources to export.", false); return; }
-  configTextarea.value = serialiseConfig(SOURCES);
-  configTextarea.select();
-  setConfigFeedback("Copied to textarea — select all and copy.", true);
+  const text = serialiseConfig(SOURCES);
+  configTextarea.value = text;
+  try {
+    await navigator.clipboard.writeText(text);
+    setConfigFeedback("Copied to clipboard.", true);
+  } catch (e) {
+    configTextarea.select();
+    setConfigFeedback("Couldn't access the clipboard — text is selected, press Ctrl/Cmd+C to copy.", false);
+  }
 });
 
 /* ── Settings open/close ── */
@@ -1370,6 +1642,16 @@ function closeSettings() { settingsSheet.classList.add("hidden"); settingsSheet.
 settingsBtn.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
 settingsBackdrop.addEventListener("click", closeSettings);
+
+/* ── Theme toggle ── */
+themeToggleBtn.addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme") || "system";
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
+  applyTheme(next);
+  updateThemeToggleUI(next);
+  Store.set(THEME_KEY, next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+});
 settingsSheet.addEventListener("keydown", e => {
   if (e.key==="Escape") { closeSettings(); return; }
   if (e.key==="Tab") {
@@ -1397,8 +1679,17 @@ clearBtn.addEventListener("click", () => { searchInput.value=""; clearBtn.classL
 /* ═══════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════ */
-applySandbox();
-handleHashRoute();
+try {
+  const p = cleanPath();
+  if (p !== location.pathname) history.replaceState(null, "", p + location.search + location.hash);
+} catch (e) { /* pushState unavailable in this context — leave the URL as-is */ }
+
+(async () => {
+  await initSources();
+  applySandbox();
+  handleHashRoute();
+})();
+initTheme();
 </script>
 </body>
 </html>
