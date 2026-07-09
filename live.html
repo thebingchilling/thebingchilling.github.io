@@ -1,9 +1,19 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <title>Bingqilin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script>
+  // Runs before first paint so a saved manual Light/Dark choice applies
+  // immediately — see index.html for the full rationale. Same storage key,
+  // so the choice carries over between the two sister apps automatically.
+  try {
+    var t = localStorage.getItem("bq_theme");
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+  } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -40,13 +50,86 @@
     --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
     --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
     --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
-    --border-med: color-mix(in srgb, var(--md-outline) 55%, transparent);
     --radius: 12px;
-    --shadow-sm: var(--el1);
-    --shadow-md: var(--el3);
     --t: 0.2s cubic-bezier(0.2,0,0,1);
   }
+  :root { color-scheme: light dark; }
+  /* ── Dark mode: follows the OS/browser setting automatically — see
+     index.html for the full rationale. Same token overrides, kept in sync. ── */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+    }
+    .config-feedback--ok { color: #6fdb8f; }
+  }
+  /* ── Manual theme override (Settings → Appearance) — see index.html for
+     the full rationale; same values, kept in sync. ── */
+  :root[data-theme="dark"] {
+    --md-primary: #ffb77c; --md-on-primary: #4a2800;
+    --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+    --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+    --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+    --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+    --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+    --md-error: #ffb4ab; --md-on-error: #690005;
+    --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+    --md-surface: #17120d;
+    --md-surface-container-lowest: #100c08;
+    --md-surface-container-low: #201a14;
+    --md-surface-container: #241e18;
+    --md-surface-container-high: #2f2822;
+    --md-surface-container-highest: #3a332c;
+    --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+    --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+    --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+    --primary-dark: #ffcda0;
+    --text-faint: #a89686;
+  }
+  :root[data-theme="dark"] .config-feedback--ok { color: #6fdb8f; }
+  :root[data-theme="light"] {
+    --md-primary: #8a4a16; --md-on-primary: #ffffff;
+    --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+    --md-secondary: #77584a; --md-on-secondary: #ffffff;
+    --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+    --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+    --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+    --md-error: #ba1a1a; --md-on-error: #ffffff;
+    --md-error-container: #ffdad6; --md-on-error-container: #410002;
+    --md-surface: #fff8f4;
+    --md-surface-container-lowest: #ffffff;
+    --md-surface-container-low: #fdf1e6;
+    --md-surface-container: #f7ebdd;
+    --md-surface-container-high: #f1e5d6;
+    --md-surface-container-highest: #ebdfd0;
+    --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+    --md-outline: #837366; --md-outline-variant: #d6c5b5;
+    --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+    --primary-dark: #632f00;
+    --text-faint: #8a7a6d;
+  }
+  :root[data-theme="light"] .config-feedback--ok { color: #146c2e; }
   *, *::before, *::after { box-sizing: border-box; }
+  /* Baseline box-model for icon spans, defined locally rather than relying
+     solely on the external Google Fonts stylesheet — see index.html for why. */
+  .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
   html, body { margin: 0; padding: 0; height: 100%; }
   body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
   .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
@@ -58,9 +141,8 @@
   .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; cursor: pointer; border-radius: 8px; padding: 0.15rem 0.3rem; margin: -0.15rem -0.3rem; transition: background var(--t); }
   .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
   .top-bar__brand:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .top-bar__brand--loading .top-bar__name, .top-bar__brand--loading .top-bar__sub { animation: brand-pulse 0.9s ease-in-out infinite; }
+  .top-bar__brand--loading .top-bar__name { animation: brand-pulse 0.9s ease-in-out infinite; }
   .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
-  .top-bar__sub { font-size: 0.68rem; color: var(--text-faint); }
   @keyframes brand-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); }
@@ -72,6 +154,12 @@
   .switch-app-btn:hover { background: var(--md-surface-container-highest); color: var(--text); border-color: var(--md-outline); }
   .switch-app-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .switch-app-btn .material-icons { font-size: 19px; }
+  @media (max-width: 400px) {
+    /* Top bar carries 3 controls on the right now — trim the link to
+       an icon on the narrowest phones so nothing crowds or wraps. */
+    .switch-app-btn { padding: 0 0.65rem; }
+    .switch-app-btn span:not(.material-icons) { display: none; }
+  }
 
   main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .view { display: none; padding: 0.75rem 0.9rem 2rem; width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; }
@@ -139,6 +227,7 @@
   .search-bar__icon { color: var(--md-on-surface-variant); font-size: 20px; flex-shrink: 0; }
   .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--text); min-width: 0; }
   .search-bar__input::placeholder { color: var(--text-faint); }
+  .search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
   .search-status { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.55rem; min-height: 1.2em; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .search-status--error { color: var(--md-error); }
@@ -219,6 +308,8 @@
   .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); box-shadow: none; }
   .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .btn--sm { padding: 0.32rem 0.8rem; font-size: 0.8rem; }
+  .btn--danger { background: var(--md-error-container); color: var(--md-on-error-container); border: none; }
+  .btn--danger:hover { background: color-mix(in srgb, var(--md-error) 14%, var(--md-error-container)); }
   .btn:disabled { opacity: 0.38; cursor: not-allowed; filter: none !important; box-shadow: none !important; }
 
   /* ── Settings sheet (M3 modal bottom sheet) ── */
@@ -256,12 +347,14 @@
   <header class="top-bar">
     <div class="top-bar__brand" id="brandReload" role="button" tabindex="0" aria-label="Reload channel lists">
       <span class="top-bar__name">🍦 Bingqilin</span>
-      <span class="top-bar__sub">tv and radio</span>
     </div>
     <div style="display:flex; align-items:center; gap:0.4rem;">
-      <a href="index.html" class="switch-app-btn" aria-label="Switch to Movies &amp; TV shows" title="Movies &amp; TV shows">
+      <a href="index.html" class="switch-app-btn" target="_blank" rel="noopener noreferrer" aria-label="Switch to Movies &amp; TV shows (opens in a new tab)" title="Movies &amp; TV shows">
         <span class="material-icons">video_library</span><span>Movies &amp; TV</span>
       </a>
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
       <button id="settingsBtn" class="icon-btn" type="button" aria-label="Import channels &amp; guide" title="Import channels &amp; guide">
         <span class="material-icons">settings</span>
       </button>
@@ -362,6 +455,7 @@
     </div>
 
     <div class="settings__section">
+      <div class="settings__section-label">Playlist URLs</div>
       <p class="settings__hint">
         This app ships with no built-in channels. Paste your own playlist URLs below.
         Format: <code>key: value</code>, one per line. Keys: <code>tv</code>, <code>radio</code>, <code>epg</code>.
@@ -456,6 +550,42 @@ const PinStore = (() => {
   return { get, set, delete: del };
 })();
 
+/* ═══════════════ Theme (top-bar toggle) ═══════════════
+   Same approach and same storage key as index.html — see there for the
+   full rationale. "system" = no data-theme attribute = the
+   prefers-color-scheme media query alone decides. One button cycles
+   System → Light → Dark → System. */
+const THEME_KEY    = "bq_theme";
+const THEME_ORDER  = ["system", "light", "dark"];
+const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
+const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
+
+function applyTheme(pref) {
+  if (pref === "light" || pref === "dark") document.documentElement.setAttribute("data-theme", pref);
+  else document.documentElement.removeAttribute("data-theme");
+}
+function updateThemeToggleUI(pref) {
+  const icon = $("themeToggleIcon");
+  if (icon) icon.textContent = THEME_ICONS[pref] || THEME_ICONS.system;
+  const btn = $("themeToggleBtn");
+  if (btn) btn.setAttribute("aria-label", `Theme: ${THEME_LABELS[pref] || "System"} (tap to change)`);
+}
+async function initTheme() {
+  let pref = "system";
+  try { pref = localStorage.getItem(THEME_KEY) || "system"; } catch (e) {}
+  try { const stored = await PinStore.get(THEME_KEY); if (stored) pref = stored; } catch (e) {}
+  applyTheme(pref);
+  updateThemeToggleUI(pref);
+}
+$("themeToggleBtn").addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme") || "system";
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
+  applyTheme(next);
+  updateThemeToggleUI(next);
+  PinStore.set(THEME_KEY, next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+});
+
 async function loadPinned() {
   for (const kind of ["tv", "radio"]) {
     const raw = await PinStore.get(`pinned-${kind}`);
@@ -477,6 +607,11 @@ function togglePin(kind, id) {
   if (set.has(id)) set.delete(id); else set.add(id);
   savePinned(kind);
   renderGrid();
+  // renderGrid() rebuilds the whole grid, so the button that was just
+  // clicked/focused no longer exists — find its replacement (channels can
+  // move position when pinned/unpinned) and restore focus to it.
+  const btn = [...$("resultsGrid").querySelectorAll(".card__pin")].find(b => b.dataset.channelId === id);
+  if (btn) btn.focus();
 }
 
 /* ═══════════ M3U8 playlist parsing ═══════════
@@ -881,7 +1016,7 @@ function renderGrid() {
           ${c.drm ? `<span class="card__drm-badge"><span class="material-icons">lock</span>DRM</span>` : ""}
           ${logo ? `<img class="card__img" loading="lazy" src="${escapeAttr(logo)}" alt="" onerror="this.remove()" />` : ""}
           <div class="card__placeholder"><span class="material-icons">${icon}</span></div>
-          ${c.drm ? "" : `<button class="card__pin ${isPinned ? "card__pin--active" : ""}" type="button" data-pin-idx="${i}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
+          ${c.drm ? "" : `<button class="card__pin ${isPinned ? "card__pin--active" : ""}" type="button" data-pin-idx="${i}" data-channel-id="${escapeAttr(c.id)}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
             <span class="material-icons">push_pin</span>
           </button>`}
           ${progressHtml}
@@ -1009,12 +1144,17 @@ configImportBtn.addEventListener("click", async () => {
   }
 });
 
-configExportBtn.addEventListener("click", () => {
+configExportBtn.addEventListener("click", async () => {
   const text = serialiseConfigText(config);
   if (!text) { setConfigFeedback("Nothing imported yet to export.", false); return; }
   configTextarea.value = text;
-  configTextarea.select();
-  setConfigFeedback("Copied to textarea — select all and copy.", true);
+  try {
+    await navigator.clipboard.writeText(text);
+    setConfigFeedback("Copied to clipboard.", true);
+  } catch (e) {
+    configTextarea.select();
+    setConfigFeedback("Couldn't access the clipboard — text is selected, press Ctrl/Cmd+C to copy.", false);
+  }
 });
 
 configClearBtn.addEventListener("click", async () => {
@@ -1344,7 +1484,12 @@ $("backFromPlayer").addEventListener("click", () => {
 });
 
 /* ═══════════ Init ═══════════ */
+try {
+  const cleaned = location.protocol === "file:" ? location.pathname : location.pathname.replace(/live\.html$/i, "");
+  if (cleaned !== location.pathname) history.replaceState(null, "", cleaned + location.search + location.hash);
+} catch (e) { /* pushState unavailable in this context — leave the URL as-is */ }
 init();
+initTheme();
 </script>
 </body>
 </html>
