@@ -9,7 +9,7 @@
   "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait-primary",
   "theme_color": "#8a4a16",
-  "background_color": "#fff8f4",
+  "background_color": "#ffffff",
   "categories": ["entertainment", "video"],
   "lang": "en",
   "dir": "ltr",

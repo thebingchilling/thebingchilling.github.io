@@ -46,7 +46,7 @@
     --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
     --md-error: #ba1a1a; --md-on-error: #ffffff;
     --md-error-container: #ffdad6; --md-on-error-container: #410002;
-    --md-surface: #fff8f4;
+    --md-surface: #ffffff;
     --md-surface-container-lowest: #ffffff;
     --md-surface-container-low: #fdf1e6;
     --md-surface-container: #f7ebdd;
@@ -128,7 +128,7 @@
     --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
     --md-error: #ba1a1a; --md-on-error: #ffffff;
     --md-error-container: #ffdad6; --md-on-error-container: #410002;
-    --md-surface: #fff8f4;
+    --md-surface: #ffffff;
     --md-surface-container-lowest: #ffffff;
     --md-surface-container-low: #fdf1e6;
     --md-surface-container: #f7ebdd;
@@ -189,6 +189,7 @@
   .top-bar__brand:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .top-bar__brand--loading .top-bar__name { animation: brand-pulse 0.9s ease-in-out infinite; }
   .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
+  .top-bar__actions { display: flex; align-items: center; gap: 0.2rem; }
   @keyframes brand-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); }
@@ -228,7 +229,13 @@
   .bottom-nav__item--active:hover .bottom-nav__icon-wrap { background: var(--md-secondary-container); }
 
   main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  .view { display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; overscroll-behavior-y: contain; }
+  .view { position: relative; display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; overscroll-behavior-y: contain; }
+  /* ── Pull-to-refresh indicator — see initPullToRefresh() for the gesture ── */
+  .pull-indicator { position: absolute; top: 0.5rem; left: 50%; width: 34px; height: 34px; margin-left: -17px; border-radius: 50%; background: var(--md-surface-container-high); box-shadow: var(--el2); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; z-index: 5; color: var(--primary); }
+  .pull-indicator .material-icons { font-size: 18px; }
+  .pull-indicator--spinning .material-icons { animation: pull-spin 0.7s linear infinite; }
+  @keyframes pull-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .pull-indicator--spinning .material-icons { animation: none; } }
   /* Browse is the only screen that shows the bottom nav — reserve room so
      its content never sits underneath the fixed bar. */
   #viewBrowse { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
@@ -439,14 +446,20 @@
     <div class="top-bar__brand" id="brandReload" role="button" tabindex="0" aria-label="Reload channel lists">
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
-    <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
-      <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
-    </button>
+    <div class="top-bar__actions">
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
+      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Import channels &amp; guide" title="Import channels &amp; guide">
+        <span class="material-icons">settings</span>
+      </button>
+    </div>
   </header>
 
   <main class="app-main">
     <!-- Browse view -->
     <section id="viewBrowse" class="view view--active" aria-label="Browse channels">
+      <div class="pull-indicator" id="pullIndicatorBrowse" aria-hidden="true"><span class="material-icons">refresh</span></div>
       <div class="tab-bar" role="tablist">
         <button class="tab-btn tab-btn--active" id="tabRadio" type="button" role="tab" aria-selected="true">
           <span class="material-icons">radio</span>Radio <span class="tab-btn__count" id="countRadio"></span>
@@ -557,17 +570,13 @@
     <!-- Bottom navigation (M3 NavigationBar) — see index.html for the full
          rationale. Hidden over the full-screen Player, shown over Browse. -->
     <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
-      <button class="bottom-nav__item bottom-nav__item--active" id="navBrowseBtn" type="button" aria-label="Browse channels">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
-        <span class="bottom-nav__label">Browse</span>
-      </button>
       <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
         <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
-        <span class="bottom-nav__label">Movies &amp; TV</span>
+        <span class="bottom-nav__label">Media</span>
       </a>
-      <button class="bottom-nav__item" id="settingsBtn" type="button" aria-label="Import channels &amp; guide">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">settings</span></span>
-        <span class="bottom-nav__label">Settings</span>
+      <button class="bottom-nav__item bottom-nav__item--active" id="navBrowseBtn" type="button" aria-label="Live">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Live</span>
       </button>
     </nav>
   </div>
@@ -603,15 +612,9 @@
     <div class="settings__section">
       <div class="settings__section-label">Playlist URLs</div>
       <p class="settings__hint">
-        This app ships with no built-in channels. Paste your own playlist URLs below.
-        Format: <code>key: value</code>, one per line. Keys: <code>tv</code>, <code>radio</code>, <code>epg</code>.
-        <code>tv</code> and <code>radio</code> can each point at an M3U8 playlist <em>or</em> a JSON channel list —
-        the format is auto-detected. JSON can be an id-keyed object (<code>{"id":{"name","url","logo","chno"}}</code>)
-        or a flat array (<code>[{"name","url","logo","chno"}]</code>); a <code>license_url</code>/<code>licenseUrl</code>
-        field or <code>"drm": true</code> marks a channel as DRM-protected.
-        <code>epg</code> is an XMLTV guide URL — if your M3U8's <code>#EXTM3U</code> header already has a
-        <code>url-tvg</code>/<code>x-tvg-url</code>, you can leave <code>epg</code> blank and it'll be picked up automatically.
-        Lines starting with <code>#</code> are ignored.
+        Paste your playlist URLs below, one per line as <code>key: value</code>.
+        Keys: <code>tv</code>, <code>radio</code>, <code>epg</code> — add more than one <code>tv:</code> or
+        <code>radio:</code> line to combine several playlists into one list.
       </p>
       <div class="config-area">
         <div class="config-textarea-wrap">
@@ -679,6 +682,52 @@ document.addEventListener("pointerdown", (e) => {
   spawnRipple(el, e.clientX, e.clientY);
 }, { passive: true });
 
+/* ── Pull-to-refresh — see index.html for the full rationale. Same
+   mechanism, kept in sync; the invocation is wired up at the bottom of
+   this script, after init()/reload() exist. ── */
+function initPullToRefresh(container, indicatorEl, onRefresh) {
+  const THRESHOLD = 64, MAX_PULL = 100;
+  let startY = 0, pulling = false, engaged = false, currentPull = 0, refreshing = false;
+
+  container.addEventListener("touchstart", e => {
+    if (refreshing) { pulling = false; return; }
+    startY = e.touches[0].clientY;
+    pulling = container.scrollTop <= 0;
+    engaged = false;
+  }, { passive: true });
+
+  container.addEventListener("touchmove", e => {
+    if (!pulling || refreshing) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0 || container.scrollTop > 0) { pulling = false; return; }
+    engaged = true;
+    e.preventDefault();
+    currentPull = Math.min(MAX_PULL, dy * 0.5);
+    const progress = Math.min(1, currentPull / THRESHOLD);
+    indicatorEl.style.opacity = String(progress);
+    indicatorEl.style.transform = `translateY(${currentPull}px) rotate(${progress * 360}deg)`;
+  }, { passive: false });
+
+  container.addEventListener("touchend", async () => {
+    if (!pulling || !engaged || refreshing) { pulling = false; engaged = false; return; }
+    pulling = false; engaged = false;
+    if (currentPull >= THRESHOLD) {
+      refreshing = true;
+      indicatorEl.classList.add("pull-indicator--spinning");
+      indicatorEl.style.transform = `translateY(${THRESHOLD}px)`;
+      indicatorEl.style.opacity = "1";
+      try { await onRefresh(); } catch (e) {}
+      refreshing = false;
+      indicatorEl.classList.remove("pull-indicator--spinning");
+    }
+    currentPull = 0;
+    indicatorEl.style.transition = "opacity 0.2s, transform 0.2s";
+    indicatorEl.style.transform = "";
+    indicatorEl.style.opacity = "0";
+    setTimeout(() => { indicatorEl.style.transition = ""; }, 220);
+  }, { passive: true });
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
 }
@@ -690,7 +739,10 @@ if ("serviceWorker" in navigator) {
 const state = { tv: [], radio: [], tab: "radio", query: "", loading: true, error: null, pinned: { tv: new Set(), radio: new Set() }, epg: new Map(), configured: false };
 let currentHls = null;
 let searchDebounce = null;
-let config = { tv: "", radio: "", epg: "" };
+// tv/radio are arrays — multiple playlists of each kind get fetched and
+// merged into one list (see init()). epg stays a single URL: merging XMLTV
+// guide data from multiple feeds isn't something this app tries to do.
+let config = { tv: [], radio: [], epg: "" };
 
 /* ═══════════ Local storage (pins + imported playlist config) ═══════════
    Prefers the Claude artifact key-value store (window.storage) when present
@@ -734,7 +786,7 @@ const THEME_ORDER  = ["system", "light", "dark"];
 const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
 const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
 
-const SURFACE_LIGHT = "#fff8f4", SURFACE_DARK = "#17120d";
+const SURFACE_LIGHT = "#ffffff", SURFACE_DARK = "#17120d";
 const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 function syncThemeColorMeta() {
   // See index.html for the full rationale.
@@ -1039,18 +1091,26 @@ function fmtTime(d) { return d.toLocaleTimeString([], { hour: "numeric", minute:
 const CONFIG_KEY = "bq-live-config";
 
 async function loadStoredConfig() {
-  const cfg = { tv: "", radio: "", epg: "" };
+  const cfg = { tv: [], radio: [], epg: "" };
   const raw = await PinStore.get(CONFIG_KEY);
   if (raw) {
-    try { Object.assign(cfg, JSON.parse(raw)); } catch (e) { /* ignore corrupt data */ }
+    try {
+      const parsed = JSON.parse(raw);
+      // Migrate a pre-multi-playlist config (tv/radio were single strings).
+      cfg.tv = Array.isArray(parsed.tv) ? parsed.tv : (parsed.tv ? [parsed.tv] : []);
+      cfg.radio = Array.isArray(parsed.radio) ? parsed.radio : (parsed.radio ? [parsed.radio] : []);
+      cfg.epg = typeof parsed.epg === "string" ? parsed.epg : "";
+    } catch (e) { /* ignore corrupt data */ }
   }
   return cfg;
 }
 function saveStoredConfig(cfg) { return PinStore.set(CONFIG_KEY, JSON.stringify(cfg)); }
 function clearStoredConfig() { return PinStore.delete(CONFIG_KEY); }
 
+// tv/radio accumulate — repeat the key on its own line to combine several
+// playlists (e.g. two "radio: ..." lines) into one merged channel list.
 function parseConfigText(text) {
-  const cfg = { tv: "", radio: "", epg: "" };
+  const cfg = { tv: [], radio: [], epg: "" };
   for (let line of String(text || "").split(/\r?\n/)) {
     line = line.trim();
     if (!line || line.startsWith("#")) continue;
@@ -1058,16 +1118,40 @@ function parseConfigText(text) {
     if (idx === -1) continue;
     const key = line.slice(0, idx).trim().toLowerCase();
     const val = line.slice(idx + 1).trim();
-    if (key === "tv" || key === "radio" || key === "epg") cfg[key] = val;
+    if (!val) continue;
+    if (key === "tv" || key === "radio") cfg[key].push(val);
+    else if (key === "epg") cfg.epg = val;
   }
   return cfg;
 }
 function serialiseConfigText(cfg) {
   const lines = [];
-  if (cfg.tv) lines.push(`tv: ${cfg.tv}`);
-  if (cfg.radio) lines.push(`radio: ${cfg.radio}`);
+  for (const url of cfg.tv || []) lines.push(`tv: ${url}`);
+  for (const url of cfg.radio || []) lines.push(`radio: ${url}`);
   if (cfg.epg) lines.push(`epg: ${cfg.epg}`);
   return lines.join("\n");
+}
+
+// Fetches every playlist URL for one kind in parallel and merges the
+// results into a single sorted, de-duplicated list. A broken URL among
+// several doesn't take down the ones that did load — its error is
+// collected and surfaced separately instead.
+async function loadChannelsMerged(urls, kind) {
+  if (!urls.length) return { channels: [], tvgUrl: "", errors: [] };
+  const results = await Promise.allSettled(urls.map(u => loadChannels(u, kind)));
+  const channels = [], seen = new Set(), errors = [];
+  let tvgUrl = "";
+  for (const r of results) {
+    if (r.status === "fulfilled") {
+      if (!tvgUrl && r.value.tvgUrl) tvgUrl = r.value.tvgUrl;
+      for (const c of r.value.channels) { if (!seen.has(c.id)) { seen.add(c.id); channels.push(c); } }
+    } else {
+      errors.push(r.reason && r.reason.message ? r.reason.message : String(r.reason));
+    }
+  }
+  const chno = c => (c.attrs["tvg-chno"] !== "" && c.attrs["tvg-chno"] !== undefined ? Number(c.attrs["tvg-chno"]) : Infinity);
+  channels.sort((a, b) => (kind === "tv" ? chno(a) - chno(b) : 0) || a.name.localeCompare(b.name));
+  return { channels, tvgUrl, errors };
 }
 
 async function init() {
@@ -1075,7 +1159,7 @@ async function init() {
   renderStatus(); renderGrid();
 
   config = await loadStoredConfig();
-  state.configured = !!(config.tv || config.radio);
+  state.configured = !!(config.tv.length || config.radio.length);
 
   if (!state.configured) {
     state.tv = []; state.radio = []; state.loading = false;
@@ -1085,14 +1169,16 @@ async function init() {
   }
 
   let tvTvgUrl = "";
+  const loadErrors = [];
   try {
-    const jobs = [loadPinned()];
-    if (config.tv) jobs.push(loadChannels(config.tv, "tv").then(r => { state.tv = r.channels; tvTvgUrl = r.tvgUrl; }));
-    else state.tv = [];
-    if (config.radio) jobs.push(loadChannels(config.radio, "radio").then(r => { state.radio = r.channels; }));
-    else state.radio = [];
+    const jobs = [
+      loadPinned(),
+      loadChannelsMerged(config.tv, "tv").then(r => { state.tv = r.channels; tvTvgUrl = r.tvgUrl; loadErrors.push(...r.errors); }),
+      loadChannelsMerged(config.radio, "radio").then(r => { state.radio = r.channels; loadErrors.push(...r.errors); }),
+    ];
     await Promise.all(jobs);
     state.loading = false;
+    if (loadErrors.length) state.error = loadErrors.length === 1 ? loadErrors[0] : `${loadErrors.length} playlists failed to load.`;
   } catch (err) {
     state.loading = false;
     state.error = (err && err.message) ? err.message : "Failed to load channel lists.";
@@ -1339,7 +1425,7 @@ $("emptyStateImportBtn").addEventListener("click", openSettings);
 
 configImportBtn.addEventListener("click", async () => {
   const parsed = parseConfigText(configTextarea.value);
-  if (!parsed.tv && !parsed.radio) {
+  if (!parsed.tv.length && !parsed.radio.length) {
     setConfigFeedback("Add at least a tv: or radio: playlist url.", false);
     return;
   }
@@ -1867,6 +1953,7 @@ try {
 } catch (e) { /* pushState unavailable in this context — leave the URL as-is */ }
 init();
 initTheme();
+initPullToRefresh($("viewBrowse"), $("pullIndicatorBrowse"), () => init());
 </script>
 </body>
 </html>
