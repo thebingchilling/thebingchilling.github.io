@@ -516,6 +516,17 @@
     .segmented__item:hover:not(.segmented__item--active) { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
     .segmented__item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+    /* ── Switch (M3) — used for the per-source "block pop-ups" toggle ── */
+    .switch-row { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
+    .switch-row__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+    .switch-row__title { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+    .switch-row__hint { font-size: 0.72rem; color: var(--text-faint); line-height: 1.4; }
+    .switch { flex-shrink: 0; width: 44px; height: 26px; border-radius: 999px; border: 2px solid var(--md-outline); background: var(--md-surface-container-highest); position: relative; padding: 0; cursor: pointer; transition: background var(--t), border-color var(--t); }
+    .switch__thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--md-outline); transition: transform var(--t), background var(--t); }
+    .switch[aria-checked="true"] { background: var(--primary); border-color: var(--primary); }
+    .switch[aria-checked="true"] .switch__thumb { transform: translateX(18px); background: var(--on-primary); }
+    .switch:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
     .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
 
     /* source cards (M3 selectable list items) */
@@ -746,6 +757,15 @@
           <input type="text" id="sfTvUrl" placeholder="https://vid/embed/tv/{tmdb}/{season}/{episode}" autocomplete="off" />
           <span class="source-form__hint">Use {tmdb}, {season}, {episode}</span>
         </div>
+        <label class="switch-row" for="sfBlockPopups">
+          <span class="switch-row__text">
+            <span class="switch-row__title">Block pop-ups (strict)</span>
+            <span class="switch-row__hint">Stops this source from ever opening a new tab. Some sources refuse to play when this is on — if that happens, turn it back off for this source.</span>
+          </span>
+          <button class="switch" id="sfBlockPopups" type="button" role="switch" aria-checked="false" aria-label="Block pop-ups (strict)">
+            <span class="switch__thumb"></span>
+          </button>
+        </label>
         <div class="source-form__actions">
           <button id="sfCancel" class="btn btn--ghost btn--sm" type="button">Cancel</button>
           <button id="sfSave" class="btn btn--primary btn--sm" type="button">Save</button>
@@ -1171,6 +1191,7 @@ const sourceFormTitle  = $("sourceFormTitle");
 const sfName           = $("sfName");
 const sfMovieUrl       = $("sfMovieUrl");
 const sfTvUrl          = $("sfTvUrl");
+const sfBlockPopups    = $("sfBlockPopups");
 const sfCancel         = $("sfCancel");
 const sfSave           = $("sfSave");
 const configTextarea   = $("configTextarea");
@@ -2007,20 +2028,27 @@ settingsSheet.addEventListener("click", e => {
   const action=btn.dataset.action, idx=Number(btn.dataset.idx);
   if (action==="up" && idx>0) { [SOURCES[idx-1],SOURCES[idx]]=[SOURCES[idx],SOURCES[idx-1]]; if (activeSourceIdx===idx) setActiveSource(idx-1); else if (activeSourceIdx===idx-1) setActiveSource(idx); sourcesSave(SOURCES); renderSourceList(); focusSourceControl(idx-1, "up"); }
   else if (action==="down" && idx<SOURCES.length-1) { [SOURCES[idx],SOURCES[idx+1]]=[SOURCES[idx+1],SOURCES[idx]]; if (activeSourceIdx===idx) setActiveSource(idx+1); else if (activeSourceIdx===idx+1) setActiveSource(idx); sourcesSave(SOURCES); renderSourceList(); focusSourceControl(idx+1, "down"); }
-  else if (action==="edit") { editingSourceIdx=idx; const s=SOURCES[idx]; sfName.value=s.name; sfMovieUrl.value=s.movie_url; sfTvUrl.value=s.tv_url||""; sourceFormTitle.textContent="Edit source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); }
+  else if (action==="edit") { editingSourceIdx=idx; const s=SOURCES[idx]; sfName.value=s.name; sfMovieUrl.value=s.movie_url; sfTvUrl.value=s.tv_url||""; setBlockPopupsToggle(!!(s.sandbox && s.sandbox.trim())); sourceFormTitle.textContent="Edit source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); }
   else if (action==="delete") { if (SOURCES.length<=1){if(!confirm("Delete the last source? You will need to import or add a new one."))return;} SOURCES.splice(idx,1); if (activeSourceIdx>=SOURCES.length) setActiveSource(Math.max(0,SOURCES.length-1)); sourcesSave(SOURCES); renderSourceList(); if (SOURCES.length) focusSourceControl(Math.min(idx, SOURCES.length-1), "delete"); else addSourceBtn.focus(); }
 });
 
-addSourceBtn.addEventListener("click", () => { editingSourceIdx=-1; sfName.value=""; sfMovieUrl.value=""; sfTvUrl.value=""; sourceFormTitle.textContent="Add source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); });
+// "Block pop-ups (strict)" applies this token combo to the source's iframe
+// sandbox attribute — allow-scripts/allow-same-origin keep the embed's own
+// player working, but with no allow-popups, window.open() is refused by
+// the browser itself. Structural, not a heuristic — but some sources
+// detect the sandbox and refuse to play, which is exactly why this is a
+// per-source opt-in rather than the default.
+const STRICT_SANDBOX = "allow-scripts allow-same-origin";
+function setBlockPopupsToggle(on) { sfBlockPopups.setAttribute("aria-checked", String(on)); }
+sfBlockPopups.addEventListener("click", () => setBlockPopupsToggle(sfBlockPopups.getAttribute("aria-checked") !== "true"));
+
+addSourceBtn.addEventListener("click", () => { editingSourceIdx=-1; sfName.value=""; sfMovieUrl.value=""; sfTvUrl.value=""; setBlockPopupsToggle(false); sourceFormTitle.textContent="Add source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); });
 sfCancel.addEventListener("click", () => { sourceForm.classList.add("hidden"); addSourceBtn.classList.remove("hidden"); });
 sfSave.addEventListener("click", () => {
   const name=sfName.value.trim(), movie_url=sfMovieUrl.value.trim(), tv_url=sfTvUrl.value.trim();
   if (!name || !movie_url) { sfName.focus(); return; }
-  // sandbox isn't editable in this simplified form (only via an imported
-  // config) — preserve whatever an existing source already had rather than
-  // silently wiping it out on every edit.
-  const prevSandbox = editingSourceIdx >= 0 ? SOURCES[editingSourceIdx].sandbox : "";
-  const entry = { name, movie_url, tv_url: tv_url||null, sandbox: prevSandbox };
+  const sandbox = sfBlockPopups.getAttribute("aria-checked") === "true" ? STRICT_SANDBOX : "";
+  const entry = { name, movie_url, tv_url: tv_url||null, sandbox };
   if (editingSourceIdx>=0) SOURCES[editingSourceIdx]=entry;
   else { SOURCES.push(entry); setActiveSource(SOURCES.length-1); }
   sourcesSave(SOURCES); renderSourceList(); sourceForm.classList.add("hidden"); addSourceBtn.classList.remove("hidden");
