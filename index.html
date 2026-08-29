@@ -289,7 +289,10 @@
     /* backFromPlayerLabel can be a full show title (see loadPlayer's caller
        in goBackFromPlayer) — ellipsize it instead of letting it hard-clip
        or push the header's right-hand controls off-screen. */
-    #backFromPlayerLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #backFromPlayerLabel { min-width: 0; }
+    /* playerTitle can be a full episode name — let it wrap instead of
+       truncating to one ellipsized line and hiding most of it. */
+    #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
     .player-back:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
     .player-back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .player-back .material-icons { font-size: 18px; }
@@ -484,7 +487,7 @@
     .now-playing-card.hidden { display: none; }
     .now-playing-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
     .now-playing-card__eyebrow { font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary); }
-    .now-playing-card__title { font-size: 0.88rem; font-weight: 500; color: var(--text); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .now-playing-card__title { font-size: 0.88rem; font-weight: 500; color: var(--text); line-height: 1.3; }
     .now-playing-card__meta { font-size: 0.72rem; color: var(--text-faint); }
     .now-playing-card__overview { font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 0.15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .reroll-btn { flex-shrink: 0; width: 36px; height: 36px; border-radius: 999px; border: none; background: var(--md-secondary-container); color: var(--md-on-secondary-container); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--el1); transition: background var(--t), transform var(--t), box-shadow var(--t); }
