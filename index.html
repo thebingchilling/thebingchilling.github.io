@@ -406,6 +406,14 @@
     .skel-line--full { width: 100%; }
     .skel-block { height: 80px; }
 
+    /* ── Search results skeleton — mirrors .card's own layout/sizing ── */
+    .card-skel { border-radius: var(--radius); overflow: hidden; box-shadow: var(--el1); background: var(--surface); display: flex; flex-direction: column; }
+    .card-skel__img { aspect-ratio: 2/3; border-radius: 0; }
+    .card-skel__body { padding: 0.45rem 0.55rem 0.55rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .card-skel__line { height: 12px; }
+    .card-skel__line--wide { width: 90%; }
+    .card-skel__line--narrow { width: 55%; }
+
     /* (roll button now lives inline in the Seasons/Episodes header rows) */
 
     /* ── Season chips (M3 filter chips) ── */
@@ -1564,6 +1572,20 @@ async function doRollSeason(tvId, seasonNum, label) {
 /* ═══════════════════════════════════════════════════════
    RENDER RESULTS
 ═══════════════════════════════════════════════════════ */
+// Shimmering placeholder cards shown the instant a search starts, in place
+// of the grid sitting empty until TMDB responds — matches the polish the
+// detail-view skeleton already has. renderResults()'s own innerHTML clear
+// replaces these the moment real results (or "no results") come back.
+function renderSearchSkeleton(count = 8) {
+  resultsGrid.innerHTML = Array.from({ length: count }, () => `
+    <div class="card-skel" aria-hidden="true">
+      <div class="card-skel__img skel"></div>
+      <div class="card-skel__body">
+        <div class="card-skel__line card-skel__line--wide skel"></div>
+        <div class="card-skel__line card-skel__line--narrow skel"></div>
+      </div>
+    </div>`).join("");
+}
 function renderResults(items) {
   resultsGrid.innerHTML = ""; emptyState.classList.add("hidden");
   if (!items?.length) return;
@@ -1815,7 +1837,7 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
 async function doSearch(query) {
   if (!query) { resultsGrid.innerHTML=""; emptyState.classList.remove("hidden"); setStatus(""); return; }
   emptyState.classList.add("hidden");
-  const seq = ++searchSeq; setStatus("Searching…"); resultsGrid.innerHTML="";
+  const seq = ++searchSeq; setStatus("Searching…"); renderSearchSkeleton();
   if (searchFetch) searchFetch.abort();
   searchFetch = new AbortController();
   try {
