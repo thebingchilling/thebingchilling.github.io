@@ -146,14 +146,14 @@
   html, body { overscroll-behavior-y: none; }
   body { -webkit-tap-highlight-color: transparent; }
   button, a, [role="button"], .card, .tab-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-  button, .icon-btn, .btn, .tab-btn, .card, .switch-app-btn,
-  .top-bar__brand, .player-back, .card__pin {
+  button, .icon-btn, .btn, .tab-btn, .card,
+  .top-bar__brand, .player-back, .card__pin, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item {
     -webkit-touch-callout: none; user-select: none;
   }
   /* ── Ripple: Material state-layer touch feedback — see index.html for
      the full rationale. JS (spawnRipple) appends/removes the .ripple span. ── */
-  .icon-btn, .btn, .tab-btn, .card, .switch-app-btn,
-  .top-bar__brand, .player-back {
+  .icon-btn, .btn, .tab-btn, .card,
+  .top-bar__brand, .player-back, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item {
     position: relative; overflow: hidden;
   }
   .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
@@ -189,23 +189,48 @@
   .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
   .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-  /* ── Switch-app button (bigger, labeled — links to the sister movies/TV app) ── */
-  .switch-app-btn { display: inline-flex; align-items: center; gap: 0.4rem; height: 40px; padding: 0 0.9rem 0 0.7rem; border-radius: 999px; border: 1px solid var(--md-outline-variant); background: var(--md-surface-container-high); color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; text-decoration: none; cursor: pointer; white-space: nowrap; transition: background var(--t), color var(--t), border-color var(--t); }
-  .switch-app-btn:hover { background: var(--md-surface-container-highest); color: var(--text); border-color: var(--md-outline); }
-  .switch-app-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .switch-app-btn .material-icons { font-size: 19px; }
-  @media (max-width: 400px) {
-    /* Top bar carries 3 controls on the right now — trim the link to
-       an icon on the narrowest phones so nothing crowds or wraps. */
-    .switch-app-btn { padding: 0 0.65rem; }
-    .switch-app-btn span:not(.material-icons) { display: none; }
-  }
+  /* ── Bottom dock: mini-player stacked above the bottom nav ── */
+  .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; }
+
+  /* ── Mini-player: a native music/radio app's now-playing bar. Lets a
+     channel keep playing while browsing instead of always killing it on
+     Back — tap the bar to return to the full player, ✕ to actually stop. ── */
+  .mini-player { display: flex; align-items: center; gap: 0.6rem; width: 100%; border: none; border-top: 1px solid var(--border); background: var(--md-surface-container-high); padding: 0.4rem calc(0.6rem + env(safe-area-inset-right)) 0.4rem calc(0.6rem + env(safe-area-inset-left)); cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif; }
+  .mini-player.hidden { display: none; }
+  .mini-player__art { position: relative; width: 40px; height: 40px; border-radius: 10px; overflow: hidden; background: var(--bg2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
+  .mini-player__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .mini-player__art .material-icons { font-size: 20px; }
+  .mini-player__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .mini-player__title { font-size: 0.85rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini-player__meta { display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini-player__btn { flex-shrink: 0; width: 36px; height: 36px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: background var(--t), color var(--t); }
+  .mini-player__btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+  .mini-player__btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .mini-player__btn .material-icons { font-size: 20px; }
+
+  /* ── Bottom navigation (M3 NavigationBar) — see index.html for the full rationale ── */
+  .bottom-nav { display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
+  .bottom-nav.hidden { display: none; }
+  .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .bottom-nav__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 12px; }
+  .bottom-nav__icon-wrap { display: flex; align-items: center; justify-content: center; width: 58px; height: 30px; border-radius: 16px; transition: background var(--t), color var(--t); }
+  .bottom-nav__icon-wrap .material-icons { font-size: 22px; }
+  .bottom-nav__item--active .bottom-nav__icon-wrap { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+  .bottom-nav__label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.01em; }
+  .bottom-nav__item--active .bottom-nav__label { color: var(--text); font-weight: 600; }
+  .bottom-nav__item:hover .bottom-nav__icon-wrap { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+  .bottom-nav__item--active:hover .bottom-nav__icon-wrap { background: var(--md-secondary-container); }
 
   main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .view { display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; overscroll-behavior-y: contain; }
+  /* Browse is the only screen that shows the bottom nav — reserve room so
+     its content never sits underneath the fixed bar. */
+  #viewBrowse { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+  /* Extra room when the mini-player bar is also stacked above the nav. */
+  body.has-mini-player #viewBrowse { padding-bottom: calc(4.6rem + 3.6rem + env(safe-area-inset-bottom)); }
   .view--active { display: block; }
   .view-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .view-meta { margin: 0; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .view-meta { margin: 0; min-width: 0; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .player-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
   .player-back { display: flex; align-items: center; gap: 0.35rem; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
@@ -288,7 +313,7 @@
   .card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 16%; z-index: 1; background: var(--bg2); }
   .card__placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 2rem; z-index: 0; }
   .card__body { padding: 0.4rem 0.5rem 0.5rem; }
-  .card__title { font-size: 0.78rem; font-weight: 500; color: var(--text); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card__title { font-size: 0.78rem; font-weight: 500; color: var(--text); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
   .card__badge { position: absolute; top: 6px; left: 6px; z-index: 2; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 6px; background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); }
 
   /* ── EPG: now-playing on cards ── */
@@ -375,6 +400,14 @@
   .settings__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 500; color: var(--text); }
   .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
   .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
+
+  /* ── Segmented button group (M3) — used for the Appearance picker ── */
+  .segmented { display: flex; border: 1px solid var(--md-outline-variant); border-radius: 999px; padding: 3px; gap: 3px; background: var(--md-surface-container-high); }
+  .segmented__item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: none; background: none; border-radius: 999px; padding: 0.45rem 0.4rem; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
+  .segmented__item .material-icons { font-size: 17px; }
+  .segmented__item--active { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+  .segmented__item:hover:not(.segmented__item--active) { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
+  .segmented__item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
 
   /* ── Config import/export ── */
@@ -400,17 +433,9 @@
     <div class="top-bar__brand" id="brandReload" role="button" tabindex="0" aria-label="Reload channel lists">
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
-    <div style="display:flex; align-items:center; gap:0.4rem;">
-      <a href="/" class="switch-app-btn" aria-label="Switch to Movies &amp; TV shows" title="Movies &amp; TV shows">
-        <span class="material-icons">video_library</span><span>Movies &amp; TV</span>
-      </a>
-      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
-        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
-      </button>
-      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Import channels &amp; guide" title="Import channels &amp; guide">
-        <span class="material-icons">settings</span>
-      </button>
-    </div>
+    <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+      <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+    </button>
   </header>
 
   <main class="app-main">
@@ -452,7 +477,12 @@
         <button id="backFromPlayer" class="player-back" type="button" aria-label="Back">
           <span class="material-icons">arrow_back</span><span id="backFromPlayerLabel">Back</span>
         </button>
-        <span id="liveBadge" class="live-badge"><span class="live-dot"></span>LIVE</span>
+        <div style="display:flex; align-items:center; gap:0.4rem;">
+          <button id="pipBtn" class="icon-btn hidden" type="button" aria-label="Picture-in-picture" title="Picture-in-picture">
+            <span class="material-icons" style="font-size:20px;">picture_in_picture_alt</span>
+          </button>
+          <span id="liveBadge" class="live-badge"><span class="live-dot"></span>LIVE</span>
+        </div>
       </div>
       <h2 id="playerTitle" class="view-title" style="margin:0 0 0.15rem;"></h2>
       <p id="playerMeta" class="view-meta" style="margin:0 0 0.4rem;"></p>
@@ -496,6 +526,45 @@
       <p id="playerError" class="search-status search-status--error hidden"></p>
     </section>
   </main>
+
+  <!-- Bottom dock: mini-player (when a channel is minimized) stacked above
+       the bottom navigation — like a native music/radio app's now-playing
+       bar sitting just above its tab bar. -->
+  <div class="bottom-dock" id="bottomDock">
+    <div class="mini-player hidden" id="miniPlayer" role="button" tabindex="0" aria-label="Expand player">
+      <span class="mini-player__art" id="miniPlayerArt">
+        <img id="miniPlayerArtImg" src="" alt="" class="hidden" />
+        <span class="material-icons" id="miniPlayerArtPh">live_tv</span>
+      </span>
+      <span class="mini-player__body">
+        <span class="mini-player__title" id="miniPlayerTitle"></span>
+        <span class="mini-player__meta"><span class="live-dot"></span><span id="miniPlayerMeta"></span></span>
+      </span>
+      <span class="mini-player__btn" id="miniPlayerPlayBtn" role="button" tabindex="0" aria-label="Pause">
+        <span class="material-icons">pause</span>
+      </span>
+      <span class="mini-player__btn" id="miniPlayerCloseBtn" role="button" tabindex="0" aria-label="Stop">
+        <span class="material-icons">close</span>
+      </span>
+    </div>
+
+    <!-- Bottom navigation (M3 NavigationBar) — see index.html for the full
+         rationale. Hidden over the full-screen Player, shown over Browse. -->
+    <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
+      <button class="bottom-nav__item bottom-nav__item--active" id="navBrowseBtn" type="button" aria-label="Browse channels">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Browse</span>
+      </button>
+      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+        <span class="bottom-nav__label">Movies &amp; TV</span>
+      </a>
+      <button class="bottom-nav__item" id="settingsBtn" type="button" aria-label="Import channels &amp; guide">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">settings</span></span>
+        <span class="bottom-nav__label">Settings</span>
+      </button>
+    </nav>
+  </div>
 </div>
 
 <!-- Settings sheet: import your own TV/Radio playlists (M3U8 or JSON) + EPG -->
@@ -507,6 +576,22 @@
       <button id="settingsClose" class="icon-btn" type="button" aria-label="Close">
         <span class="material-icons">close</span>
       </button>
+    </div>
+
+    <!-- Appearance section -->
+    <div class="settings__section">
+      <div class="settings__section-label">Appearance</div>
+      <div class="segmented" id="themeSegmented" role="radiogroup" aria-label="Theme">
+        <button class="segmented__item" data-theme-choice="system" type="button" role="radio">
+          <span class="material-icons">brightness_auto</span>System
+        </button>
+        <button class="segmented__item" data-theme-choice="light" type="button" role="radio">
+          <span class="material-icons">light_mode</span>Light
+        </button>
+        <button class="segmented__item" data-theme-choice="dark" type="button" role="radio">
+          <span class="material-icons">dark_mode</span>Dark
+        </button>
+      </div>
     </div>
 
     <div class="settings__section">
@@ -569,7 +654,7 @@ const $ = id => document.getElementById(id);
    ─────────────────────────────────────────────────────
    See index.html for the full rationale — same mechanism, kept in sync.
 ═══════════════════════════════════════════════════════ */
-const RIPPLE_SELECTOR = ".icon-btn, .btn, .tab-btn, .card, .switch-app-btn, .top-bar__brand, .player-back";
+const RIPPLE_SELECTOR = ".icon-btn, .btn, .tab-btn, .card, .top-bar__brand, .player-back, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item";
 function spawnRipple(el, x, y) {
   const rect = el.getBoundingClientRect();
   const size = Math.max(rect.width, rect.height) * 1.8;
@@ -668,6 +753,11 @@ function updateThemeToggleUI(pref) {
   if (icon) icon.textContent = THEME_ICONS[pref] || THEME_ICONS.system;
   const btn = $("themeToggleBtn");
   if (btn) btn.setAttribute("aria-label", `Theme: ${THEME_LABELS[pref] || "System"} (tap to change)`);
+  document.querySelectorAll("#themeSegmented .segmented__item").forEach(el => {
+    const active = el.dataset.themeChoice === pref;
+    el.classList.toggle("segmented__item--active", active);
+    el.setAttribute("aria-checked", String(active));
+  });
 }
 async function initTheme() {
   let pref = "system";
@@ -676,13 +766,19 @@ async function initTheme() {
   applyTheme(pref);
   updateThemeToggleUI(pref);
 }
+function setThemePref(pref) {
+  applyTheme(pref);
+  updateThemeToggleUI(pref);
+  PinStore.set(THEME_KEY, pref);
+  try { localStorage.setItem(THEME_KEY, pref); } catch (e) {}
+}
 $("themeToggleBtn").addEventListener("click", () => {
   const current = document.documentElement.getAttribute("data-theme") || "system";
   const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
-  applyTheme(next);
-  updateThemeToggleUI(next);
-  PinStore.set(THEME_KEY, next);
-  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  setThemePref(next);
+});
+document.querySelectorAll("#themeSegmented .segmented__item").forEach(btn => {
+  btn.addEventListener("click", () => setThemePref(btn.dataset.themeChoice));
 });
 
 async function loadPinned() {
@@ -1432,6 +1528,7 @@ function loadStream(url, mediaEl, { onWaiting, onReady, onFail } = {}) {
 }
 
 let currentPlayerChannel = null;
+let playingIsTv = false;
 let epgPanelInterval = null;
 
 function updateEpgPanel() {
@@ -1532,6 +1629,38 @@ $("guideModalClose").addEventListener("click", closeGuideModal);
 $("guideModal").addEventListener("click", e => { if (e.target.id === "guideModal") closeGuideModal(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("guideModal").classList.contains("hidden")) closeGuideModal(); });
 
+/* ═══════════ Media Session ═══════════
+   Surfaces the current channel on the OS's own now-playing UI — lock
+   screen, notification shade, hardware/earbud media keys — exactly like a
+   native music/radio app, instead of only being controllable from inside
+   the browser tab. */
+function activeMediaEl() { return playingIsTv ? videoEl : audioEl; }
+function setMediaSessionForChannel(channel, isTv) {
+  if (!("mediaSession" in navigator)) return;
+  const logo = channel.attrs["tvg-logo"] || "";
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: channel.name,
+      artist: isTv ? "Live TV" : "Live Radio",
+      album: "Bingqilin",
+      artwork: logo ? [{ src: logo, sizes: "512x512", type: "image/png" }] : [],
+    });
+  } catch (e) {}
+  navigator.mediaSession.playbackState = "playing";
+}
+function clearMediaSession() {
+  if (!("mediaSession" in navigator)) return;
+  navigator.mediaSession.metadata = null;
+  navigator.mediaSession.playbackState = "none";
+}
+if ("mediaSession" in navigator) {
+  navigator.mediaSession.setActionHandler("play", () => {
+    const el = activeMediaEl(); const p = el.play(); if (p && p.catch) p.catch(() => {});
+  });
+  navigator.mediaSession.setActionHandler("pause", () => activeMediaEl().pause());
+  navigator.mediaSession.setActionHandler("stop", () => miniPlayerClose());
+}
+
 // View Transitions API: fade-through motion between Browse↔Player instead of
 // an instant display:none swap — see index.html for the full rationale.
 // Pure progressive enhancement — unsupported browsers just run apply().
@@ -1542,11 +1671,17 @@ function switchView(apply) {
 
 function openPlayer(channel) {
   const isTv = state.tab === "tv";
+  playingIsTv = isTv;
+  hideMiniPlayer();
   switchView(() => {
     $("viewBrowse").classList.remove("view--active");
     $("viewPlayer").classList.add("view--active");
+    // Bottom nav is the root-level tab bar — Player pushes over it
+    // full-screen, like a native app's tab bar hiding on pushed screens.
+    bottomNav.classList.add("hidden");
   });
   $("backFromPlayerLabel").textContent = isTv ? "TV" : "Radio";
+  $("pipBtn").classList.toggle("hidden", !isTv || !document.pictureInPictureEnabled);
 
   $("playerTitle").textContent = channel.name;
   const bits = [];
@@ -1559,6 +1694,7 @@ function openPlayer(channel) {
   epgPanelInterval = setInterval(updateEpgPanel, 30000);
 
   stopAllPlayback();
+  setMediaSessionForChannel(channel, isTv);
 
   $("tvPlayerWrap").classList.toggle("hidden", !isTv);
   $("radioPlayerWrap").classList.toggle("hidden", isTv);
@@ -1608,15 +1744,111 @@ function openPlayer(channel) {
   }
 }
 
-$("backFromPlayer").addEventListener("click", () => {
+const bottomNav = $("bottomNav");
+const navBrowseBtn = $("navBrowseBtn");
+navBrowseBtn.addEventListener("click", () => {
+  if ($("viewBrowse").classList.contains("view--active")) return;
+  $("backFromPlayer").click();
+});
+
+/* ═══════════ Picture-in-picture (TV only — a real, first-party <video>
+   element, unlike index.html's third-party iframe embeds, so the browser's
+   native PiP window works directly on it) ═══════════ */
+const pipBtn = $("pipBtn");
+pipBtn.addEventListener("click", async () => {
+  try {
+    if (document.pictureInPictureElement) await document.exitPictureInPicture();
+    else await videoEl.requestPictureInPicture();
+  } catch (e) { /* unsupported on this element/state — button just no-ops */ }
+});
+
+/* ═══════════ Mini-player ═══════════
+   Minimizing (not stopping) on Back is what makes this feel like a native
+   music/radio app: the channel keeps playing in a slim bar above the
+   bottom nav, tap it to return to the full player, ✕ to actually stop. */
+const miniPlayer         = $("miniPlayer");
+const miniPlayerArtImg   = $("miniPlayerArtImg");
+const miniPlayerArtPh    = $("miniPlayerArtPh");
+const miniPlayerTitle    = $("miniPlayerTitle");
+const miniPlayerMeta     = $("miniPlayerMeta");
+const miniPlayerPlayBtn  = $("miniPlayerPlayBtn");
+const miniPlayerPlayIcon = miniPlayerPlayBtn.querySelector(".material-icons");
+const miniPlayerCloseBtn = $("miniPlayerCloseBtn");
+
+function updateMiniPlayerPlayIcon() {
+  const paused = activeMediaEl().paused;
+  miniPlayerPlayIcon.textContent = paused ? "play_arrow" : "pause";
+  miniPlayerPlayBtn.setAttribute("aria-label", paused ? "Play" : "Pause");
+}
+function showMiniPlayer(channel) {
+  miniPlayerTitle.textContent = channel.name;
+  miniPlayerMeta.textContent = playingIsTv ? "TV" : "Radio";
+  miniPlayerArtPh.textContent = playingIsTv ? "live_tv" : "radio";
+  const logo = channel.attrs["tvg-logo"] || "";
+  if (logo) {
+    miniPlayerArtImg.src = logo;
+    miniPlayerArtImg.classList.remove("hidden");
+    miniPlayerArtImg.onerror = () => miniPlayerArtImg.classList.add("hidden");
+  } else {
+    miniPlayerArtImg.classList.add("hidden");
+  }
+  updateMiniPlayerPlayIcon();
+  miniPlayer.classList.remove("hidden");
+  document.body.classList.add("has-mini-player");
+}
+function hideMiniPlayer() {
+  miniPlayer.classList.add("hidden");
+  document.body.classList.remove("has-mini-player");
+}
+miniPlayer.addEventListener("click", () => {
+  hideMiniPlayer();
+  switchView(() => {
+    $("viewBrowse").classList.remove("view--active");
+    $("viewPlayer").classList.add("view--active");
+    bottomNav.classList.add("hidden");
+  });
+  clearInterval(epgPanelInterval);
+  updateEpgPanel();
+  epgPanelInterval = setInterval(updateEpgPanel, 30000);
+});
+miniPlayer.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); miniPlayer.click(); } });
+function miniPlayerTogglePlay(e) {
+  if (e) e.stopPropagation();
+  const el = activeMediaEl();
+  if (el.paused) { const p = el.play(); if (p && p.catch) p.catch(() => {}); }
+  else el.pause();
+}
+miniPlayerPlayBtn.addEventListener("click", miniPlayerTogglePlay);
+miniPlayerPlayBtn.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); miniPlayerTogglePlay(e); } });
+function miniPlayerClose(e) {
+  if (e) e.stopPropagation();
   stopAllPlayback();
   clearInterval(epgPanelInterval);
   currentPlayerChannel = null;
+  hideMiniPlayer();
+  clearMediaSession();
+}
+miniPlayerCloseBtn.addEventListener("click", miniPlayerClose);
+miniPlayerCloseBtn.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); miniPlayerClose(e); } });
+videoEl.addEventListener("play", updateMiniPlayerPlayIcon);
+videoEl.addEventListener("pause", updateMiniPlayerPlayIcon);
+audioEl.addEventListener("play", updateMiniPlayerPlayIcon);
+audioEl.addEventListener("pause", updateMiniPlayerPlayIcon);
+
+$("backFromPlayer").addEventListener("click", () => {
   closeGuideModal();
+  if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
+  // Minimize into the mini-player (keep playing) unless nothing actually
+  // loaded, or it errored out — nothing worth keeping around in that case.
+  const keepPlaying = currentPlayerChannel && $("playerError").classList.contains("hidden");
   switchView(() => {
     $("viewPlayer").classList.remove("view--active");
     $("viewBrowse").classList.add("view--active");
+    bottomNav.classList.remove("hidden");
   });
+  clearInterval(epgPanelInterval);
+  if (keepPlaying) showMiniPlayer(currentPlayerChannel);
+  else { stopAllPlayback(); currentPlayerChannel = null; clearMediaSession(); }
 });
 
 /* ═══════════ Init ═══════════ */
