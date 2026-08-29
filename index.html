@@ -184,6 +184,13 @@
     @keyframes bq-view-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
     @keyframes bq-view-in { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
     @media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; } }
+    /* Hero poster morph: a tapped card's poster visually expands into the
+       Detail view's poster slot instead of just cross-fading with the rest
+       of the page — see handleCardClick()/renderDetailSkeleton(). A named
+       group gets its own independent transition (position+size interpolated
+       automatically), separate from the root fade-through above. */
+    ::view-transition-group(hero-poster) { animation-duration: 0.32s; animation-timing-function: cubic-bezier(0.2,0,0,1); }
+    @media (prefers-reduced-motion: reduce) { ::view-transition-group(hero-poster) { animation: none !important; } }
     /* Baseline box-model for icon spans, defined locally rather than relying
        solely on the external Google Fonts stylesheet — if that request fails
        (offline, blocked, slow network) icons still lay out sanely instead of
@@ -394,7 +401,7 @@
     @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
     .skel-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text" "play"; gap: 0.9rem; }
     .skel-panel--tv { grid-template-areas: "poster" "text"; }
-    .skel-panel-poster { grid-area: poster; width: 120px; aspect-ratio: 2/3; border-radius: 12px; }
+    .skel-panel-poster { grid-area: poster; width: 120px; aspect-ratio: 2/3; border-radius: 12px; display: block; object-fit: cover; }
     .skel-panel-lines { grid-area: text; display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.2rem; }
     .skel-panel-play { grid-area: play; height: 48px; border-radius: 14px; }
     @media (min-width: 640px) {
@@ -1652,10 +1659,18 @@ function renderResults(items) {
 /* ═══════════════════════════════════════════════════════
    SKELETON
 ═══════════════════════════════════════════════════════ */
-function renderDetailSkeleton(mediaType) {
+function renderDetailSkeleton(mediaType, posterUrl) {
   const isMovie = mediaType === "movie";
+  // A poster URL from the card that was tapped (same title, already in
+  // hand from the search results — no need to wait for the TMDB detail
+  // fetch just to know it) lets the real poster show immediately instead
+  // of a gray placeholder, and carries the hero view-transition-name so
+  // it visually morphs from the grid straight into place.
+  const posterHtml = posterUrl
+    ? `<img class="skel-panel-poster" src="${esc(posterUrl)}" alt="" style="view-transition-name:hero-poster;">`
+    : `<div class="skel skel-panel-poster"></div>`;
   const panel = `<div class="skel-panel${isMovie ? "" : " skel-panel--tv"}">
-    <div class="skel skel-panel-poster"></div>
+    ${posterHtml}
     <div class="skel-panel-lines">
       <div class="skel skel-line skel-line--short"></div>
       <div class="skel skel-line skel-line--full"></div>
@@ -1885,6 +1900,18 @@ async function doSearch(query) {
 /* ═══════════════════════════════════════════════════════
    CARD CLICK
 ═══════════════════════════════════════════════════════ */
+// Shared view-transition-name for the "hero" poster morph — see
+// renderDetailSkeleton()'s comment. Tracked so the previous element (which
+// may no longer even be in the DOM after a new search) gets its name
+// cleared before the next card claims it; view-transition-name must stay
+// unique among whatever's part of a snapshot, or the browser just skips
+// the transition rather than erroring.
+let heroPosterEl = null;
+function setHeroPoster(el) {
+  if (heroPosterEl && heroPosterEl !== el) heroPosterEl.style.viewTransitionName = "";
+  heroPosterEl = el || null;
+  if (el) el.style.viewTransitionName = "hero-poster";
+}
 async function handleCardClick(e) {
   const extBtn = e.target.closest(".card__ext-btn");
   if (extBtn) {
@@ -1894,11 +1921,13 @@ async function handleCardClick(e) {
   }
   const card = e.target.closest(".card"); if (!card) return;
   const id = Number(card.dataset.id), mt = card.dataset.mediaType; if (!id||!mt) return;
+  const posterImg = card.querySelector(".card__img");
+  setHeroPoster(posterImg);
   pushDetailHash(mt, id); setView("detail");
-  await loadDetailFor(mt, id);
+  await loadDetailFor(mt, id, posterImg ? posterImg.src : null);
 }
-async function loadDetailFor(mt, id) {
-  detailTitle.textContent="Loading…"; detailMeta.textContent=""; renderDetailSkeleton(mt);
+async function loadDetailFor(mt, id, posterUrl) {
+  detailTitle.textContent="Loading…"; detailMeta.textContent=""; renderDetailSkeleton(mt, posterUrl);
   if (detailFetch) detailFetch.abort();
   detailFetch = new AbortController();
   try {
