@@ -176,6 +176,12 @@
   body, .view { scrollbar-width: none; }
   body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
 
+  /* ── Cross-document view transitions — see index.html for the full
+     rationale. Same rule + view-transition-names, kept in sync. ── */
+  @view-transition { navigation: auto; }
+  .top-bar { view-transition-name: top-bar; }
+  .bottom-dock { view-transition-name: bottom-dock; }
+
   /* ── Top app bar ── */
   .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
   .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; cursor: pointer; border-radius: 8px; padding: 0.15rem 0.3rem; margin: -0.15rem -0.3rem; transition: background var(--t); }

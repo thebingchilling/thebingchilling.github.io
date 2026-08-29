@@ -196,6 +196,20 @@
     body, .view { scrollbar-width: none; }
     body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
 
+    /* ── Cross-document view transitions: Search (/) and Live TV (/live) are
+       separate pages, so switching between them is a full navigation —
+       without this it's a hard flash-to-white. Chrome morphs the shared
+       top-bar/bottom-dock chrome across the navigation instead of crossfading
+       two full-page snapshots, so the app shell reads as staying in place
+       while only the content underneath changes — matching how the same
+       tap feels within index.html's own setView()/switchView(). Both this
+       page and live.html declare the same rule + view-transition-names, and
+       it's inert (silently ignored, normal navigation) on browsers that
+       don't support it yet. ── */
+    @view-transition { navigation: auto; }
+    .top-bar { view-transition-name: top-bar; }
+    .bottom-dock { view-transition-name: bottom-dock; }
+
     /* ── Top app bar (M3) ── */
     .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
     .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; cursor: pointer; border-radius: 8px; padding: 0.1rem 0.3rem; margin: -0.1rem -0.3rem; transition: background var(--t); user-select: none; }
@@ -208,7 +222,11 @@
     .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; background: color-mix(in srgb, var(--md-on-surface) 10%, transparent); }
 
     /* ── Bottom navigation (M3 NavigationBar) ── */
-    .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
+    /* ── Bottom dock: wraps the nav so index.html and live.html share the
+       same structure and the same view-transition-name (see the
+       @view-transition rule below) for a seamless cross-page navigation. ── */
+    .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; }
+    .bottom-nav { display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
     .bottom-nav.hidden { display: none; }
     .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
     .bottom-nav__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 12px; }
@@ -249,7 +267,11 @@
     .player-header-right { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
 
     /* ── Back button ── */
-    .player-back { display: flex; align-items: center; gap: 0.35rem; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
+    .player-back { display: flex; align-items: center; gap: 0.35rem; min-width: 0; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
+    /* backFromPlayerLabel can be a full show title (see loadPlayer's caller
+       in goBackFromPlayer) — ellipsize it instead of letting it hard-clip
+       or push the header's right-hand controls off-screen. */
+    #backFromPlayerLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .player-back:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
     .player-back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .player-back .material-icons { font-size: 18px; }
@@ -260,6 +282,9 @@
     .share-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .share-btn .material-icons { font-size: 15px; }
     .share-btn--copied { background: var(--md-primary-container); color: var(--md-on-primary-container); }
+    /* Source names are user-entered with no length limit — cap this one
+       label so a long name can't crowd the rest of the player header row. */
+    #sourceSwitchBtnLabel { max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: bottom; }
 
     /* ── Search bar (M3 search field) ── */
     .search-bar { display: flex; align-items: center; gap: 0.7rem; background: var(--md-surface-container-high); border-radius: 28px; padding: 0.65rem 1rem; box-shadow: none; border: 1px solid transparent; margin-bottom: 0.65rem; transition: background var(--t), box-shadow var(--t); }
@@ -458,6 +483,17 @@
     .segmented__item--active { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
     .segmented__item:hover:not(.segmented__item--active) { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
     .segmented__item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+    /* ── Switch (M3) — used for the Player section's toggles ── */
+    .switch-row { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
+    .switch-row__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+    .switch-row__title { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+    .switch-row__hint { font-size: 0.72rem; color: var(--text-faint); line-height: 1.4; }
+    .switch { flex-shrink: 0; width: 44px; height: 26px; border-radius: 999px; border: 2px solid var(--md-outline); background: var(--md-surface-container-highest); position: relative; padding: 0; cursor: pointer; transition: background var(--t), border-color var(--t); }
+    .switch__thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--md-outline); transition: transform var(--t), background var(--t); }
+    .switch[aria-checked="true"] { background: var(--primary); border-color: var(--primary); }
+    .switch[aria-checked="true"] .switch__thumb { transform: translateX(18px); background: var(--on-primary); }
+    .switch:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
 
     /* source cards (M3 selectable list items) */
@@ -562,6 +598,9 @@
           <span id="backFromPlayerLabel">Back</span>
         </button>
         <div class="player-header-right">
+          <button id="sourceSwitchBtn" class="share-btn hidden" type="button" aria-label="Switch player source">
+            <span class="material-icons">swap_horiz</span><span id="sourceSwitchBtnLabel"></span>
+          </button>
           <button id="shareBtn" class="share-btn" type="button" aria-label="Copy link">
             <span class="material-icons">link</span><span id="shareBtnLabel">Share</span>
           </button>
@@ -607,21 +646,26 @@
 
   <!-- Bottom navigation (M3 NavigationBar) — the app's primary destinations,
        shown only over the root Search screen; Detail/Player push over it
-       full-screen, like a native app's tab bar hiding on pushed screens. -->
-  <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
-    <button class="bottom-nav__item bottom-nav__item--active" id="navSearchBtn" type="button" aria-label="Search">
-      <span class="bottom-nav__icon-wrap"><span class="material-icons">search</span></span>
-      <span class="bottom-nav__label">Search</span>
-    </button>
-    <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
-      <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
-      <span class="bottom-nav__label">Live TV</span>
-    </a>
-    <button class="bottom-nav__item" id="settingsBtn" type="button" aria-label="Settings">
-      <span class="bottom-nav__icon-wrap"><span class="material-icons">tune</span></span>
-      <span class="bottom-nav__label">Settings</span>
-    </button>
-  </nav>
+       full-screen, like a native app's tab bar hiding on pushed screens.
+       Wrapped in .bottom-dock (matching live.html's structure, even though
+       this app has no mini-player) so the two pages share a view-transition
+       name — see the @view-transition rule below. -->
+  <div class="bottom-dock" id="bottomDock">
+    <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
+      <button class="bottom-nav__item bottom-nav__item--active" id="navSearchBtn" type="button" aria-label="Search">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">search</span></span>
+        <span class="bottom-nav__label">Search</span>
+      </button>
+      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Live TV</span>
+      </a>
+      <button class="bottom-nav__item" id="settingsBtn" type="button" aria-label="Settings">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">tune</span></span>
+        <span class="bottom-nav__label">Settings</span>
+      </button>
+    </nav>
+  </div>
 </div>
 
 <!-- Settings sheet -->
@@ -649,6 +693,20 @@
           <span class="material-icons">dark_mode</span>Dark
         </button>
       </div>
+    </div>
+
+    <!-- Player section -->
+    <div class="settings__section">
+      <div class="settings__section-label">Player</div>
+      <label class="switch-row" for="skipGateToggle">
+        <span class="switch-row__text">
+          <span class="switch-row__title">Tap-to-play gate</span>
+          <span class="switch-row__hint">One tap before a video starts, so a pop-up ad from the source never gets the click it's waiting for. Turn off to autoplay immediately instead.</span>
+        </span>
+        <button class="switch" id="skipGateToggle" type="button" role="switch" aria-checked="true" aria-label="Tap-to-play gate">
+          <span class="switch__thumb"></span>
+        </button>
+      </label>
     </div>
 
     <!-- Sources section -->
@@ -984,7 +1042,10 @@ const playerOverlaySub  = $("playerOverlaySub");
 
 /* ── Player overlay states: loading → ready (tap-to-play gate) → dismissed.
    See the .player-overlay--ready CSS comment for why the gate exists —
-   it's the popup-ad mitigation, not just a loading spinner. ── */
+   it's the popup-ad mitigation, not just a loading spinner. Settings →
+   Player lets it be turned off (skipTapGate) for anyone who'd rather
+   autoplay immediately and take the pop-up risk on trusted sources. ── */
+let skipTapGate = false;
 function setPlayerOverlayLoading(text) {
   playerOverlay.classList.remove("hidden", "player-overlay--ready");
   playerOverlayIcon.textContent = "smart_display";
@@ -992,6 +1053,7 @@ function setPlayerOverlayLoading(text) {
   playerOverlaySub.classList.add("hidden");
 }
 function setPlayerOverlayReady() {
+  if (skipTapGate) { playerOverlay.classList.add("hidden"); playerOverlay.classList.remove("player-overlay--ready"); return; }
   playerOverlay.classList.remove("hidden");
   playerOverlay.classList.add("player-overlay--ready");
   playerOverlayIcon.textContent = "play_circle";
@@ -1016,6 +1078,8 @@ const nowPlayingOverview = $("nowPlayingOverview");
 const rerollBtn        = $("rerollBtn");
 const shareBtn         = $("shareBtn");
 const shareBtnLabel    = $("shareBtnLabel");
+const sourceSwitchBtn      = $("sourceSwitchBtn");
+const sourceSwitchBtnLabel = $("sourceSwitchBtnLabel");
 const shareDetailBtn      = $("shareDetailBtn");
 const shareDetailBtnLabel = $("shareDetailBtnLabel");
 const settingsBtn      = $("settingsBtn");
@@ -1110,9 +1174,12 @@ function pushDetailHash(mt, id) { history.pushState(null, "", `#/${mt}/${id}`); 
 
 async function handleHashRoute() {
   const hash = location.hash;
-  if (!hash || hash === "#") { setView("search"); return; }
+  // Covers browser back/forward (not just in-app UI) landing back on Search
+  // — same teardown as goToSearch()/goBackFromDetail() so a playing embed
+  // can't keep running once its view is no longer reachable this way either.
+  if (!hash || hash === "#") { teardownPlayer(); setView("search"); return; }
   const m = hash.match(/^#\/(movie|tv)\/(\d+)(?:\/s(\d+)\/e(\d+))?$/);
-  if (!m) { setView("search"); return; }
+  if (!m) { teardownPlayer(); setView("search"); return; }
   const [, type, idStr, sStr, eStr] = m;
   const id = Number(idStr);
   if (sStr && eStr && currentDetail.id === id && currentPlayer.id === id) { setView("player"); return; }
@@ -1168,6 +1235,16 @@ function buildPlayerUrl({ mediaType, tmdbId, season = 1, episode = 1 }) {
   return url;
 }
 
+// Shown in the player header once there's more than one source configured —
+// no point offering a switcher for a single source. Tapping it opens
+// Settings, scrolled to the Player sources list right at the top.
+function updateSourceSwitchBtn() {
+  sourceSwitchBtn.classList.toggle("hidden", SOURCES.length < 2);
+  const src = SOURCES[Math.max(0, Math.min(activeSourceIdx, SOURCES.length - 1))];
+  sourceSwitchBtnLabel.textContent = src ? src.name : "";
+}
+sourceSwitchBtn.addEventListener("click", openSettings);
+
 // Sandbox is opt-in: leave the field blank for no restrictions at all
 // (matches how most third-party video embeds expect to run). Fill it in
 // only if you want to lock a specific source down.
@@ -1183,6 +1260,7 @@ function loadPlayer({ mediaType, id, season, episode, label, extraMeta, rolledEp
 
   const url = buildPlayerUrl({ mediaType, tmdbId: id, season, episode });
   applySandbox();
+  updateSourceSwitchBtn();
 
   if (playerFrame.src !== url) {
     setPlayerOverlayLoading("Loading player…");
@@ -1228,6 +1306,16 @@ function loadPlayer({ mediaType, id, season, episode, label, extraMeta, rolledEp
 /* ═══════════════════════════════════════════════════════
    BACK NAVIGATION
 ═══════════════════════════════════════════════════════ */
+// Tears down the iframe player so a movie/TV embed can't keep running
+// (audio, ads, trackers) once it's no longer on screen. Shared by every
+// "leave the player behind" path — direct back-button taps, the "/" search
+// shortcut, and browser back/forward (popstate) — so none of them can
+// accidentally skip it the way a bare setView("search") would.
+function teardownPlayer() {
+  playerFrame.src = ""; playerFrame.title = "Video player";
+  setPlayerOverlayLoading("Loading player…");
+  epNav.classList.add("hidden");
+}
 function goBackFromPlayer() {
   if (currentPlayer.mediaType === "tv" && currentDetail.id) {
     const { season, episode } = currentPlayer;
@@ -1246,8 +1334,7 @@ function goBackFromPlayer() {
       }
     });
   } else {
-    playerFrame.src = ""; playerFrame.title = "Video player";
-    setPlayerOverlayLoading("Loading player…"); epNav.classList.add("hidden");
+    teardownPlayer();
     history.pushState(null, "", cleanPath()); setView("search");
   }
 }
@@ -1257,8 +1344,7 @@ function goBackFromDetail() {
   // Unlike the Player→Detail hop (goBackFromPlayer), this leaves the show
   // entirely back to Search — always tear the iframe down so a TV episode
   // can't keep playing audio/video in the background, unseen.
-  playerFrame.src = ""; playerFrame.title = "Video player";
-  setPlayerOverlayLoading("Loading player…"); epNav.classList.add("hidden");
+  teardownPlayer();
   history.pushState(null, "", cleanPath()); setView("search");
 }
 
@@ -1687,7 +1773,7 @@ function goToSearch() {
   clearTimeout(searchDebounce);
   // Jumping straight to Search leaves whatever was playing, movie or TV —
   // always stop it rather than letting a TV episode run on unseen.
-  playerFrame.src=""; setPlayerOverlayLoading("Loading player…"); epNav.classList.add("hidden");
+  teardownPlayer();
   history.pushState(null,"",cleanPath()); setView("search");
 }
 const topBarBrand = $("topBarBrand");
@@ -1715,7 +1801,7 @@ document.addEventListener("keydown", e => {
   const tag = document.activeElement?.tagName;
   if (tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT") return;
   e.preventDefault();
-  if (!viewSearch.classList.contains("view--active")) { history.pushState(null,"",cleanPath()); setView("search"); }
+  goToSearch(); // also tears down an active iframe player, unlike a bare setView("search")
   searchInput.focus({preventScroll:true});
 });
 
@@ -1762,8 +1848,14 @@ function renderSourceList() {
 
     card.addEventListener("click", e => {
       if (e.target.closest(".source-card__btn")) return;
-      setActiveSource(i); renderSourceList(); applySandbox();
-      if (currentPlayer.url) { const newUrl=buildPlayerUrl({mediaType:currentPlayer.mediaType,tmdbId:currentPlayer.id,season:currentPlayer.season,episode:currentPlayer.episode}); if (newUrl!==currentPlayer.url) { playerFrame.src=newUrl; currentPlayer.url=newUrl; } }
+      setActiveSource(i); renderSourceList(); applySandbox(); updateSourceSwitchBtn();
+      // Reload the currently-playing title through the newly active source —
+      // routed through loadPlayer() (not a bare playerFrame.src set) so the
+      // popup-gate overlay re-arms for the freshly-loaded iframe document too.
+      if (currentPlayer.mediaType) {
+        loadPlayer({ mediaType: currentPlayer.mediaType, id: currentPlayer.id, season: currentPlayer.season,
+          episode: currentPlayer.episode, label: currentPlayer.label, rollMode: currentPlayer.rollMode, rollSeason: currentPlayer.rollSeason });
+      }
     });
     card.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); card.click(); } });
     sourceListEl.appendChild(card);
@@ -1860,6 +1952,29 @@ themeToggleBtn.addEventListener("click", () => {
 document.querySelectorAll("#themeSegmented .segmented__item").forEach(btn => {
   btn.addEventListener("click", () => setThemePref(btn.dataset.themeChoice));
 });
+
+/* ── Tap-to-play gate toggle (Settings → Player) ──
+   The switch reads ON when the *gate* is enabled (shown) — i.e. when
+   skipTapGate is false — not when skipTapGate itself is true. Keep that
+   inversion in mind: it's easy to wire this backwards. ── */
+const SKIP_GATE_KEY = "bq_skip_tap_gate";
+const skipGateToggle = $("skipGateToggle");
+function updateSkipGateToggleUI() { skipGateToggle.setAttribute("aria-checked", String(!skipTapGate)); }
+async function initSkipGateToggle() {
+  let v = false;
+  try { v = localStorage.getItem(SKIP_GATE_KEY) === "1"; } catch (e) {}
+  try { const stored = await Store.get(SKIP_GATE_KEY); if (stored != null) v = stored === "1"; } catch (e) {}
+  skipTapGate = v;
+  updateSkipGateToggleUI();
+}
+skipGateToggle.addEventListener("click", () => {
+  skipTapGate = !skipTapGate;
+  updateSkipGateToggleUI();
+  Store.set(SKIP_GATE_KEY, skipTapGate ? "1" : "0");
+  try { localStorage.setItem(SKIP_GATE_KEY, skipTapGate ? "1" : "0"); } catch (e) {}
+});
+initSkipGateToggle();
+
 settingsSheet.addEventListener("keydown", e => {
   if (e.key==="Escape") { closeSettings(); return; }
   if (e.key==="Tab") {
