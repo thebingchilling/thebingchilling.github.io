@@ -728,6 +728,26 @@ function initPullToRefresh(container, indicatorEl, onRefresh) {
   }, { passive: true });
 }
 
+/* ── Swipe-back — see index.html for the full rationale. Same mechanism,
+   kept in sync; the invocation is wired up at the bottom of this script. ── */
+function initSwipeBack(container, onBack, edge = 24, threshold = 80) {
+  let startX = 0, startY = 0, tracking = false, committed = false;
+  container.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    tracking = t.clientX <= edge;
+    committed = false;
+    startX = t.clientX; startY = t.clientY;
+  }, { passive: true });
+  container.addEventListener("touchmove", e => {
+    if (!tracking || committed) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startX, dy = t.clientY - startY;
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) { tracking = false; return; }
+    if (dx > threshold) { committed = true; tracking = false; onBack(); }
+  }, { passive: true });
+  container.addEventListener("touchend", () => { tracking = false; });
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
 }
@@ -1954,6 +1974,9 @@ try {
 init();
 initTheme();
 initPullToRefresh($("viewBrowse"), $("pullIndicatorBrowse"), () => init());
+initSwipeBack(document, () => {
+  if ($("viewPlayer").classList.contains("view--active")) $("backFromPlayer").click();
+});
 </script>
 </body>
 </html>

@@ -843,6 +843,34 @@ function initPullToRefresh(container, indicatorEl, onRefresh) {
     setTimeout(() => { indicatorEl.style.transition = ""; }, 220);
   }, { passive: true });
 }
+
+/* ── Swipe-back ───────────────────────────────────────────────────────
+   An edge swipe (start within EDGE px of the left edge, drag right past
+   THRESHOLD) triggers the same back action as the visible Back button.
+   iOS Safari already does this natively for its own navigation; Android
+   Chrome doesn't do it for in-page view switches like this app's, so it's
+   worth adding by hand. Deliberately simple — the gesture commits the
+   instant it crosses the threshold rather than live-tracking a drag
+   preview the rest of the way, so the View Transition already wired into
+   setView() supplies the actual motion. */
+function initSwipeBack(container, onBack, edge = 24, threshold = 80) {
+  let startX = 0, startY = 0, tracking = false, committed = false;
+  container.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    tracking = t.clientX <= edge;
+    committed = false;
+    startX = t.clientX; startY = t.clientY;
+  }, { passive: true });
+  container.addEventListener("touchmove", e => {
+    if (!tracking || committed) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startX, dy = t.clientY - startY;
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) { tracking = false; return; } // vertical scroll — not this gesture
+    if (dx > threshold) { committed = true; tracking = false; onBack(); }
+  }, { passive: true });
+  container.addEventListener("touchend", () => { tracking = false; });
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
 }
@@ -2068,6 +2096,11 @@ try {
 })();
 initTheme();
 initPullToRefresh(viewSearch, $("pullIndicatorSearch"), () => doSearch(searchInput.value.trim()));
+initSwipeBack(document, () => {
+  if (!settingsSheet.classList.contains("hidden")) return; // let the sheet's own backdrop/close handle that
+  if (viewPlayer.classList.contains("view--active")) goBackFromPlayer();
+  else if (viewDetail.classList.contains("view--active")) goBackFromDetail();
+});
 </script>
 </body>
 </html>
