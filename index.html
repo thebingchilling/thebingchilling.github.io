@@ -461,27 +461,6 @@
     .player-overlay { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #111; color: rgba(255,255,255,0.45); font-size: 0.85rem; gap: 0.5rem; transition: opacity 0.3s; text-align: center; padding: 1rem; }
     .player-overlay.hidden { opacity: 0; pointer-events: none; }
     .player-overlay .material-icons { font-size: 2.5rem; opacity: 0.35; }
-    /* ── "Tap to play" gate: shown once the source has finished loading, in
-       place of auto-revealing the iframe. It exists to eat exactly one
-       click — most third-party embeds fire a pop-up/redirect off the very
-       first click anywhere in their document, piggy-backing on that click's
-       genuine user-gesture to legally call window.open(). Sandboxing the
-       iframe to block that gets detected by the embed's own anti-adblock
-       script (window.open returns null) and it refuses to play. Since our
-       overlay div sits above the iframe and captures that first click
-       itself, the iframe's document never receives it, so the popup script
-       never fires *and* never sees a blocked window.open to detect. ── */
-    /* Reverted to visible-but-light after the fully-invisible version
-       stopped reliably getting tapped in practice (no affordance at all
-       meant the click that was supposed to land on the gate often missed
-       or never happened). Deliberately light-touch: a faint scrim and a
-       small glyph, not a dark blocking modal — it should read as an
-       ordinary video poster's play button, not an interruption, even
-       though it's functionally a gate. */
-    .player-overlay--ready { cursor: pointer; background: rgba(0,0,0,0.1); }
-    .player-overlay--ready .material-icons { font-size: 2.75rem; opacity: 0.96; color: #fff; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.45)); animation: player-gate-in 0.25s ease-out; }
-    @keyframes player-gate-in { from { opacity: 0; transform: scale(0.85); } to { opacity: 0.96; transform: scale(1); } }
-    @media (prefers-reduced-motion: reduce) { .player-overlay--ready .material-icons { animation: none; } }
 
     /* ── Episode nav ── */
     .ep-nav { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.55rem; }
@@ -658,7 +637,7 @@
       </div>
       <h2 id="playerTitle" class="view-title" style="margin:0 0 0.35rem;"></h2>
       <div class="player-wrap">
-        <div id="playerOverlay" class="player-overlay" role="button" tabindex="0" aria-label="Tap to start playback — also blocks pop-ups from this source">
+        <div id="playerOverlay" class="player-overlay" role="status" aria-live="polite">
           <span class="material-icons" id="playerOverlayIcon">smart_display</span>
           <span id="playerOverlayText" class="player-overlay__text">Loading player…</span>
         </div>
@@ -1146,31 +1125,14 @@ const playerOverlay    = $("playerOverlay");
 const playerOverlayText = $("playerOverlayText");
 const playerOverlayIcon = $("playerOverlayIcon");
 
-/* ── Player overlay states: loading → ready (tap-to-play gate) → dismissed.
-   The gate eats exactly one click — see the .player-overlay--ready CSS
-   comment — so it's always on; it's what keeps most sources' pop-up ads
-   from ever firing, not a preference to trade away. Kept deliberately
-   unobtrusive: just a small play glyph over a light scrim and no headline
-   copy, so it reads as an ordinary "tap to play" video poster rather than
-   an interruption — the aria-label still tells screen readers why. ── */
 function setPlayerOverlayLoading(text) {
-  playerOverlay.classList.remove("hidden", "player-overlay--ready");
+  playerOverlay.classList.remove("hidden");
   playerOverlayIcon.textContent = "smart_display";
   playerOverlayText.textContent = text || "Loading player…";
 }
 function setPlayerOverlayReady() {
-  playerOverlay.classList.remove("hidden");
-  playerOverlay.classList.add("player-overlay--ready");
-  playerOverlayIcon.textContent = "play_circle";
-  playerOverlayText.textContent = "";
-}
-function dismissPlayerOverlay() {
-  if (!playerOverlay.classList.contains("player-overlay--ready")) return; // only the ready gate is dismissible
   playerOverlay.classList.add("hidden");
-  playerOverlay.classList.remove("player-overlay--ready");
 }
-playerOverlay.addEventListener("click", dismissPlayerOverlay);
-playerOverlay.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); dismissPlayerOverlay(); } });
 const epNav            = $("epNav");
 const epNavLabel       = $("epNavLabel");
 const prevEpBtn        = $("prevEpBtn");
@@ -1407,8 +1369,6 @@ function loadPlayer({ mediaType, id, season, episode, label, extraMeta, rolledEp
     playerFrame.src = url || "";
     playerFrame.title = `Video player — ${label || ""}`;
     if (url) {
-      // Deliberately don't auto-reveal the iframe once loaded — see the
-      // .player-overlay--ready CSS comment. The gate only opens on a tap.
       playerFrame.addEventListener("load", setPlayerOverlayReady, { once: true });
       setTimeout(() => { if (playerFrame.src === url) setPlayerOverlayReady(); }, 8000);
     }
