@@ -5,7 +5,21 @@
 <head>
 <meta charset="UTF-8" />
 <title>Bingqilin</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- ── App-shell / installability metadata — see index.html for the full
+     rationale. Same manifest/service worker cover both sister apps. ── -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<!-- Kept in sync with the current surface color — see index.html for the
+     full rationale. -->
+<meta name="theme-color" id="themeColorMeta" content="#fff8f4" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Bingqilin" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="color-scheme" content="light dark" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
 <script>
   // Runs before first paint so a saved manual Light/Dark choice applies
   // immediately — see index.html for the full rationale. Same storage key,
@@ -128,6 +142,31 @@
   }
   :root[data-theme="light"] .config-feedback--ok { color: #146c2e; }
   *, *::before, *::after { box-sizing: border-box; }
+  /* ── Native-app shell layer — see index.html for the full rationale ── */
+  html, body { overscroll-behavior-y: none; }
+  body { -webkit-tap-highlight-color: transparent; }
+  button, a, [role="button"], .card, .tab-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  button, .icon-btn, .btn, .tab-btn, .card, .switch-app-btn,
+  .top-bar__brand, .player-back, .card__pin {
+    -webkit-touch-callout: none; user-select: none;
+  }
+  /* ── Ripple: Material state-layer touch feedback — see index.html for
+     the full rationale. JS (spawnRipple) appends/removes the .ripple span. ── */
+  .icon-btn, .btn, .tab-btn, .card, .switch-app-btn,
+  .top-bar__brand, .player-back {
+    position: relative; overflow: hidden;
+  }
+  .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
+  @keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .ripple { display: none; } }
+
+  /* ── View Transitions: fade-through motion for switchView() navigation ── */
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; animation-timing-function: cubic-bezier(0.2,0,0,1); }
+  ::view-transition-old(root) { animation-name: bq-view-out; }
+  ::view-transition-new(root) { animation-name: bq-view-in; }
+  @keyframes bq-view-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
+  @keyframes bq-view-in { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; } }
   /* Baseline box-model for icon spans, defined locally rather than relying
      solely on the external Google Fonts stylesheet — see index.html for why. */
   .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
@@ -138,7 +177,7 @@
   body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
 
   /* ── Top app bar ── */
-  .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 1rem; background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
   .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; cursor: pointer; border-radius: 8px; padding: 0.15rem 0.3rem; margin: -0.15rem -0.3rem; transition: background var(--t); }
   .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
   .top-bar__brand:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -163,7 +202,7 @@
   }
 
   main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  .view { display: none; padding: 0.75rem 0.9rem 2rem; width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; }
+  .view { display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; overscroll-behavior-y: contain; }
   .view--active { display: block; }
   .view-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .view-meta { margin: 0; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -329,7 +368,7 @@
   .settings { position: fixed; inset: 0; z-index: 110; display: flex; align-items: flex-end; justify-content: center; }
   .settings.hidden { display: none; }
   .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); }
-  .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem 1rem 1.25rem; animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; }
+  .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem calc(1rem + env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left)); animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; overscroll-behavior-y: contain; }
   .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
   @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
@@ -525,6 +564,34 @@
 "use strict";
 const $ = id => document.getElementById(id);
 
+/* ═══════════════════════════════════════════════════════
+   NATIVE APP SHELL: ripple feedback + service worker
+   ─────────────────────────────────────────────────────
+   See index.html for the full rationale — same mechanism, kept in sync.
+═══════════════════════════════════════════════════════ */
+const RIPPLE_SELECTOR = ".icon-btn, .btn, .tab-btn, .card, .switch-app-btn, .top-bar__brand, .player-back";
+function spawnRipple(el, x, y) {
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 1.8;
+  const span = document.createElement("span");
+  span.className = "ripple";
+  span.style.width = span.style.height = size + "px";
+  span.style.left = (x - rect.left - size / 2) + "px";
+  span.style.top  = (y - rect.top  - size / 2) + "px";
+  el.appendChild(span);
+  span.addEventListener("animationend", () => span.remove(), { once: true });
+}
+document.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  const el = e.target.closest(RIPPLE_SELECTOR);
+  if (!el || el.disabled) return;
+  spawnRipple(el, e.clientX, e.clientY);
+}, { passive: true });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+}
+
 /* No channels ship with this app — the person imports their own TV/Radio
    playlists (M3U8 or JSON, auto-detected) and optionally an XMLTV EPG url
    via the Settings sheet. See loadStoredConfig / parseChannelsAuto below. */
@@ -576,9 +643,25 @@ const THEME_ORDER  = ["system", "light", "dark"];
 const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
 const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
 
+const SURFACE_LIGHT = "#fff8f4", SURFACE_DARK = "#17120d";
+const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+function syncThemeColorMeta() {
+  // See index.html for the full rationale.
+  const meta = document.getElementById("themeColorMeta");
+  if (!meta) return;
+  const attr = document.documentElement.getAttribute("data-theme");
+  const isDark = attr === "dark" || (attr !== "light" && !!(systemDarkMQ && systemDarkMQ.matches));
+  meta.setAttribute("content", isDark ? SURFACE_DARK : SURFACE_LIGHT);
+}
+if (systemDarkMQ && systemDarkMQ.addEventListener) {
+  systemDarkMQ.addEventListener("change", () => {
+    if (!document.documentElement.hasAttribute("data-theme")) syncThemeColorMeta();
+  });
+}
 function applyTheme(pref) {
   if (pref === "light" || pref === "dark") document.documentElement.setAttribute("data-theme", pref);
   else document.documentElement.removeAttribute("data-theme");
+  syncThemeColorMeta();
 }
 function updateThemeToggleUI(pref) {
   const icon = $("themeToggleIcon");
@@ -1449,10 +1532,20 @@ $("guideModalClose").addEventListener("click", closeGuideModal);
 $("guideModal").addEventListener("click", e => { if (e.target.id === "guideModal") closeGuideModal(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("guideModal").classList.contains("hidden")) closeGuideModal(); });
 
+// View Transitions API: fade-through motion between Browse↔Player instead of
+// an instant display:none swap — see index.html for the full rationale.
+// Pure progressive enhancement — unsupported browsers just run apply().
+function switchView(apply) {
+  if (document.startViewTransition) document.startViewTransition(apply);
+  else apply();
+}
+
 function openPlayer(channel) {
   const isTv = state.tab === "tv";
-  $("viewBrowse").classList.remove("view--active");
-  $("viewPlayer").classList.add("view--active");
+  switchView(() => {
+    $("viewBrowse").classList.remove("view--active");
+    $("viewPlayer").classList.add("view--active");
+  });
   $("backFromPlayerLabel").textContent = isTv ? "TV" : "Radio";
 
   $("playerTitle").textContent = channel.name;
@@ -1520,8 +1613,10 @@ $("backFromPlayer").addEventListener("click", () => {
   clearInterval(epgPanelInterval);
   currentPlayerChannel = null;
   closeGuideModal();
-  $("viewPlayer").classList.remove("view--active");
-  $("viewBrowse").classList.add("view--active");
+  switchView(() => {
+    $("viewPlayer").classList.remove("view--active");
+    $("viewBrowse").classList.add("view--active");
+  });
 });
 
 /* ═══════════ Init ═══════════ */

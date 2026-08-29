@@ -3,7 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <title>Bingqilin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- ── App-shell / installability metadata. Together with manifest.webmanifest
+       and sw.js, this is what lets the OS treat this as a real installed app
+       (own icon, own window, no address bar) rather than a browser tab. ── -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- Kept in sync with the current surface color (light/dark, plus any manual
+       override) by initTheme()/applyTheme() below, so the OS status bar always
+       blends into the top app bar instead of showing a mismatched browser color. -->
+  <meta name="theme-color" id="themeColorMeta" content="#fff8f4" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Bingqilin" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script>
     // Runs before first paint so a saved manual Light/Dark choice applies
     // immediately instead of flashing the system-default theme first.
@@ -136,6 +152,38 @@
     }
     :root[data-theme="light"] .config-feedback--ok { color: #146c2e; }
     *, *::before, *::after { box-sizing: border-box; }
+    /* ── Native-app shell layer ──────────────────────────────────────────
+       This block is what stops the page from *feeling* like a browser tab:
+       no rubber-band scroll bounce past the app's own content, no blue/grey
+       tap flash on touch, no callout/selection popovers on chrome controls,
+       and the standard iOS/Android tap-delay removed via touch-action. Real
+       content (search input, overview text) is deliberately left selectable. */
+    html, body { overscroll-behavior-y: none; }
+    body { -webkit-tap-highlight-color: transparent; }
+    button, a, [role="button"], .card, .chip, .ep-card, .source-card { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button, .icon-btn, .btn, .chip, .card, .ep-card, .source-card, .switch-app-btn,
+    .top-bar__brand, .play-btn, .reroll-btn, .share-btn, .player-back {
+      -webkit-touch-callout: none; user-select: none;
+    }
+    /* ── Ripple: Material state-layer touch feedback. Hover states above
+       only fire for a mouse — touch has nothing today, which is the single
+       biggest reason the app currently *feels* like a webpage instead of a
+       native surface. JS (spawnRipple) appends/removes the .ripple span. ── */
+    .icon-btn, .btn, .chip, .card, .ep-card, .source-card, .switch-app-btn,
+    .top-bar__brand, .play-btn, .reroll-btn, .share-btn, .player-back {
+      position: relative; overflow: hidden;
+    }
+    .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
+    @keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .ripple { display: none; } }
+
+    /* ── View Transitions: fade-through motion for setView() navigation ── */
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; animation-timing-function: cubic-bezier(0.2,0,0,1); }
+    ::view-transition-old(root) { animation-name: bq-view-out; }
+    ::view-transition-new(root) { animation-name: bq-view-in; }
+    @keyframes bq-view-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
+    @keyframes bq-view-in { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; } }
     /* Baseline box-model for icon spans, defined locally rather than relying
        solely on the external Google Fonts stylesheet — if that request fails
        (offline, blocked, slow network) icons still lay out sanely instead of
@@ -149,7 +197,7 @@
     body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
 
     /* ── Top app bar (M3) ── */
-    .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 1rem; background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
     .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; cursor: pointer; border-radius: 8px; padding: 0.1rem 0.3rem; margin: -0.1rem -0.3rem; transition: background var(--t); user-select: none; }
     .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
     .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
@@ -185,7 +233,7 @@
 
     /* ── Views ── */
     main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    .view { display: none; padding: 0.75rem 0.9rem 1.5rem; width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; }
+    .view { display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(1.5rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; overscroll-behavior-y: contain; }
     .view--active { display: block; }
     .view-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .view-meta { margin: 0; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -376,7 +424,7 @@
     .settings { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
     .settings.hidden { display: none; }
     .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); }
-    .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem 1rem 1.25rem; animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; }
+    .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem calc(1rem + env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left)); animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; overscroll-behavior-y: contain; }
     .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
     @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
@@ -616,6 +664,40 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════
+   NATIVE APP SHELL: ripple feedback + service worker
+   ─────────────────────────────────────────────────────
+   spawnRipple gives every Material surface (buttons, cards, chips) the
+   same tap feedback a native control has — the CSS :hover states already
+   in this file never fire on a touchscreen, which is the main reason the
+   app currently reads as a webpage rather than a native surface.
+   SW registration is best-effort: on failure the app just runs exactly as
+   it did before (no offline shell / install prompt), never broken.
+═══════════════════════════════════════════════════════ */
+const RIPPLE_SELECTOR = ".icon-btn, .btn, .chip, .card, .ep-card, .source-card, " +
+  ".switch-app-btn, .top-bar__brand, .play-btn, .reroll-btn, .share-btn, .player-back";
+function spawnRipple(el, x, y) {
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 1.8;
+  const span = document.createElement("span");
+  span.className = "ripple";
+  span.style.width = span.style.height = size + "px";
+  span.style.left = (x - rect.left - size / 2) + "px";
+  span.style.top  = (y - rect.top  - size / 2) + "px";
+  el.appendChild(span);
+  span.addEventListener("animationend", () => span.remove(), { once: true });
+}
+document.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  const el = e.target.closest(RIPPLE_SELECTOR);
+  if (!el || el.disabled) return;
+  spawnRipple(el, e.clientX, e.clientY);
+}, { passive: true });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+}
+
+/* ═══════════════════════════════════════════════════════
    CONFIG FORMAT
    ─────────────────────────────────────────────────────
    One source per block, blocks separated by blank lines.
@@ -717,9 +799,28 @@ const THEME_ORDER  = ["system", "light", "dark"];
 const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
 const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
 
+const SURFACE_LIGHT = "#fff8f4", SURFACE_DARK = "#17120d";
+const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+function syncThemeColorMeta() {
+  // The <meta name=theme-color> tint the OS uses for the status bar / task
+  // switcher can't itself see the manual data-theme override (only actual
+  // prefers-color-scheme), so JS keeps it aligned to whichever surface is
+  // actually showing — system, or the explicit Light/Dark choice.
+  const meta = document.getElementById("themeColorMeta");
+  if (!meta) return;
+  const attr = document.documentElement.getAttribute("data-theme");
+  const isDark = attr === "dark" || (attr !== "light" && !!(systemDarkMQ && systemDarkMQ.matches));
+  meta.setAttribute("content", isDark ? SURFACE_DARK : SURFACE_LIGHT);
+}
+if (systemDarkMQ && systemDarkMQ.addEventListener) {
+  systemDarkMQ.addEventListener("change", () => {
+    if (!document.documentElement.hasAttribute("data-theme")) syncThemeColorMeta();
+  });
+}
 function applyTheme(pref) {
   if (pref === "light" || pref === "dark") document.documentElement.setAttribute("data-theme", pref);
   else document.documentElement.removeAttribute("data-theme");
+  syncThemeColorMeta();
 }
 function updateThemeToggleUI(pref) {
   const icon = $("themeToggleIcon");
@@ -883,9 +984,16 @@ function hasAired(air_date, today) { if (!air_date) return false; return air_dat
    VIEW MANAGEMENT
 ═══════════════════════════════════════════════════════ */
 function setView(name) {
-  viewSearch.classList.toggle("view--active", name === "search");
-  viewDetail.classList.toggle("view--active", name === "detail");
-  viewPlayer.classList.toggle("view--active", name === "player");
+  const apply = () => {
+    viewSearch.classList.toggle("view--active", name === "search");
+    viewDetail.classList.toggle("view--active", name === "detail");
+    viewPlayer.classList.toggle("view--active", name === "player");
+  };
+  // View Transitions API: gives Search↔Detail↔Player the fade-through motion
+  // a native screen navigation has, instead of an instant display:none swap.
+  // Pure progressive enhancement — unsupported browsers just run apply().
+  if (document.startViewTransition) document.startViewTransition(apply);
+  else apply();
 }
 
 /* ═══════════════════════════════════════════════════════
