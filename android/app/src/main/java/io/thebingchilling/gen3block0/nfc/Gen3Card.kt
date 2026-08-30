@@ -58,16 +58,20 @@ object Gen3Card {
             false
         }
 
+    /** Result of a write: the card's raw ack to the write command, and the verified read-back. */
+    data class WriteResult(val ackHex: String, val readBack: ByteArray)
+
     /**
      * Writes [block0] (exactly 16 bytes) via the Gen3 backdoor command, then
-     * reads block 0 back to confirm the card actually stored it. The ack
-     * byte(s) returned by the write itself are not treated as authoritative;
-     * only the read-back is.
+     * reads block 0 back to confirm the card actually stored it. The write's
+     * own ack is captured for diagnostics but is not treated as authoritative
+     * by itself — only the read-back match decides success, since ack framing
+     * is known to vary between Gen3 chip vendors.
      */
-    fun writeBlock0(nfcA: NfcA, block0: ByteArray): ByteArray {
+    fun writeBlock0(nfcA: NfcA, block0: ByteArray): WriteResult {
         require(block0.size == 16) { "Block 0 must be exactly 16 bytes, got ${block0.size}" }
 
-        try {
+        val ack = try {
             nfcA.transceive(CMD_WRITE_BLOCK0 + block0)
         } catch (e: TagLostException) {
             throw Gen3Error(
@@ -75,16 +79,21 @@ object Gen3Card {
                     "do not assume it is unchanged. Re-scan to check its current block 0."
             )
         } catch (e: IOException) {
-            throw Gen3Error("Write command failed: ${e.message}")
+            throw Gen3Error("Write command got no response at all: ${e.message}")
         }
+        val ackHex = HexUtils.toHex(ack)
 
-        val readBack = readBlockRaw(nfcA, 0)
+        val readBack = try {
+            readBlockRaw(nfcA, 0)
+        } catch (e: Gen3Error) {
+            throw Gen3Error("Write sent (ack $ackHex) but couldn't read block 0 back to verify: ${e.message}")
+        }
         if (!readBack.contentEquals(block0)) {
             throw Gen3Error(
-                "Write did not verify: card now reads ${HexUtils.toHex(readBack)} " +
-                    "instead of ${HexUtils.toHex(block0)}"
+                "Write sent (ack $ackHex) but did not take: card still reads " +
+                    "${HexUtils.toHex(readBack)} instead of ${HexUtils.toHex(block0)}"
             )
         }
-        return readBack
+        return WriteResult(ackHex, readBack)
     }
 }

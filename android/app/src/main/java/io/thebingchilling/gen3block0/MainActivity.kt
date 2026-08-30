@@ -11,7 +11,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +21,7 @@ import io.thebingchilling.gen3block0.nfc.Gen3Card
 import io.thebingchilling.gen3block0.nfc.HexUtils
 import io.thebingchilling.gen3block0.nfc.KeyType
 import io.thebingchilling.gen3block0.nfc.MifareSourceReader
+import io.thebingchilling.gen3block0.ui.Gen3Theme
 import io.thebingchilling.gen3block0.ui.Gen3WriterScreen
 import io.thebingchilling.gen3block0.ui.ScanTarget
 import io.thebingchilling.gen3block0.ui.WriterUiState
@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            MaterialTheme {
+            Gen3Theme {
                 Surface {
                     Gen3WriterScreen(
                         state = uiState,
@@ -162,9 +162,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            result.onSuccess { readBack ->
+            result.onSuccess { write ->
                 uiState = uiState.copy(
-                    log = uiState.log + "Wrote and verified block 0: ${HexUtils.toHex(readBack)}",
+                    log = uiState.log + "Wrote and verified block 0: ${HexUtils.toHex(write.readBack)} " +
+                        "(write ack was ${write.ackHex})",
                 )
             }.onFailure { e ->
                 uiState = uiState.copy(log = uiState.log + "Write failed: ${e.message}")
