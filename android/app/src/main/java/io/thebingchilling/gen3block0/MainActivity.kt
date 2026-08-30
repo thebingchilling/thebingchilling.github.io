@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.lifecycleScope
+import io.thebingchilling.gen3block0.nfc.Block0
 import io.thebingchilling.gen3block0.nfc.Gen3Card
 import io.thebingchilling.gen3block0.nfc.HexUtils
 import io.thebingchilling.gen3block0.nfc.KeyType
@@ -144,7 +145,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun onTargetTagScanned(tag: Tag) {
-        val block0Hex = uiState.block0Hex
+        val requested = HexUtils.fromHex(uiState.block0Hex)
+        val toWrite = Block0.withCorrectBcc(requested)
+        val bccWasFixed = !toWrite.contentEquals(requested)
         uiState = uiState.copy(scanTarget = ScanTarget.NONE)
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -156,16 +159,19 @@ class MainActivity : ComponentActivity() {
                         if (!Gen3Card.looksLikeGen3(nfcA)) {
                             error("Block 0 is not readable without authentication — this card doesn't look like Gen3.")
                         }
-                        Gen3Card.writeBlock0(nfcA, HexUtils.fromHex(block0Hex))
+                        Gen3Card.writeBlock0(nfcA, toWrite)
                     } finally {
                         runCatching { nfcA.close() }
                     }
                 }
             }
             result.onSuccess { write ->
+                val bccNote = if (bccWasFixed) {
+                    " (note: BCC byte didn't match the UID you set, corrected it to ${"%02X".format(toWrite[4])} before writing)"
+                } else ""
                 uiState = uiState.copy(
                     log = uiState.log + "Wrote and verified block 0: ${HexUtils.toHex(write.readBack)} " +
-                        "(write ack was ${write.ackHex})",
+                        "(write ack was ${write.ackHex})$bccNote",
                 )
             }.onFailure { e ->
                 uiState = uiState.copy(log = uiState.log + "Write failed: ${e.message}")

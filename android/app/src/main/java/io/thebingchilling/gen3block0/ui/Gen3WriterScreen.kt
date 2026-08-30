@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import io.thebingchilling.gen3block0.nfc.Block0
 import io.thebingchilling.gen3block0.nfc.HexUtils
 import io.thebingchilling.gen3block0.nfc.KeyType
 
@@ -102,6 +103,7 @@ fun Gen3WriterScreen(
             Text("2. Block 0 to write", style = MaterialTheme.typography.titleMedium)
             Text("Filled in automatically from step 1, or paste your own 32-hex-char block 0 (e.g. exported from MCT).")
 
+            val bccMismatch = block0Valid && Block0.hasBccMismatch(HexUtils.fromHex(state.block0Hex))
             OutlinedTextField(
                 value = state.block0Hex,
                 onValueChange = onBlock0HexChange,
@@ -111,6 +113,13 @@ fun Gen3WriterScreen(
                 supportingText = {
                     if (state.block0Hex.isNotEmpty() && !block0Valid) {
                         Text("Needs to be exactly 32 hex characters (16 bytes).")
+                    } else if (bccMismatch) {
+                        Text(
+                            "Byte 5 (BCC) doesn't match this UID — if you hand-edited the UID, the " +
+                                "card's anticollision layer can end up presenting a different, " +
+                                "effectively random UID. It'll be auto-corrected on write, but fix " +
+                                "it here if you want to see the real value first."
+                        )
                     }
                 },
                 textStyle = monoStyle,
