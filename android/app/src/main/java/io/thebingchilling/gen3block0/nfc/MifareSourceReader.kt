@@ -1,8 +1,8 @@
 package io.thebingchilling.gen3block0.nfc
 
 import android.nfc.Tag
+import android.nfc.TagLostException
 import android.nfc.tech.MifareClassic
-import android.nfc.tech.TagLostException
 import java.io.IOException
 
 enum class KeyType { A, B }

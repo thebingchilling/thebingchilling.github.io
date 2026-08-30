@@ -1,7 +1,7 @@
 package io.thebingchilling.gen3block0.nfc
 
+import android.nfc.TagLostException
 import android.nfc.tech.NfcA
-import android.nfc.tech.TagLostException
 import java.io.IOException
 
 /**
