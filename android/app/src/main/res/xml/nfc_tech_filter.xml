@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Either tech list matches: a standard/CUID Mifare Classic source card
+         exposes MifareClassic; a Gen3 target card is talked to over the raw
+         NfcA layer, so it only needs to expose NfcA. -->
+    <tech-list>
+        <tech>android.nfc.tech.MifareClassic</tech>
+        <tech>android.nfc.tech.NfcA</tech>
+    </tech-list>
+    <tech-list>
+        <tech>android.nfc.tech.NfcA</tech>
+    </tech-list>
+</resources>
