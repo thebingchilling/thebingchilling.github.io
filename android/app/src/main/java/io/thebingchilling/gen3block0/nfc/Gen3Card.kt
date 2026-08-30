@@ -101,11 +101,13 @@ object Gen3Card {
         require(block0.size == 16) { "Block 0 must be exactly 16 bytes, got ${block0.size}" }
         val uid = block0.copyOfRange(0, 4)
 
-        // Re-select right before each backdoor command. On some Gen3 chips
+        // Re-select once before the set-UID command — on some Gen3 chips
         // (confirmed by testing) these commands are only honored as the very
-        // first thing sent after the tag is selected — anything sent earlier
-        // in the same session, even one of our own prior commands, can
-        // silently close that window.
+        // first thing sent after the tag is selected. Deliberately NOT
+        // re-selecting again before the block0 write: the reference
+        // implementation (pn532-python) sends set-UID then set-block0 back
+        // to back in the *same* selection, and re-selecting in between
+        // appears to break that pairing rather than help it.
         reselect(nfcA, "before setting the UID")
         val uidAck = try {
             nfcA.transceive(CMD_SET_UID + uid)
@@ -116,7 +118,6 @@ object Gen3Card {
         }
         val uidAckHex = HexUtils.toHex(uidAck)
 
-        reselect(nfcA, "before writing block 0")
         val ack = try {
             nfcA.transceive(CMD_WRITE_BLOCK0 + block0)
         } catch (e: TagLostException) {
