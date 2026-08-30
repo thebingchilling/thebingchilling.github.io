@@ -22,6 +22,13 @@ object Gen3Card {
     private val CMD_WRITE_BLOCK0 =
         byteArrayOf(0x90.toByte(), 0xF0.toByte(), 0xCC.toByte(), 0xCC.toByte(), 0x10)
 
+    // Empirically, some Gen3 chips go briefly unresponsive to a plain READ
+    // right after the write command (as if still committing to EEPROM) and
+    // need to be re-selected before they'll answer again.
+    private const val WRITE_SETTLE_MS = 50L
+    private const val VERIFY_RETRY_DELAY_MS = 30L
+    private const val VERIFY_RETRY_ATTEMPTS = 4
+
     class Gen3Error(message: String) : IOException(message)
 
     /**
@@ -83,17 +90,35 @@ object Gen3Card {
         }
         val ackHex = HexUtils.toHex(ack)
 
-        val readBack = try {
-            readBlockRaw(nfcA, 0)
-        } catch (e: Gen3Error) {
-            throw Gen3Error("Write sent (ack $ackHex) but couldn't read block 0 back to verify: ${e.message}")
+        // Give the write a moment to commit, then re-select the tag (fresh
+        // REQA/anticollision) before trying to read it back — a plain
+        // transceive() straight after the write is what was coming back
+        // truncated/garbled in testing.
+        Thread.sleep(WRITE_SETTLE_MS)
+        try {
+            nfcA.close()
+        } catch (e: IOException) {
+            // Ignore — about to reconnect regardless.
         }
-        if (!readBack.contentEquals(block0)) {
-            throw Gen3Error(
-                "Write sent (ack $ackHex) but did not take: card still reads " +
-                    "${HexUtils.toHex(readBack)} instead of ${HexUtils.toHex(block0)}"
-            )
+        try {
+            nfcA.connect()
+        } catch (e: IOException) {
+            throw Gen3Error("Write sent (ack $ackHex) but the card couldn't be re-selected to verify it: ${e.message}")
         }
-        return WriteResult(ackHex, readBack)
+
+        var lastFailure: String? = null
+        repeat(VERIFY_RETRY_ATTEMPTS) { attempt ->
+            try {
+                val readBack = readBlockRaw(nfcA, 0)
+                if (readBack.contentEquals(block0)) {
+                    return WriteResult(ackHex, readBack)
+                }
+                lastFailure = "card reads ${HexUtils.toHex(readBack)} instead of ${HexUtils.toHex(block0)}"
+            } catch (e: Gen3Error) {
+                lastFailure = e.message
+            }
+            if (attempt < VERIFY_RETRY_ATTEMPTS - 1) Thread.sleep(VERIFY_RETRY_DELAY_MS)
+        }
+        throw Gen3Error("Write sent (ack $ackHex) but couldn't verify it after $VERIFY_RETRY_ATTEMPTS tries: $lastFailure")
     }
 }
