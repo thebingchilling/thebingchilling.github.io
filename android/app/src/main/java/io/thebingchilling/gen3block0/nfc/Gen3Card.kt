@@ -78,6 +78,24 @@ object Gen3Card {
     fun writeBlock0(nfcA: NfcA, block0: ByteArray): WriteResult {
         require(block0.size == 16) { "Block 0 must be exactly 16 bytes, got ${block0.size}" }
 
+        // Re-select right before writing. On some Gen3 chips the F0 backdoor
+        // is only honored when it's the very first command sent after the
+        // tag is selected — even our own harmless Gen3-detection read
+        // (looksLikeGen3), if it ran earlier in this same session, can
+        // silently close that window: the write still gets acked, but is
+        // quietly ignored. Testing confirmed exactly that shape (identical
+        // ack every time, block 0 never actually changing).
+        try {
+            nfcA.close()
+        } catch (e: IOException) {
+            // Ignore — about to reconnect regardless.
+        }
+        try {
+            nfcA.connect()
+        } catch (e: IOException) {
+            throw Gen3Error("Couldn't re-select the card right before writing: ${e.message}")
+        }
+
         val ack = try {
             nfcA.transceive(CMD_WRITE_BLOCK0 + block0)
         } catch (e: TagLostException) {
