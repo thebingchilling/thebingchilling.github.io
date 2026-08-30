@@ -20,8 +20,8 @@ block 0.
    or manufacturer bytes before writing.
 3. **Write to the Gen3 card.** Tap a blank Gen3 card. The app confirms it
    looks like Gen3 (block 0 is readable with no authentication), sends the
-   backdoor write command, then reads block 0 back and verifies it matches
-   before reporting success.
+   set-UID backdoor command followed by the set-block0 backdoor command, then
+   reads block 0 back and verifies it matches before reporting success.
 
 There is no "lock/freeze" feature (the `90 FD 11 11 00` command some Gen3
 cards support) — it permanently disables further UID changes and was out of
@@ -38,13 +38,25 @@ Mifare `READ`/`AUTH` commands. That's why this app uses
 | Operation | Command |
 |---|---|
 | Read a block, no auth (detection + verification) | `30 <block>` |
+| Set UID | `90 FB CC CC 07 <4-byte uid>` |
 | Write block 0 | `90 F0 CC CC 10 <16 bytes>` |
-| Change UID only (not used here) | `90 FB CC CC 07 <uid>` |
 | Lock permanently (not used here) | `90 FD 11 11 00` |
+
+Writing block 0 sends **both** of the first two commands, set-UID then
+write-block0, not block0 alone — on-device testing found that sending only
+the block0 command could leave block0 *memory* correct (readable back with
+the raw `30` command) while the tag's live anticollision UID stayed
+unpinned/effectively random, since on this hardware the set-UID command is
+what actually controls that. Confirmed via a second, independently-written
+reference implementation:
+[whywilson/pn532-python](https://github.com/whywilson/pn532-python)
+(`pn532_cmd.py`'s `setGen3Uid`/`setGen3Block0`), which sends the same two
+commands in the same order against real Gen3 hardware.
 
 Sources: [proxmark3 `doc/magic_cards_notes.md`](https://github.com/RfidResearchGroup/proxmark3/blob/master/doc/magic_cards_notes.md),
 ["Gen3" magic tags · MCT issue #336](https://github.com/ikarus23/MifareClassicTool/issues/336),
-[KSEC Labs Gen3 product notes](https://labs.ksec.co.uk/product/mifare-compatible-4k-4byte-magic-uid-4-byte-changeable-uid-gen-3-apdu/).
+[KSEC Labs Gen3 product notes](https://labs.ksec.co.uk/product/mifare-compatible-4k-4byte-magic-uid-4-byte-changeable-uid-gen-3-apdu/),
+[whywilson/pn532-python](https://github.com/whywilson/pn532-python).
 
 Reading the *source* card (step 1) uses the standard, well-documented
 `android.nfc.tech.MifareClassic` API (`authenticateSectorWithKeyA/B` +

@@ -170,8 +170,8 @@ class MainActivity : ComponentActivity() {
                     " (note: BCC byte didn't match the UID you set, corrected it to ${"%02X".format(toWrite[4])} before writing)"
                 } else ""
                 uiState = uiState.copy(
-                    log = uiState.log + "Wrote and verified block 0: ${HexUtils.toHex(write.readBack)} " +
-                        "(write ack was ${write.ackHex})$bccNote",
+                    log = uiState.log + "Set UID and wrote/verified block 0: ${HexUtils.toHex(write.readBack)} " +
+                        "(acks: uid=${write.uidAckHex}, block0=${write.ackHex})$bccNote",
                 )
             }.onFailure { e ->
                 uiState = uiState.copy(log = uiState.log + "Write failed: ${e.message}")
