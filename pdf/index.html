@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Unlock PDF · Bingqilin</title>
+  <title>Unlock PDF</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Remove owner-password restrictions from a PDF entirely in your browser. Nothing is ever uploaded." />
   <meta name="theme-color" id="themeColorMeta" content="#fff8f4" />
@@ -16,8 +16,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script>
     // Runs before first paint so a saved Light/Dark choice applies immediately
-    // instead of flashing the system-default theme — same key as the rest of
-    // the app, so the choice made on / or /live carries over here too.
+    // instead of flashing the system-default theme.
     try {
       var t = localStorage.getItem("bq_theme");
       if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
@@ -132,16 +131,12 @@
     *, *::before, *::after { box-sizing: border-box; }
     body { -webkit-tap-highlight-color: transparent; }
     button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    button, .icon-btn, .btn, .top-bar__brand, .bottom-nav__item, .dropzone { -webkit-touch-callout: none; user-select: none; }
+    button, .icon-btn, .btn, .dropzone { -webkit-touch-callout: none; user-select: none; }
 
-    .icon-btn, .btn, .top-bar__brand, .bottom-nav__item, .dropzone { position: relative; overflow: hidden; }
+    .icon-btn, .btn, .dropzone { position: relative; overflow: hidden; }
     .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
     @keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .ripple { display: none; } }
-
-    @view-transition { navigation: auto; }
-    .top-bar { view-transition-name: top-bar; }
-    .bottom-dock { view-transition-name: bottom-dock; }
 
     .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
     html, body { margin: 0; padding: 0; height: 100%; }
@@ -152,8 +147,6 @@
 
     /* ── Top app bar ── */
     .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-    .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; cursor: pointer; border-radius: 8px; padding: 0.1rem 0.3rem; margin: -0.1rem -0.3rem; transition: background var(--t); text-decoration: none; }
-    .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
     .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
 
     .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); flex-shrink: 0; }
@@ -174,21 +167,8 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
 
-    /* ── Bottom navigation ── */
-    .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; }
-    .bottom-nav { display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
-    .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-    .bottom-nav__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 12px; }
-    .bottom-nav__icon-wrap { display: flex; align-items: center; justify-content: center; width: 58px; height: 30px; border-radius: 16px; transition: background var(--t), color var(--t); }
-    .bottom-nav__icon-wrap .material-icons { font-size: 22px; }
-    .bottom-nav__item--active .bottom-nav__icon-wrap { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
-    .bottom-nav__label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.01em; }
-    .bottom-nav__item--active .bottom-nav__label { color: var(--text); font-weight: 600; }
-    .bottom-nav__item:hover .bottom-nav__icon-wrap { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
-    .bottom-nav__item--active:hover .bottom-nav__icon-wrap { background: var(--md-secondary-container); }
-
     /* ── Page content ── */
-    .app-main { flex: 1; overflow-y: auto; padding: 1.25rem 1rem calc(6.5rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
+    .app-main { flex: 1; overflow-y: auto; padding: 1.25rem 1rem calc(2rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
@@ -251,9 +231,7 @@
 <body>
 <div class="app">
   <header class="top-bar">
-    <a class="top-bar__brand" href="/" aria-label="Go to Bingqilin home">
-      <span class="top-bar__name">🍦 Bingqilin</span>
-    </a>
+    <span class="top-bar__name">Unlock PDF</span>
     <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
       <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
     </button>
@@ -330,22 +308,6 @@
     </div>
   </main>
 
-  <div class="bottom-dock" id="bottomDock">
-    <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
-      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
-        <span class="bottom-nav__label">Media</span>
-      </a>
-      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
-        <span class="bottom-nav__label">Live</span>
-      </a>
-      <button class="bottom-nav__item bottom-nav__item--active" id="navPdfBtn" type="button" aria-label="PDF unlock">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">lock_open</span></span>
-        <span class="bottom-nav__label">PDF</span>
-      </button>
-    </nav>
-  </div>
 </div>
 
 <script src="/pdf/vendor/qpdf.js"></script>
@@ -355,7 +317,7 @@
   const $ = (id) => document.getElementById(id);
 
   /* ── Ripple (matches index.html / live.html) ── */
-  const RIPPLE_SELECTOR = ".icon-btn, .btn, .top-bar__brand, .bottom-nav__item, .dropzone, .file-chip__remove";
+  const RIPPLE_SELECTOR = ".icon-btn, .btn, .dropzone, .file-chip__remove";
   function spawnRipple(el, x, y) {
     const rect = el.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height) * 1.8;
