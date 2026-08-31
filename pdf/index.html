@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Unlock PDF · Bingqilin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Remove owner-password restrictions from a PDF entirely in your browser. Nothing is ever uploaded." />
+  <meta name="theme-color" id="themeColorMeta" content="#fff8f4" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Unlock PDF" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <script>
+    // Runs before first paint so a saved Light/Dark choice applies immediately
+    // instead of flashing the system-default theme — same key as the rest of
+    // the app, so the choice made on / or /live carries over here too.
+    try {
+      var t = localStorage.getItem("bq_theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <style>
+    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
+       token set to index.html / live.html, so this page is visually part of
+       the same app rather than a bolted-on tool. ── */
+    :root {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+
+      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
+      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
+      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+
+      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
+      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
+      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
+      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
+      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
+      --radius: 12px;
+      --t: 0.2s cubic-bezier(0.2,0,0,1);
+    }
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-primary: #ffb77c; --md-on-primary: #4a2800;
+        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+        --md-error: #ffb4ab; --md-on-error: #690005;
+        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+        --md-surface: #17120d;
+        --md-surface-container-lowest: #100c08;
+        --md-surface-container-low: #201a14;
+        --md-surface-container: #241e18;
+        --md-surface-container-high: #2f2822;
+        --md-surface-container-highest: #3a332c;
+        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+        --primary-dark: #ffcda0;
+        --text-faint: #a89686;
+      }
+    }
+    :root[data-theme="dark"] {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+    }
+    :root[data-theme="light"] {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+      --primary-dark: #632f00;
+      --text-faint: #8a7a6d;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { -webkit-tap-highlight-color: transparent; }
+    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button, .icon-btn, .btn, .top-bar__brand, .bottom-nav__item, .dropzone { -webkit-touch-callout: none; user-select: none; }
+
+    .icon-btn, .btn, .top-bar__brand, .bottom-nav__item, .dropzone { position: relative; overflow: hidden; }
+    .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
+    @keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .ripple { display: none; } }
+
+    @view-transition { navigation: auto; }
+    .top-bar { view-transition-name: top-bar; }
+    .bottom-dock { view-transition-name: bottom-dock; }
+
+    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    body { scrollbar-width: none; }
+    body::-webkit-scrollbar { display: none; }
+
+    /* ── Top app bar ── */
+    .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; cursor: pointer; border-radius: 8px; padding: 0.1rem 0.3rem; margin: -0.1rem -0.3rem; transition: background var(--t); text-decoration: none; }
+    .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+    .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
+
+    .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); flex-shrink: 0; }
+    .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+    .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; background: color-mix(in srgb, var(--md-on-surface) 10%, transparent); }
+
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
+    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
+    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
+    .btn--primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
+    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .btn--block { width: 100%; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
+
+    /* ── Bottom navigation ── */
+    .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; }
+    .bottom-nav { display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
+    .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .bottom-nav__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 12px; }
+    .bottom-nav__icon-wrap { display: flex; align-items: center; justify-content: center; width: 58px; height: 30px; border-radius: 16px; transition: background var(--t), color var(--t); }
+    .bottom-nav__icon-wrap .material-icons { font-size: 22px; }
+    .bottom-nav__item--active .bottom-nav__icon-wrap { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+    .bottom-nav__label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.01em; }
+    .bottom-nav__item--active .bottom-nav__label { color: var(--text); font-weight: 600; }
+    .bottom-nav__item:hover .bottom-nav__icon-wrap { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+    .bottom-nav__item--active:hover .bottom-nav__icon-wrap { background: var(--md-secondary-container); }
+
+    /* ── Page content ── */
+    .app-main { flex: 1; overflow-y: auto; padding: 1.25rem 1rem calc(6.5rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
+    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
+    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
+    .hero__icon .material-icons { font-size: 30px; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+
+    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+
+    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 16px; padding: 2.2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
+    .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+    .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
+    .dropzone .material-icons { font-size: 34px; color: var(--primary); }
+    .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
+    .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+    .file-chip { display: flex; align-items: center; gap: 0.7rem; background: var(--bg2); border-radius: 14px; padding: 0.7rem 0.8rem; margin-top: 0.9rem; }
+    .file-chip.hidden { display: none; }
+    .file-chip .material-icons { color: var(--primary); flex-shrink: 0; }
+    .file-chip__body { flex: 1; min-width: 0; }
+    .file-chip__name { font-size: 0.86rem; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-chip__meta { font-size: 0.74rem; color: var(--text-faint); }
+    .file-chip__remove { border: none; background: none; color: var(--text-muted); cursor: pointer; width: 32px; height: 32px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .file-chip__remove:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+
+    .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 1rem 0 0.4rem; }
+    .field-hint { font-size: 0.72rem; color: var(--text-faint); margin: 0.3rem 0 0; }
+    .password-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
+    .password-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
+    .password-row input::placeholder { color: var(--text-faint); }
+
+    .action-row { margin-top: 1.1rem; }
+    .status-line { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 0.9rem; min-height: 1.2em; }
+    .status-line.hidden { display: none; }
+
+    .result-card { text-align: center; }
+    .result-card.hidden { display: none; }
+    .result-card__icon { width: 52px; height: 52px; border-radius: 999px; background: color-mix(in srgb, #146c2e 16%, transparent); color: #146c2e; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.7rem; }
+    :root[data-theme="dark"] .result-card__icon { background: color-mix(in srgb, #6fdb8f 18%, transparent); color: #6fdb8f; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .result-card__icon { background: color-mix(in srgb, #6fdb8f 18%, transparent); color: #6fdb8f; } }
+    .result-card__icon .material-icons { font-size: 28px; }
+    .result-card__title { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 0.3rem; }
+    .result-card__sub { font-size: 0.84rem; color: var(--text-muted); margin: 0 0 1.1rem; }
+    .result-card__actions { display: flex; flex-direction: column; gap: 0.55rem; }
+
+    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
+    .error-banner.hidden { display: none; }
+    .error-banner .material-icons { flex-shrink: 0; }
+    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
+    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
+    .error-banner__details { margin-top: 0.5rem; font-size: 0.72rem; opacity: 0.85; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, monospace; }
+
+    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
+    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
+    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
+    .note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <a class="top-bar__brand" href="/" aria-label="Go to Bingqilin home">
+      <span class="top-bar__name">🍦 Bingqilin</span>
+    </a>
+    <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+      <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+    </button>
+  </header>
+
+  <main class="app-main">
+    <div class="hero">
+      <div class="hero__icon"><span class="material-icons">lock_open</span></div>
+      <h1 class="hero__title">Unlock a PDF</h1>
+      <p class="hero__sub">Strip the owner password &amp; restrictions (printing, copying, editing) from any PDF — entirely on your device. Nothing is uploaded anywhere.</p>
+    </div>
+
+    <div class="card">
+      <label class="dropzone" id="dropzone" for="fileInput">
+        <span class="material-icons">picture_as_pdf</span>
+        <span class="dropzone__title" id="dropzoneTitle">Drop a PDF here, or tap to choose</span>
+        <span class="dropzone__sub">Processed locally in your browser</span>
+        <input id="fileInput" type="file" accept=".pdf,application/pdf" aria-label="Choose a PDF file" />
+      </label>
+
+      <div class="file-chip hidden" id="fileChip">
+        <span class="material-icons">description</span>
+        <div class="file-chip__body">
+          <div class="file-chip__name" id="fileChipName"></div>
+          <div class="file-chip__meta" id="fileChipMeta"></div>
+        </div>
+        <button class="file-chip__remove" id="fileChipRemove" type="button" aria-label="Remove file">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <label class="field-label" for="passwordInput">Password (only if the file asks for one to open)</label>
+      <div class="password-row">
+        <input id="passwordInput" type="password" placeholder="Leave blank for most restricted PDFs" autocomplete="off" />
+        <button class="icon-btn" id="togglePasswordBtn" type="button" aria-label="Show password">
+          <span class="material-icons" id="togglePasswordIcon">visibility</span>
+        </button>
+      </div>
+      <p class="field-hint">Owner-password restrictions (no printing/copying/editing) come off with no password needed — this field is only for PDFs that require a password just to open.</p>
+
+      <div class="action-row">
+        <button class="btn btn--primary btn--block" id="unlockBtn" type="button" disabled>
+          <span class="material-icons" id="unlockBtnIcon">lock_open</span>
+          <span id="unlockBtnLabel">Choose a PDF first</span>
+        </button>
+        <p class="status-line hidden" id="statusLine" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="error-banner hidden" id="errorBanner" role="alert">
+        <span class="material-icons">error_outline</span>
+        <div>
+          <p class="error-banner__title">Couldn't unlock this PDF</p>
+          <p class="error-banner__body" id="errorBody"></p>
+          <p class="error-banner__details hidden" id="errorDetails"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card result-card hidden" id="resultCard">
+      <div class="result-card__icon"><span class="material-icons">task_alt</span></div>
+      <h2 class="result-card__title">Restrictions removed</h2>
+      <p class="result-card__sub" id="resultSub"></p>
+      <div class="result-card__actions">
+        <a class="btn btn--primary btn--block" id="downloadBtn" href="#" download>
+          <span class="material-icons">download</span><span>Download unlocked PDF</span>
+        </a>
+        <button class="btn btn--ghost btn--block" id="resetBtn" type="button">Unlock another file</button>
+      </div>
+    </div>
+
+    <div class="card note-card">
+      <span class="material-icons">shield</span>
+      <p>Your PDF never leaves this device — everything runs locally via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly. Only unlock files you have the right to modify.</p>
+    </div>
+  </main>
+
+  <div class="bottom-dock" id="bottomDock">
+    <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
+      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+        <span class="bottom-nav__label">Media</span>
+      </a>
+      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Live</span>
+      </a>
+      <button class="bottom-nav__item bottom-nav__item--active" id="navPdfBtn" type="button" aria-label="PDF unlock">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">lock_open</span></span>
+        <span class="bottom-nav__label">PDF</span>
+      </button>
+    </nav>
+  </div>
+</div>
+
+<script src="/pdf/vendor/qpdf.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  /* ── Ripple (matches index.html / live.html) ── */
+  const RIPPLE_SELECTOR = ".icon-btn, .btn, .top-bar__brand, .bottom-nav__item, .dropzone, .file-chip__remove";
+  function spawnRipple(el, x, y) {
+    const rect = el.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 1.8;
+    const span = document.createElement("span");
+    span.className = "ripple";
+    span.style.width = span.style.height = size + "px";
+    span.style.left = (x - rect.left - size / 2) + "px";
+    span.style.top  = (y - rect.top  - size / 2) + "px";
+    el.appendChild(span);
+    span.addEventListener("animationend", () => span.remove(), { once: true });
+  }
+  document.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const el = e.target.closest(RIPPLE_SELECTOR);
+    if (!el || el.disabled) return;
+    spawnRipple(el, e.clientX, e.clientY);
+  }, { passive: true });
+
+  /* ── Theme (same localStorage key as the rest of the app) ── */
+  const THEME_KEY = "bq_theme";
+  const THEME_ORDER = ["system", "light", "dark"];
+  const THEME_ICONS = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
+  const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
+  const SURFACE_LIGHT = "#ffffff", SURFACE_DARK = "#17120d";
+  const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  function syncThemeColorMeta() {
+    const meta = $("themeColorMeta");
+    if (!meta) return;
+    const attr = document.documentElement.getAttribute("data-theme");
+    const isDark = attr === "dark" || (attr !== "light" && !!(systemDarkMQ && systemDarkMQ.matches));
+    meta.setAttribute("content", isDark ? SURFACE_DARK : SURFACE_LIGHT);
+  }
+  if (systemDarkMQ && systemDarkMQ.addEventListener) {
+    systemDarkMQ.addEventListener("change", () => {
+      if (!document.documentElement.hasAttribute("data-theme")) syncThemeColorMeta();
+    });
+  }
+  function applyTheme(pref) {
+    if (pref === "light" || pref === "dark") document.documentElement.setAttribute("data-theme", pref);
+    else document.documentElement.removeAttribute("data-theme");
+    syncThemeColorMeta();
+  }
+  function updateThemeToggleUI(pref) {
+    const icon = $("themeToggleIcon");
+    if (icon) icon.textContent = THEME_ICONS[pref] || THEME_ICONS.system;
+    const btn = $("themeToggleBtn");
+    if (btn) btn.setAttribute("aria-label", "Theme: " + (THEME_LABELS[pref] || "System") + " (tap to change)");
+  }
+  function setThemePref(pref) {
+    applyTheme(pref);
+    updateThemeToggleUI(pref);
+    try { localStorage.setItem(THEME_KEY, pref); } catch (e) {}
+  }
+  (function initTheme() {
+    let pref = "system";
+    try { pref = localStorage.getItem(THEME_KEY) || "system"; } catch (e) {}
+    applyTheme(pref);
+    updateThemeToggleUI(pref);
+  })();
+  $("themeToggleBtn").addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme") || "system";
+    const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
+    setThemePref(next);
+  });
+
+  /* ── qpdf (WebAssembly) engine ──────────────────────────────────────────
+     Vendored locally (see vendor/README.md) rather than pulled from a CDN,
+     so this stays a fully offline, self-contained tool. The module exposes
+     a virtual in-memory filesystem (FS) that qpdf's CLI logic (callMain)
+     reads/writes just like real files — nothing ever touches the network
+     or disk. `--decrypt` with an empty password strips the /Encrypt
+     dictionary (owner password + all permission restrictions) from a PDF
+     whose *user* password is empty, which is exactly what "owner password
+     protected" means: the file already opens with no prompt today, it's
+     just flagged as restricted. The optional password field below covers
+     the rarer case where the file also needs a password just to open. ── */
+  let qpdfPromise = null;
+  let qpdfLog = [];
+  function loadQpdf() {
+    if (qpdfPromise) return qpdfPromise;
+    qpdfPromise = (async () => {
+      if (typeof window.Module !== "function") {
+        throw new Error("The PDF engine failed to load (vendor/qpdf.js didn't run).");
+      }
+      // qpdf's own stdout/stderr binds directly to console.log/console.error
+      // once, at creation time — so we swap those in just long enough to
+      // capture qpdf's messages (e.g. "invalid password") into qpdfLog for
+      // display, then restore the real console right after.
+      const origError = console.error.bind(console);
+      const origLog = console.log.bind(console);
+      console.error = function () { qpdfLog.push(Array.prototype.map.call(arguments, String).join(" ")); origError.apply(console, arguments); };
+      console.log = function () { qpdfLog.push(Array.prototype.map.call(arguments, String).join(" ")); origLog.apply(console, arguments); };
+      try {
+        return await window.Module({ locateFile: () => "/pdf/vendor/qpdf.wasm" });
+      } finally {
+        console.error = origError;
+        console.log = origLog;
+      }
+    })();
+    return qpdfPromise;
+  }
+
+  async function unlockPdf(file, password) {
+    const qpdf = await loadQpdf();
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    try { qpdf.FS.unlink("/input.pdf"); } catch (e) {}
+    try { qpdf.FS.unlink("/output.pdf"); } catch (e) {}
+    qpdf.FS.writeFile("/input.pdf", bytes);
+    qpdfLog = [];
+    let exitCode;
+    try {
+      exitCode = qpdf.callMain(["--password=" + (password || ""), "--decrypt", "/input.pdf", "/output.pdf"]);
+    } catch (e) {
+      exitCode = -1;
+      qpdfLog.push(String((e && e.message) || e));
+    }
+    let outBytes = null;
+    try { outBytes = qpdf.FS.readFile("/output.pdf"); } catch (e) {}
+    try { qpdf.FS.unlink("/input.pdf"); } catch (e) {}
+    try { qpdf.FS.unlink("/output.pdf"); } catch (e) {}
+    // 0 = clean success, 3 = succeeded with warnings (qpdf still wrote output.pdf)
+    const ok = (exitCode === 0 || exitCode === 3) && outBytes && outBytes.length > 0;
+    return { ok, exitCode, outBytes, log: qpdfLog.slice() };
+  }
+
+  /* ── UI wiring ── */
+  const dropzone = $("dropzone"), dropzoneTitle = $("dropzoneTitle"), fileInput = $("fileInput");
+  const fileChip = $("fileChip"), fileChipName = $("fileChipName"), fileChipMeta = $("fileChipMeta"), fileChipRemove = $("fileChipRemove");
+  const passwordInput = $("passwordInput"), togglePasswordBtn = $("togglePasswordBtn"), togglePasswordIcon = $("togglePasswordIcon");
+  const unlockBtn = $("unlockBtn"), unlockBtnIcon = $("unlockBtnIcon"), unlockBtnLabel = $("unlockBtnLabel");
+  const statusLine = $("statusLine");
+  const errorBanner = $("errorBanner"), errorBody = $("errorBody"), errorDetails = $("errorDetails");
+  const resultCard = $("resultCard"), resultSub = $("resultSub"), downloadBtn = $("downloadBtn"), resetBtn = $("resetBtn");
+
+  let currentFile = null;
+  let currentObjectUrl = null;
+  let busy = false;
+
+  function formatBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + " KB";
+    return (n / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function setStatus(text) {
+    if (!text) { statusLine.classList.add("hidden"); statusLine.textContent = ""; return; }
+    statusLine.textContent = text;
+    statusLine.classList.remove("hidden");
+  }
+
+  function hideError() { errorBanner.classList.add("hidden"); errorDetails.classList.add("hidden"); errorDetails.textContent = ""; }
+  function showError(message, details) {
+    errorBody.textContent = message;
+    if (details) { errorDetails.textContent = details; errorDetails.classList.remove("hidden"); }
+    else { errorDetails.classList.add("hidden"); errorDetails.textContent = ""; }
+    errorBanner.classList.remove("hidden");
+  }
+
+  function hideResult() {
+    resultCard.classList.add("hidden");
+    if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; }
+  }
+
+  function updateUnlockButton() {
+    unlockBtn.disabled = !currentFile || busy;
+    if (busy) { unlockBtnIcon.textContent = ""; unlockBtnLabel.textContent = "Unlocking…"; }
+    else if (!currentFile) { unlockBtnIcon.textContent = "lock_open"; unlockBtnLabel.textContent = "Choose a PDF first"; }
+    else { unlockBtnIcon.textContent = "lock_open"; unlockBtnLabel.textContent = "Unlock PDF"; }
+  }
+
+  function selectFile(file) {
+    hideError(); hideResult();
+    if (!file) { currentFile = null; fileChip.classList.add("hidden"); dropzoneTitle.textContent = "Drop a PDF here, or tap to choose"; updateUnlockButton(); return; }
+    const looksLikePdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!looksLikePdf) {
+      currentFile = null;
+      fileChip.classList.add("hidden");
+      showError("That doesn't look like a PDF file. Please choose a .pdf file.");
+      updateUnlockButton();
+      return;
+    }
+    currentFile = file;
+    fileChipName.textContent = file.name;
+    fileChipMeta.textContent = formatBytes(file.size);
+    fileChip.classList.remove("hidden");
+    dropzoneTitle.textContent = "Drop a different PDF, or tap to change";
+    updateUnlockButton();
+  }
+
+  fileInput.addEventListener("change", () => selectFile(fileInput.files && fileInput.files[0]));
+  fileChipRemove.addEventListener("click", (e) => { e.preventDefault(); fileInput.value = ""; selectFile(null); });
+
+  ["dragenter", "dragover"].forEach((evt) => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add("dropzone--drag"); }));
+  ["dragleave", "dragend"].forEach((evt) => dropzone.addEventListener(evt, () => dropzone.classList.remove("dropzone--drag")));
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dropzone--drag");
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) { fileInput.value = ""; selectFile(file); }
+  });
+
+  togglePasswordBtn.addEventListener("click", () => {
+    const showing = passwordInput.type === "text";
+    passwordInput.type = showing ? "password" : "text";
+    togglePasswordIcon.textContent = showing ? "visibility" : "visibility_off";
+    togglePasswordBtn.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+  });
+
+  function suggestOutputName(name) {
+    const base = name.replace(/\.pdf$/i, "");
+    return base + "-unlocked.pdf";
+  }
+
+  async function runUnlock() {
+    if (!currentFile || busy) return;
+    busy = true;
+    hideError(); hideResult();
+    updateUnlockButton();
+    setStatus(qpdfPromise ? "Removing owner password & restrictions…" : "Loading PDF engine (first time only)…");
+    try {
+      const result = await unlockPdf(currentFile, passwordInput.value);
+      if (result.ok) {
+        const blob = new Blob([result.outBytes], { type: "application/pdf" });
+        currentObjectUrl = URL.createObjectURL(blob);
+        const outName = suggestOutputName(currentFile.name);
+        downloadBtn.href = currentObjectUrl;
+        downloadBtn.download = outName;
+        resultSub.textContent = outName + " · " + formatBytes(blob.size);
+        resultCard.classList.remove("hidden");
+        setStatus("");
+      } else {
+        const detail = result.log.join("\n").trim();
+        const needsPassword = /invalid password|password is invalid|wrong password/i.test(detail);
+        showError(
+          needsPassword
+            ? "This PDF needs a password to open. Enter it above and try again."
+            : "qpdf couldn't process this file — it may be corrupted, not a real PDF, or use an unsupported encryption scheme.",
+          detail || ("Exit code " + result.exitCode)
+        );
+        setStatus("");
+      }
+    } catch (err) {
+      showError("Something went wrong while unlocking this PDF.", String((err && err.message) || err));
+      setStatus("");
+    } finally {
+      busy = false;
+      updateUnlockButton();
+    }
+  }
+  unlockBtn.addEventListener("click", runUnlock);
+
+  resetBtn.addEventListener("click", () => {
+    fileInput.value = "";
+    passwordInput.value = "";
+    selectFile(null);
+    hideResult();
+    hideError();
+  });
+})();
+</script>
+</body>
+</html>
