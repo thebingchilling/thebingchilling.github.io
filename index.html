@@ -2024,10 +2024,13 @@ settingsSheet.addEventListener("click", e => {
 // "Block pop-ups (strict)" applies this token combo to the source's iframe
 // sandbox attribute — allow-scripts/allow-same-origin keep the embed's own
 // player working, but with no allow-popups, window.open() is refused by
-// the browser itself. Structural, not a heuristic — but some sources
-// detect the sandbox and refuse to play, which is exactly why this is a
-// per-source opt-in rather than the default.
-const STRICT_SANDBOX = "allow-scripts allow-same-origin";
+// the browser itself. allow-fullscreen is required too: it's a distinct
+// sandbox token from the iframe's allow="fullscreen" permissions-policy
+// attribute, and without it the embed's own fullscreen button silently
+// fails once the iframe is sandboxed. Structural, not a heuristic — but
+// some sources detect the sandbox and refuse to play, which is exactly
+// why this is a per-source opt-in rather than the default.
+const STRICT_SANDBOX = "allow-scripts allow-same-origin allow-fullscreen";
 function setBlockPopupsToggle(on) { sfBlockPopups.setAttribute("aria-checked", String(on)); }
 sfBlockPopups.addEventListener("click", () => setBlockPopupsToggle(sfBlockPopups.getAttribute("aria-checked") !== "true"));
 
