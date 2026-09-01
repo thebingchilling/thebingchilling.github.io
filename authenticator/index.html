@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Authenticator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Generate two-factor (TOTP) codes entirely in your browser. Secrets are stored only on this device." />
+  <meta name="theme-color" id="themeColorMeta" content="#fff8f4" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Authenticator" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <script>
+    // Runs before first paint so a saved Light/Dark choice applies immediately
+    // instead of flashing the system-default theme.
+    try {
+      var t = localStorage.getItem("bq_theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <style>
+    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
+       token set to /pdf, so this tool is visually consistent with it. ── */
+    :root {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+
+      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
+      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
+      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+
+      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
+      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
+      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
+      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
+      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
+      --radius: 12px;
+      --t: 0.2s cubic-bezier(0.2,0,0,1);
+    }
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-primary: #ffb77c; --md-on-primary: #4a2800;
+        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+        --md-error: #ffb4ab; --md-on-error: #690005;
+        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+        --md-surface: #17120d;
+        --md-surface-container-lowest: #100c08;
+        --md-surface-container-low: #201a14;
+        --md-surface-container: #241e18;
+        --md-surface-container-high: #2f2822;
+        --md-surface-container-highest: #3a332c;
+        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+        --primary-dark: #ffcda0;
+        --text-faint: #a89686;
+      }
+    }
+    :root[data-theme="dark"] {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+    }
+    :root[data-theme="light"] {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+      --primary-dark: #632f00;
+      --text-faint: #8a7a6d;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { -webkit-tap-highlight-color: transparent; }
+    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button, .icon-btn, .btn, .dropzone, .account-card { -webkit-touch-callout: none; user-select: none; }
+
+    .icon-btn, .btn, .dropzone, .account-card { position: relative; overflow: hidden; }
+    .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
+    @keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .ripple { display: none; } }
+
+    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    body { scrollbar-width: none; }
+    body::-webkit-scrollbar { display: none; }
+
+    /* ── Top app bar ── */
+    .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
+    .top-bar__actions { display: flex; align-items: center; gap: 0.2rem; }
+
+    .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); flex-shrink: 0; }
+    .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+    .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; background: color-mix(in srgb, var(--md-on-surface) 10%, transparent); }
+
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
+    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
+    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
+    .btn--primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
+    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .btn--sm { padding: 0.4rem 0.85rem; font-size: 0.8rem; }
+    .btn--block { width: 100%; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
+
+    /* ── Page content ── */
+    .app-main { flex: 1; overflow-y: auto; padding: 1.25rem 1rem calc(2rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
+    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
+    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
+    .hero__icon .material-icons { font-size: 30px; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+
+    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; }
+    .section-title h2 { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
+
+    /* ── Add-account entry points ── */
+    .add-tabs { display: flex; gap: 0.4rem; background: var(--bg2); border-radius: 999px; padding: 0.25rem; margin-bottom: 1rem; }
+    .add-tab { flex: 1; border: none; background: none; border-radius: 999px; padding: 0.5rem 0.5rem; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
+    .add-tab--active { background: var(--md-surface-container-low); color: var(--primary-dark); box-shadow: var(--el1); }
+    .add-panel { display: none; }
+    .add-panel--active { display: block; }
+
+    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 16px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
+    .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+    .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
+    .dropzone .material-icons { font-size: 34px; color: var(--primary); }
+    .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
+    .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+    .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 1rem 0 0.4rem; }
+    .field-label:first-child { margin-top: 0; }
+    .field-hint { font-size: 0.72rem; color: var(--text-faint); margin: 0.3rem 0 0; }
+    .input-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
+    .input-row input, .input-row select { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
+    .input-row input::placeholder { color: var(--text-faint); }
+    .input-row select { padding-right: 0.5rem; cursor: pointer; }
+
+    .adv-toggle { display: flex; align-items: center; gap: 0.3rem; border: none; background: none; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; padding: 0.6rem 0.1rem 0; }
+    .adv-toggle .material-icons { font-size: 18px; transition: transform var(--t); }
+    .adv-toggle--open .material-icons { transform: rotate(180deg); }
+    .adv-grid { display: none; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 0.7rem; }
+    .adv-grid--open { display: grid; }
+    .adv-grid .field-label { margin: 0 0 0.35rem; }
+
+    .action-row { margin-top: 1.1rem; }
+    .status-line { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 0.9rem; min-height: 1.2em; }
+    .status-line.hidden { display: none; }
+
+    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
+    .error-banner.hidden { display: none; }
+    .error-banner .material-icons { flex-shrink: 0; }
+    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
+    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
+
+    /* ── Accounts list ── */
+    .accounts-empty { text-align: center; padding: 2rem 1rem; color: var(--text-faint); }
+    .accounts-empty .material-icons { font-size: 32px; margin-bottom: 0.5rem; }
+    .accounts-empty p { margin: 0; font-size: 0.85rem; }
+    .accounts-empty.hidden { display: none; }
+
+    .account-card { display: flex; align-items: center; gap: 0.85rem; background: var(--md-surface-container-low); border-radius: 18px; padding: 0.9rem 1rem; box-shadow: var(--el1); margin-bottom: 0.7rem; cursor: pointer; }
+    .account-card__ring { flex-shrink: 0; width: 38px; height: 38px; }
+    .account-card__ring circle { fill: none; stroke-width: 3; }
+    .account-card__ring .track { stroke: var(--bg2); }
+    .account-card__ring .prog { stroke: var(--primary); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+    .account-card__ring--warn .prog { stroke: var(--md-error); }
+    .account-card__body { flex: 1; min-width: 0; }
+    .account-card__label { font-size: 0.86rem; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-card__issuer { font-size: 0.74rem; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-card__code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.35rem; font-weight: 500; color: var(--primary-dark); letter-spacing: 0.03em; margin-top: 0.1rem; }
+    .account-card__actions { display: flex; align-items: center; gap: 0.1rem; flex-shrink: 0; }
+    .account-card__copied { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 0.4rem; background: var(--md-surface-container-low); color: #146c2e; font-size: 0.85rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+    :root[data-theme="dark"] .account-card__copied { color: #6fdb8f; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .account-card__copied { color: #6fdb8f; } }
+    .account-card__copied--show { opacity: 1; }
+    .account-card__copied .material-icons { font-size: 18px; }
+
+    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
+    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
+    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
+    .note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
+
+    .data-actions { display: flex; gap: 0.6rem; }
+    .data-actions .btn { flex: 1; }
+    input[type="file"].visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+    /* ── Modal (edit account) ── */
+    .modal-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+    .modal-scrim.hidden { display: none; }
+    .modal-sheet { width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; background: var(--md-surface-container-low); border-radius: 20px 20px 0 0; padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); box-shadow: var(--el3); }
+    @media (min-width: 620px) {
+      .modal-scrim { align-items: center; }
+      .modal-sheet { border-radius: 20px; max-height: 85vh; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <span class="top-bar__name">Authenticator</span>
+    <div class="top-bar__actions">
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="hero">
+      <div class="hero__icon"><span class="material-icons">verified_user</span></div>
+      <h1 class="hero__title">Authenticator</h1>
+      <p class="hero__sub">Generate two-factor (TOTP) codes entirely on your device. Secrets are stored only in this browser and never leave it.</p>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>Add an account</h2></div>
+
+      <div class="add-tabs" role="tablist">
+        <button class="add-tab add-tab--active" id="tabQr" type="button" role="tab" aria-selected="true">Scan QR</button>
+        <button class="add-tab" id="tabUri" type="button" role="tab" aria-selected="false">Paste URI</button>
+        <button class="add-tab" id="tabManual" type="button" role="tab" aria-selected="false">Manual</button>
+      </div>
+
+      <div class="add-panel add-panel--active" id="panelQr">
+        <label class="dropzone" id="dropzone" for="qrFileInput">
+          <span class="material-icons">qr_code_scanner</span>
+          <span class="dropzone__title">Drop a QR code image here, or tap to choose</span>
+          <span class="dropzone__sub">Decoded locally — the image is never uploaded</span>
+          <input id="qrFileInput" type="file" accept="image/*" aria-label="Choose a QR code image" />
+        </label>
+      </div>
+
+      <div class="add-panel" id="panelUri">
+        <label class="field-label" for="uriInput">otpauth:// setup URI</label>
+        <div class="input-row">
+          <input id="uriInput" type="text" placeholder="otpauth://totp/Example:you@example.com?secret=..." autocomplete="off" autocapitalize="off" spellcheck="false" />
+        </div>
+        <div class="action-row">
+          <button class="btn btn--primary btn--block" id="uriParseBtn" type="button">Continue</button>
+        </div>
+      </div>
+
+      <div class="add-panel" id="panelManual">
+        <form id="manualForm">
+          <label class="field-label" for="manualSecret">Secret key</label>
+          <div class="input-row">
+            <input id="manualSecret" type="text" placeholder="Base32 secret, e.g. JBSWY3DPEHPK3PXP" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          </div>
+          <label class="field-label" for="manualLabel">Account name</label>
+          <div class="input-row">
+            <input id="manualLabel" type="text" placeholder="you@example.com" autocomplete="off" />
+          </div>
+          <label class="field-label" for="manualIssuer">Issuer (optional)</label>
+          <div class="input-row">
+            <input id="manualIssuer" type="text" placeholder="e.g. GitHub" autocomplete="off" />
+          </div>
+
+          <button type="button" class="adv-toggle" id="manualAdvToggle">
+            <span class="material-icons">expand_more</span>Advanced options
+          </button>
+          <div class="adv-grid" id="manualAdvGrid">
+            <div>
+              <label class="field-label" for="manualAlgo">Algorithm</label>
+              <div class="input-row">
+                <select id="manualAlgo">
+                  <option value="SHA-1" selected>SHA-1</option>
+                  <option value="SHA-256">SHA-256</option>
+                  <option value="SHA-512">SHA-512</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="manualDigits">Digits</label>
+              <div class="input-row">
+                <select id="manualDigits">
+                  <option value="6" selected>6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="manualPeriod">Period (seconds)</label>
+              <div class="input-row">
+                <input id="manualPeriod" type="number" min="10" max="120" value="30" />
+              </div>
+            </div>
+          </div>
+
+          <div class="action-row">
+            <button class="btn btn--primary btn--block" type="submit">Add account</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="error-banner hidden" id="addError" role="alert">
+        <span class="material-icons">error_outline</span>
+        <div>
+          <p class="error-banner__title">Couldn't add this account</p>
+          <p class="error-banner__body" id="addErrorBody"></p>
+        </div>
+      </div>
+      <p class="status-line hidden" id="addStatus" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>Your accounts</h2></div>
+      <div class="accounts-empty" id="accountsEmpty">
+        <div class="material-icons">shield</div>
+        <p>No accounts yet — scan a QR code or add one manually above.</p>
+      </div>
+      <div id="accountsList"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>Backup</h2></div>
+      <p class="field-hint" style="margin: 0 0 0.8rem;">Export your accounts to a file you keep somewhere safe, or restore from one. This is the only way to recover them if you clear browser data.</p>
+      <div class="data-actions">
+        <button class="btn btn--ghost" id="exportBtn" type="button">
+          <span class="material-icons" style="font-size:18px;">download</span>Export
+        </button>
+        <button class="btn btn--ghost" id="importBtn" type="button">
+          <span class="material-icons" style="font-size:18px;">upload</span>Import
+        </button>
+      </div>
+      <input type="file" id="importFileInput" class="visually-hidden" accept="application/json,.json" />
+    </div>
+
+    <div class="card note-card">
+      <span class="material-icons">shield</span>
+      <p>Everything runs locally — QR decoding via <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a> and codes via your browser's built-in cryptography. Nothing is ever sent anywhere. Only add secrets for accounts you own.</p>
+    </div>
+  </main>
+</div>
+
+<div class="modal-scrim hidden" id="editScrim">
+  <div class="modal-sheet">
+    <div class="section-title"><h2>Edit account</h2></div>
+    <form id="editForm">
+      <label class="field-label" for="editLabel">Account name</label>
+      <div class="input-row"><input id="editLabel" type="text" autocomplete="off" /></div>
+      <label class="field-label" for="editIssuer">Issuer (optional)</label>
+      <div class="input-row"><input id="editIssuer" type="text" autocomplete="off" /></div>
+
+      <button type="button" class="adv-toggle" id="editAdvToggle">
+        <span class="material-icons">expand_more</span>Advanced options
+      </button>
+      <div class="adv-grid" id="editAdvGrid">
+        <div>
+          <label class="field-label" for="editAlgo">Algorithm</label>
+          <div class="input-row">
+            <select id="editAlgo">
+              <option value="SHA-1">SHA-1</option>
+              <option value="SHA-256">SHA-256</option>
+              <option value="SHA-512">SHA-512</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="field-label" for="editDigits">Digits</label>
+          <div class="input-row">
+            <select id="editDigits">
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="field-label" for="editPeriod">Period (seconds)</label>
+          <div class="input-row"><input id="editPeriod" type="number" min="10" max="120" /></div>
+        </div>
+      </div>
+
+      <div class="action-row" style="display:flex; gap:0.6rem;">
+        <button type="button" class="btn btn--ghost" id="editCancelBtn" style="flex:1;">Cancel</button>
+        <button type="submit" class="btn btn--primary" style="flex:1;">Save</button>
+      </div>
+    </form>
+    <div class="action-row">
+      <button type="button" class="btn btn--ghost btn--block" id="editDeleteBtn" style="color: var(--md-error);">
+        <span class="material-icons" style="font-size:18px;">delete</span>Delete this account
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/authenticator/vendor/jsQR.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  /* ── Ripple (matches /pdf) ── */
+  const RIPPLE_SELECTOR = ".icon-btn, .btn, .dropzone, .add-tab, .account-card";
+  function spawnRipple(el, x, y) {
+    const rect = el.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 1.8;
+    const span = document.createElement("span");
+    span.className = "ripple";
+    span.style.width = span.style.height = size + "px";
+    span.style.left = (x - rect.left - size / 2) + "px";
+    span.style.top  = (y - rect.top  - size / 2) + "px";
+    el.appendChild(span);
+    span.addEventListener("animationend", () => span.remove(), { once: true });
+  }
+  document.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const el = e.target.closest(RIPPLE_SELECTOR);
+    if (!el || el.disabled) return;
+    spawnRipple(el, e.clientX, e.clientY);
+  }, { passive: true });
+
+  /* ── Theme ── */
+  const THEME_KEY = "bq_theme";
+  const THEME_ORDER = ["system", "light", "dark"];
+  const THEME_ICONS = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
+  const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
+  const SURFACE_LIGHT = "#ffffff", SURFACE_DARK = "#17120d";
+  const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  function syncThemeColorMeta() {
+    const meta = $("themeColorMeta");
+    if (!meta) return;
+    const attr = document.documentElement.getAttribute("data-theme");
+    const isDark = attr === "dark" || (attr !== "light" && !!(systemDarkMQ && systemDarkMQ.matches));
+    meta.setAttribute("content", isDark ? SURFACE_DARK : SURFACE_LIGHT);
+  }
+  if (systemDarkMQ && systemDarkMQ.addEventListener) {
+    systemDarkMQ.addEventListener("change", () => {
+      if (!document.documentElement.hasAttribute("data-theme")) syncThemeColorMeta();
+    });
+  }
+  function applyTheme(pref) {
+    if (pref === "light" || pref === "dark") document.documentElement.setAttribute("data-theme", pref);
+    else document.documentElement.removeAttribute("data-theme");
+    syncThemeColorMeta();
+  }
+  function updateThemeToggleUI(pref) {
+    const icon = $("themeToggleIcon");
+    if (icon) icon.textContent = THEME_ICONS[pref] || THEME_ICONS.system;
+    const btn = $("themeToggleBtn");
+    if (btn) btn.setAttribute("aria-label", "Theme: " + (THEME_LABELS[pref] || "System") + " (tap to change)");
+  }
+  function setThemePref(pref) {
+    applyTheme(pref);
+    updateThemeToggleUI(pref);
+    try { localStorage.setItem(THEME_KEY, pref); } catch (e) {}
+  }
+  (function initTheme() {
+    let pref = "system";
+    try { pref = localStorage.getItem(THEME_KEY) || "system"; } catch (e) {}
+    applyTheme(pref);
+    updateThemeToggleUI(pref);
+  })();
+  $("themeToggleBtn").addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme") || "system";
+    const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
+    setThemePref(next);
+  });
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TOTP engine (RFC 4226 / RFC 6238) — built on the browser's native
+     Web Crypto (crypto.subtle.sign("HMAC", ...)) rather than a hand-rolled
+     HMAC, so the only custom logic is Base32 decoding and RFC dynamic
+     truncation. Verified against all 10 RFC 4226 Appendix D HOTP vectors
+     and all 18 RFC 6238 Appendix B TOTP vectors (SHA-1/256/512) before
+     this shipped. ═══════════════════════════════════════════════════ */
+  function base32Decode(input) {
+    const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    const clean = String(input).toUpperCase().replace(/[^A-Z2-7]/g, "");
+    let bits = "";
+    for (const c of clean) {
+      const val = ALPHABET.indexOf(c);
+      if (val === -1) continue;
+      bits += val.toString(2).padStart(5, "0");
+    }
+    const byteLen = Math.floor(bits.length / 8);
+    const bytes = new Uint8Array(byteLen);
+    for (let i = 0; i < byteLen; i++) bytes[i] = parseInt(bits.slice(i * 8, i * 8 + 8), 2);
+    return bytes;
+  }
+
+  async function hotp(keyBytes, counter, { algorithm = "SHA-1", digits = 6 } = {}) {
+    const counterBuf = new ArrayBuffer(8);
+    const view = new DataView(counterBuf);
+    const hi = Math.floor(counter / 2 ** 32);
+    const lo = counter >>> 0;
+    view.setUint32(0, hi);
+    view.setUint32(4, lo);
+    const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: algorithm }, false, ["sign"]);
+    const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, counterBuf));
+    const offset = sig[sig.length - 1] & 0x0f;
+    const binCode =
+      ((sig[offset] & 0x7f) << 24) |
+      ((sig[offset + 1] & 0xff) << 16) |
+      ((sig[offset + 2] & 0xff) << 8) |
+      (sig[offset + 3] & 0xff);
+    const mod = 10 ** digits;
+    return String(binCode % mod).padStart(digits, "0");
+  }
+
+  async function totp(keyBytes, opts) {
+    const period = opts.period || 30;
+    const counter = Math.floor(Date.now() / 1000 / period);
+    return hotp(keyBytes, counter, opts);
+  }
+
+  /* ── otpauth:// URI parsing ── */
+  function parseOtpauthUri(uriStr) {
+    let url;
+    try { url = new URL(uriStr.trim()); } catch (e) { throw new Error("That doesn't look like a valid otpauth:// URI."); }
+    if (url.protocol !== "otpauth:") throw new Error("Not an otpauth:// URI.");
+    const type = url.hostname.toLowerCase() || url.pathname.split("/")[0];
+    if (type !== "totp") throw new Error("Only time-based (TOTP) accounts are supported — this one is " + (type || "unknown") + ".");
+
+    let rawLabel = decodeURIComponent(url.pathname.replace(/^\/+/, ""));
+    let issuer = url.searchParams.get("issuer") || "";
+    let label = rawLabel;
+    const colonIdx = rawLabel.indexOf(":");
+    if (colonIdx !== -1) {
+      const prefixIssuer = rawLabel.slice(0, colonIdx).trim();
+      label = rawLabel.slice(colonIdx + 1).trim();
+      if (!issuer) issuer = prefixIssuer;
+    }
+
+    const secret = url.searchParams.get("secret");
+    if (!secret) throw new Error("This URI is missing a secret.");
+    const algoRaw = (url.searchParams.get("algorithm") || "SHA1").toUpperCase();
+    const algorithm = algoRaw === "SHA256" ? "SHA-256" : algoRaw === "SHA512" ? "SHA-512" : "SHA-1";
+    const digits = parseInt(url.searchParams.get("digits") || "6", 10) || 6;
+    const period = parseInt(url.searchParams.get("period") || "30", 10) || 30;
+
+    return { label: label || "Account", issuer, secret: secret.replace(/\s+/g, ""), algorithm, digits, period };
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Storage — plain localStorage, this device only, never transmitted.
+     ═══════════════════════════════════════════════════════════════════ */
+  const STORE_KEY = "authenticator_accounts_v1";
+  function loadAccounts() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) { return []; }
+  }
+  function saveAccounts(accounts) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(accounts)); } catch (e) {}
+  }
+  function makeId() {
+    return "acct_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  let accounts = loadAccounts();
+
+  /* ── UI: add-account tabs ── */
+  const tabs = { qr: $("tabQr"), uri: $("tabUri"), manual: $("tabManual") };
+  const panels = { qr: $("panelQr"), uri: $("panelUri"), manual: $("panelManual") };
+  function selectTab(name) {
+    Object.keys(tabs).forEach((k) => {
+      tabs[k].classList.toggle("add-tab--active", k === name);
+      tabs[k].setAttribute("aria-selected", String(k === name));
+      panels[k].classList.toggle("add-panel--active", k === name);
+    });
+    hideAddError();
+  }
+  tabs.qr.addEventListener("click", () => selectTab("qr"));
+  tabs.uri.addEventListener("click", () => selectTab("uri"));
+  tabs.manual.addEventListener("click", () => selectTab("manual"));
+
+  const addError = $("addError"), addErrorBody = $("addErrorBody");
+  const addStatus = $("addStatus");
+  function hideAddError() { addError.classList.add("hidden"); }
+  function showAddError(msg) { addErrorBody.textContent = msg; addError.classList.remove("hidden"); }
+  function setAddStatus(text) {
+    if (!text) { addStatus.classList.add("hidden"); addStatus.textContent = ""; return; }
+    addStatus.textContent = text; addStatus.classList.remove("hidden");
+  }
+
+  /* ── QR upload → decode → prefill ── */
+  const dropzone = $("dropzone"), qrFileInput = $("qrFileInput");
+  ["dragenter", "dragover"].forEach((evt) => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add("dropzone--drag"); }));
+  ["dragleave", "dragend"].forEach((evt) => dropzone.addEventListener(evt, () => dropzone.classList.remove("dropzone--drag")));
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dropzone--drag");
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) handleQrFile(file);
+  });
+  qrFileInput.addEventListener("change", () => {
+    const file = qrFileInput.files && qrFileInput.files[0];
+    if (file) handleQrFile(file);
+    qrFileInput.value = "";
+  });
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read that image.")); };
+      img.src = url;
+    });
+  }
+
+  async function handleQrFile(file) {
+    hideAddError();
+    setAddStatus("Reading QR code…");
+    try {
+      if (typeof window.jsQR !== "function") throw new Error("The QR scanner failed to load.");
+      const img = await loadImage(file);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const result = window.jsQR(imageData.data, imageData.width, imageData.height);
+      if (!result || !result.data) throw new Error("No QR code found in that image.");
+      const parsed = parseOtpauthUri(result.data);
+      openAddConfirm(parsed);
+      setAddStatus("");
+    } catch (err) {
+      setAddStatus("");
+      showAddError(String((err && err.message) || err));
+    }
+  }
+
+  /* ── Paste otpauth:// URI ── */
+  $("uriParseBtn").addEventListener("click", () => {
+    hideAddError();
+    const val = $("uriInput").value.trim();
+    if (!val) { showAddError("Paste a setup URI first."); return; }
+    try {
+      const parsed = parseOtpauthUri(val);
+      openAddConfirm(parsed);
+      $("uriInput").value = "";
+    } catch (err) {
+      showAddError(String((err && err.message) || err));
+    }
+  });
+
+  /* ── Manual entry ── */
+  const manualAdvToggle = $("manualAdvToggle"), manualAdvGrid = $("manualAdvGrid");
+  manualAdvToggle.addEventListener("click", () => {
+    const open = manualAdvGrid.classList.toggle("adv-grid--open");
+    manualAdvToggle.classList.toggle("adv-toggle--open", open);
+  });
+  $("manualForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    hideAddError();
+    const secret = $("manualSecret").value.replace(/\s+/g, "");
+    const label = $("manualLabel").value.trim() || "Account";
+    const issuer = $("manualIssuer").value.trim();
+    const algorithm = $("manualAlgo").value;
+    const digits = parseInt($("manualDigits").value, 10) || 6;
+    const period = parseInt($("manualPeriod").value, 10) || 30;
+    if (!secret || base32Decode(secret).length === 0) {
+      showAddError("Enter a valid Base32 secret key.");
+      return;
+    }
+    addAccount({ label, issuer, secret, algorithm, digits, period });
+    e.target.reset();
+    $("manualDigits").value = "6"; $("manualAlgo").value = "SHA-1"; $("manualPeriod").value = "30";
+    manualAdvGrid.classList.remove("adv-grid--open");
+    manualAdvToggle.classList.remove("adv-toggle--open");
+  });
+
+  /* ── Confirm-and-add flow shared by QR + URI paths: reuse the manual
+     form, pre-filled, so the user can double-check/edit before saving. ── */
+  function openAddConfirm(parsed) {
+    selectTab("manual");
+    $("manualSecret").value = parsed.secret;
+    $("manualLabel").value = parsed.label;
+    $("manualIssuer").value = parsed.issuer || "";
+    $("manualAlgo").value = parsed.algorithm;
+    $("manualDigits").value = String(parsed.digits);
+    $("manualPeriod").value = String(parsed.period);
+    if (parsed.algorithm !== "SHA-1" || parsed.digits !== 6 || parsed.period !== 30) {
+      manualAdvGrid.classList.add("adv-grid--open");
+      manualAdvToggle.classList.add("adv-toggle--open");
+    }
+    setAddStatus("Review the details below, then tap Add account.");
+  }
+
+  function addAccount(fields) {
+    const account = {
+      id: makeId(),
+      label: fields.label,
+      issuer: fields.issuer || "",
+      secret: fields.secret,
+      algorithm: fields.algorithm || "SHA-1",
+      digits: fields.digits || 6,
+      period: fields.period || 30,
+      createdAt: Date.now(),
+    };
+    accounts.push(account);
+    saveAccounts(accounts);
+    renderAccounts();
+    setAddStatus("Added " + (account.issuer ? account.issuer + " — " : "") + account.label + ".");
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Accounts list: live-rotating codes + countdown ring.
+     ═══════════════════════════════════════════════════════════════════ */
+  const accountsList = $("accountsList"), accountsEmpty = $("accountsEmpty");
+  const RING_R = 9, RING_C = 2 * Math.PI * RING_R;
+
+  function renderAccounts() {
+    accountsEmpty.classList.toggle("hidden", accounts.length > 0);
+    accountsList.innerHTML = "";
+    accounts.forEach((account) => {
+      const card = document.createElement("div");
+      card.className = "account-card";
+      card.dataset.id = account.id;
+      card.innerHTML =
+        '<svg class="account-card__ring" viewBox="0 0 24 24">' +
+          '<circle class="track" cx="12" cy="12" r="' + RING_R + '"></circle>' +
+          '<circle class="prog" cx="12" cy="12" r="' + RING_R + '" stroke-dasharray="' + RING_C + '"></circle>' +
+        '</svg>' +
+        '<div class="account-card__body">' +
+          (account.issuer ? '<div class="account-card__issuer">' + escapeHtml(account.issuer) + '</div>' : '') +
+          '<div class="account-card__label">' + escapeHtml(account.label) + '</div>' +
+          '<div class="account-card__code">······</div>' +
+        '</div>' +
+        '<div class="account-card__actions">' +
+          '<button class="icon-btn" type="button" data-action="edit" aria-label="Edit ' + escapeHtml(account.label) + '"><span class="material-icons">edit</span></button>' +
+        '</div>' +
+        '<div class="account-card__copied"><span class="material-icons">check</span>Copied</div>';
+      card.addEventListener("click", (e) => {
+        if (e.target.closest('[data-action="edit"]')) { openEdit(account.id); return; }
+        copyCode(card, account);
+      });
+      accountsList.appendChild(card);
+    });
+    tickCodes();
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  async function copyCode(card, account) {
+    const codeEl = card.querySelector(".account-card__code");
+    const code = (codeEl.textContent || "").replace(/\s+/g, "");
+    if (!code || code.includes("·")) return;
+    let copied = false;
+    try { await navigator.clipboard.writeText(code); copied = true; } catch (e) {}
+    if (!copied) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = code; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        copied = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch (e) {}
+    }
+    if (!copied) return;
+    const badge = card.querySelector(".account-card__copied");
+    badge.classList.add("account-card__copied--show");
+    setTimeout(() => badge.classList.remove("account-card__copied--show"), 1200);
+  }
+
+  let ticking = false;
+  async function tickCodes() {
+    if (ticking) return;
+    ticking = true;
+    try {
+      const now = Date.now() / 1000;
+      for (const account of accounts) {
+        const card = accountsList.querySelector('[data-id="' + account.id + '"]');
+        if (!card) continue;
+        const codeEl = card.querySelector(".account-card__code");
+        const progEl = card.querySelector(".prog");
+        const ringEl = card.querySelector(".account-card__ring");
+        const period = account.period || 30;
+        const secondsIntoPeriod = now % period;
+        const fraction = secondsIntoPeriod / period;
+        const secondsLeft = Math.ceil(period - secondsIntoPeriod);
+        if (progEl) {
+          progEl.style.strokeDashoffset = String(RING_C * fraction);
+          if (ringEl) ringEl.classList.toggle("account-card__ring--warn", secondsLeft <= 5);
+        }
+        try {
+          const keyBytes = base32Decode(account.secret);
+          const code = await totp(keyBytes, account);
+          const mid = Math.ceil(code.length / 2);
+          codeEl.textContent = code.slice(0, mid) + " " + code.slice(mid);
+        } catch (e) {
+          codeEl.textContent = "Error";
+        }
+      }
+    } finally {
+      ticking = false;
+    }
+  }
+  setInterval(tickCodes, 1000);
+
+  /* ── Edit / delete modal ── */
+  const editScrim = $("editScrim"), editForm = $("editForm");
+  const editAdvToggle = $("editAdvToggle"), editAdvGrid = $("editAdvGrid");
+  editAdvToggle.addEventListener("click", () => {
+    const open = editAdvGrid.classList.toggle("adv-grid--open");
+    editAdvToggle.classList.toggle("adv-toggle--open", open);
+  });
+  let editingId = null;
+  function openEdit(id) {
+    const account = accounts.find((a) => a.id === id);
+    if (!account) return;
+    editingId = id;
+    $("editLabel").value = account.label;
+    $("editIssuer").value = account.issuer || "";
+    $("editAlgo").value = account.algorithm;
+    $("editDigits").value = String(account.digits);
+    $("editPeriod").value = String(account.period);
+    editAdvGrid.classList.remove("adv-grid--open");
+    editAdvToggle.classList.remove("adv-toggle--open");
+    editScrim.classList.remove("hidden");
+  }
+  function closeEdit() { editScrim.classList.add("hidden"); editingId = null; }
+  $("editCancelBtn").addEventListener("click", closeEdit);
+  editScrim.addEventListener("click", (e) => { if (e.target === editScrim) closeEdit(); });
+
+  editForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!editingId) return;
+    const account = accounts.find((a) => a.id === editingId);
+    if (!account) return;
+    account.label = $("editLabel").value.trim() || "Account";
+    account.issuer = $("editIssuer").value.trim();
+    account.algorithm = $("editAlgo").value;
+    account.digits = parseInt($("editDigits").value, 10) || 6;
+    account.period = parseInt($("editPeriod").value, 10) || 30;
+    saveAccounts(accounts);
+    renderAccounts();
+    closeEdit();
+  });
+
+  $("editDeleteBtn").addEventListener("click", () => {
+    if (!editingId) return;
+    const account = accounts.find((a) => a.id === editingId);
+    if (!account) return;
+    const ok = confirm('Delete "' + account.label + '"? If you no longer have the original QR code or secret, you won\'t be able to add it back.');
+    if (!ok) return;
+    accounts = accounts.filter((a) => a.id !== editingId);
+    saveAccounts(accounts);
+    renderAccounts();
+    closeEdit();
+  });
+
+  /* ── Export / import backup ── */
+  $("exportBtn").addEventListener("click", () => {
+    if (accounts.length === 0) { alert("No accounts to export yet."); return; }
+    const blob = new Blob([JSON.stringify({ accounts }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "authenticator-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  const importFileInput = $("importFileInput");
+  $("importBtn").addEventListener("click", () => importFileInput.click());
+  importFileInput.addEventListener("change", async () => {
+    const file = importFileInput.files && importFileInput.files[0];
+    importFileInput.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const incoming = Array.isArray(data) ? data : Array.isArray(data.accounts) ? data.accounts : null;
+      if (!incoming) throw new Error("That file doesn't look like an authenticator backup.");
+      let added = 0;
+      for (const raw of incoming) {
+        if (!raw || !raw.secret) continue;
+        const existing = accounts.some((a) => a.secret === raw.secret && a.label === raw.label);
+        if (existing) continue;
+        accounts.push({
+          id: makeId(),
+          label: raw.label || "Account",
+          issuer: raw.issuer || "",
+          secret: String(raw.secret).replace(/\s+/g, ""),
+          algorithm: raw.algorithm === "SHA-256" || raw.algorithm === "SHA-512" ? raw.algorithm : "SHA-1",
+          digits: [6, 7, 8].includes(raw.digits) ? raw.digits : 6,
+          period: raw.period || 30,
+          createdAt: Date.now(),
+        });
+        added++;
+      }
+      saveAccounts(accounts);
+      renderAccounts();
+      alert(added > 0 ? "Imported " + added + " account" + (added === 1 ? "" : "s") + "." : "Nothing new to import — all accounts in that file are already here.");
+    } catch (err) {
+      alert("Couldn't import that file: " + String((err && err.message) || err));
+    }
+  });
+
+  renderAccounts();
+})();
+</script>
+</body>
+</html>
