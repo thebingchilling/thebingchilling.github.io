@@ -718,7 +718,6 @@ function initSwipeBack(container, onBack, edge = 24, threshold = 80) {
 }
 
 if ("serviceWorker" in navigator) {
-  BQChrome.watchForUpdate();
   window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
 }
 
