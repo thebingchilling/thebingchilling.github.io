@@ -12,7 +12,7 @@
        override) by /shared/chrome.js's BQChrome.initTheme() below, so the OS
        status bar and gesture nav bar blend into the app's own top/bottom
        bars instead of showing a mismatched browser color. -->
-  <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
+  <meta name="theme-color" id="themeColorMeta" content="#ffffff" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Bingqilin" />
@@ -229,11 +229,8 @@
     #viewSearch { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
     .view--active { display: block; }
     .view-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .view-meta { margin: 0; min-width: 0; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* ── Header rows ── */
-    .view-header-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; }
-    .view-header-row__titles { flex: 1; min-width: 0; }
     .player-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
     .player-header-right { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
 
@@ -291,41 +288,35 @@
     /* ── Detail ── */
     .detail-body { background: var(--surface); border-radius: var(--radius); border: none; box-shadow: var(--el1); overflow: hidden; }
     .detail-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-    .detail-content { padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; }
+    .detail-tags--center { justify-content: center; }
+    .detail-content { padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.9rem; }
     .detail-section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.25rem; }
     .overview { margin: 0; font-size: 0.84rem; line-height: 1.6; color: var(--text-muted); }
     .overview--error { color: var(--md-error); }
 
-    /* ── Series panel (no banner — poster + key facts, same idea as the
-       movie panel, just without a Play button: TV plays via season/episode
-       selection below instead of one immediate action). ── */
-    .series-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text"; gap: 0.9rem; }
-    .series-panel__poster { grid-area: poster; width: 120px; border-radius: 12px; overflow: hidden; box-shadow: var(--el1); }
-    .series-panel__poster img { width: 100%; display: block; }
-    .series-panel__poster-ph { grid-area: poster; width: 120px; aspect-ratio: 2/3; border-radius: 12px; background: var(--bg2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 1.8rem; }
-    .series-panel__text { grid-area: text; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    /* ── Detail poster: the show/movie name now lives right under its own
+       poster (not off in the header next to Back/Share) — bigger, more
+       elevated artwork so the two read as one clear unit at a glance. ── */
+    .detail-poster { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; text-align: center; }
+    .detail-poster__frame { width: 190px; max-width: 62%; aspect-ratio: 2/3; border-radius: 20px; overflow: hidden; box-shadow: var(--el3); background: var(--bg2); }
+    .detail-poster__frame img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .detail-poster__frame--ph { display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 2.6rem; }
+    .detail-poster__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 600; color: var(--text); line-height: 1.25; max-width: 22rem; }
+    .meta-tag { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 500; padding: 0.18rem 0.6rem; border-radius: 6px; background: var(--md-surface-container-high); color: var(--text-muted); white-space: nowrap; }
+
+    /* ── Series panel: tagline + overview under the poster (no Play button
+       — TV plays via season/episode selection further down instead). ── */
+    .series-panel__text { display: flex; flex-direction: column; gap: 0.5rem; }
     .series-panel__tagline { margin: 0; font-size: 0.83rem; color: var(--text-muted); font-style: italic; line-height: 1.4; }
     .series-panel__overview { margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); }
-    @media (min-width: 640px) {
-      .series-panel { grid-template-columns: 130px 1fr; grid-template-areas: "poster text"; align-items: start; gap: 1.4rem; }
-      .series-panel__poster, .series-panel__poster-ph { width: 130px; }
-    }
 
-    /* ── Movie panel: poster, blurb, and the Play button as one unit —
-       stacked on narrow screens, a single row on wider ones. ── */
-    .movie-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text" "play"; gap: 0.9rem; }
-    .movie-panel__poster { grid-area: poster; width: 120px; border-radius: 12px; overflow: hidden; box-shadow: var(--el1); }
-    .movie-panel__poster img { width: 100%; display: block; }
-    .movie-panel__poster-ph { grid-area: poster; width: 120px; aspect-ratio: 2/3; border-radius: 12px; background: var(--bg2); display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 1.8rem; }
-    .movie-panel__text { grid-area: text; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    /* ── Movie panel: tagline + overview + Play button under the poster. ── */
+    .movie-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+    .movie-panel__text { display: flex; flex-direction: column; gap: 0.5rem; }
     .movie-panel__tagline { margin: 0; font-size: 0.83rem; color: var(--text-muted); font-style: italic; line-height: 1.4; }
     .movie-panel__overview { margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); }
-    .movie-panel__play { grid-area: play; }
-    .meta-tag { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 500; padding: 0.18rem 0.6rem; border-radius: 6px; background: var(--md-surface-container-high); color: var(--text-muted); white-space: nowrap; }
-    @media (min-width: 640px) {
-      .movie-panel { grid-template-columns: 130px 1fr auto; grid-template-areas: "poster text play"; align-items: start; gap: 1.4rem; }
-      .movie-panel__poster, .movie-panel__poster-ph { width: 130px; }
-      .movie-panel__play.play-btn { width: auto; min-width: 190px; align-self: center; padding-left: 1.6rem; padding-right: 1.6rem; }
+    @media (min-width: 480px) {
+      .movie-panel__play.play-btn { width: auto; min-width: 220px; margin: 0 auto; padding-left: 1.6rem; padding-right: 1.6rem; }
     }
 
     /* ── Play button: full-width by default (mobile), auto-width in the
@@ -341,17 +332,11 @@
     .detail-skeleton { padding: 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; }
     .skel { background: var(--bg2); border-radius: 8px; animation: skel-pulse 1.4s ease-in-out infinite; }
     @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-    .skel-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text" "play"; gap: 0.9rem; }
+    .skel-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text" "play"; gap: 0.9rem; justify-items: center; }
     .skel-panel--tv { grid-template-areas: "poster" "text"; }
-    .skel-panel-poster { grid-area: poster; width: 120px; aspect-ratio: 2/3; border-radius: 12px; display: block; object-fit: cover; }
-    .skel-panel-lines { grid-area: text; display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.2rem; }
-    .skel-panel-play { grid-area: play; height: 48px; border-radius: 14px; }
-    @media (min-width: 640px) {
-      .skel-panel { grid-template-columns: 130px 1fr 190px; grid-template-areas: "poster text play"; gap: 1.4rem; align-items: start; }
-      .skel-panel--tv { grid-template-columns: 130px 1fr; grid-template-areas: "poster text"; }
-      .skel-panel-poster { width: 130px; }
-      .skel-panel-play { align-self: center; }
-    }
+    .skel-panel-poster { grid-area: poster; width: 190px; max-width: 62%; aspect-ratio: 2/3; border-radius: 20px; display: block; object-fit: cover; }
+    .skel-panel-lines { grid-area: text; width: 100%; display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.2rem; }
+    .skel-panel-play { grid-area: play; width: 100%; height: 48px; border-radius: 14px; }
     .skel-line { height: 14px; }
     .skel-line--short { width: 40%; }
     .skel-line--med { width: 65%; }
@@ -532,18 +517,16 @@
 
     <!-- Detail view -->
     <section id="viewDetail" class="view" aria-label="Details">
-      <header class="view-header-row">
+      <div class="player-header-row">
         <button id="backFromDetail" class="player-back" type="button" aria-label="Back to search">
           <span class="material-icons">arrow_back</span><span>Search</span>
         </button>
-        <div class="view-header-row__titles">
-          <h2 id="detailTitle" class="view-title"></h2>
-          <p id="detailMeta" class="view-meta"></p>
+        <div class="player-header-right">
+          <button id="shareDetailBtn" class="share-btn" type="button" aria-label="Copy link">
+            <span class="material-icons">link</span><span id="shareDetailBtnLabel">Share</span>
+          </button>
         </div>
-        <button id="shareDetailBtn" class="share-btn" type="button" aria-label="Copy link">
-          <span class="material-icons">link</span><span id="shareDetailBtnLabel">Share</span>
-        </button>
-      </header>
+      </div>
       <div id="detailBody" class="detail-body"></div>
     </section>
 
@@ -895,8 +878,6 @@ const viewDetail       = $("viewDetail");
 const viewPlayer       = $("viewPlayer");
 const backFromDetail   = $("backFromDetail");
 const backFromPlayer   = $("backFromPlayer");
-const detailTitle      = $("detailTitle");
-const detailMeta       = $("detailMeta");
 const detailBody       = $("detailBody");
 const playerTitle      = $("playerTitle");
 const playerFrame      = $("playerFrame");
@@ -1022,7 +1003,7 @@ async function handleHashRoute() {
   const id = Number(idStr);
   if (sStr && eStr && currentDetail.id === id && currentPlayer.id === id) { setView("player"); return; }
   if (!sStr && currentDetail.id === id) { setView("detail"); return; }
-  detailTitle.textContent = "Loading…"; detailMeta.textContent = ""; renderDetailSkeleton(type); setView("detail");
+  renderDetailSkeleton(type); setView("detail");
   if (detailFetch) detailFetch.abort();
   detailFetch = new AbortController();
   try {
@@ -1042,7 +1023,7 @@ async function handleHashRoute() {
   } catch(err) {
     detailFetch = null;
     if (err.name === "AbortError") return;
-    detailTitle.textContent = "Error"; detailBody.innerHTML = `<p class="overview overview--error" style="padding:1rem;">Could not fetch from TMDB. <button class="btn btn--ghost btn--sm" id="retryDetailBtn">Retry</button></p>`;
+    detailBody.innerHTML = `<p class="overview overview--error" style="padding:1rem;">Could not fetch from TMDB. <button class="btn btn--ghost btn--sm" id="retryDetailBtn">Retry</button></p>`;
     const rb = $("retryDetailBtn"); if (rb) rb.onclick = () => handleHashRoute();
   }
 }
@@ -1374,7 +1355,6 @@ function renderMovie(movie) {
   const year    = getYear(movie.release_date);
   const rt      = movie.runtime > 0 ? `${movie.runtime} min` : "";
   const tags    = [year, rt].filter(Boolean).join(" · ");
-  detailTitle.textContent = title; detailMeta.textContent = tags;
 
   const poster   = movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : null;
   const tagline  = movie.tagline?.trim() || "";
@@ -1382,10 +1362,13 @@ function renderMovie(movie) {
 
   detailBody.innerHTML = `
     <div class="detail-content">
+      <div class="detail-poster">
+        <div class="detail-poster__frame">${poster ? `<img src="${esc(poster)}" alt="" loading="lazy"/>` : `<div class="detail-poster__frame--ph"><span class="material-icons">movie</span></div>`}</div>
+        <h3 class="detail-poster__title">${esc(title)}</h3>
+        ${tagsHtml ? `<div class="detail-tags detail-tags--center">${tagsHtml}</div>` : ""}
+      </div>
       <div class="movie-panel">
-        ${poster ? `<div class="movie-panel__poster"><img src="${esc(poster)}" alt="${esc(title)}" loading="lazy"/></div>` : `<div class="movie-panel__poster-ph"><span class="material-icons">movie</span></div>`}
         <div class="movie-panel__text">
-          ${tagsHtml ? `<div class="detail-tags">${tagsHtml}</div>` : ""}
           ${tagline ? `<p class="movie-panel__tagline">${esc(tagline)}</p>` : ""}
           <p class="movie-panel__overview">${esc(movie.overview || "No overview available.")}</p>
         </div>
@@ -1410,7 +1393,6 @@ function renderTV(tv) {
   const year       = getYear(tv.first_air_date);
   const seasonsLabel = seasons.length ? `${seasons.length} season${seasons.length>1?"s":""}` : "";
   const tags       = [year, seasonsLabel].filter(Boolean).join(" · ");
-  detailTitle.textContent = title; detailMeta.textContent = tags;
 
   const poster   = tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : null;
   const network  = tv.networks?.[0]?.name || "";
@@ -1423,10 +1405,13 @@ function renderTV(tv) {
 
   detailBody.innerHTML = `
     <div class="detail-content">
+      <div class="detail-poster">
+        <div class="detail-poster__frame">${poster ? `<img src="${esc(poster)}" alt="" loading="lazy"/>` : `<div class="detail-poster__frame--ph"><span class="material-icons">live_tv</span></div>`}</div>
+        <h3 class="detail-poster__title">${esc(title)}</h3>
+        ${tagsHtml ? `<div class="detail-tags detail-tags--center">${tagsHtml}</div>` : ""}
+      </div>
       <div class="series-panel">
-        ${poster ? `<div class="series-panel__poster"><img src="${esc(poster)}" alt="${esc(title)}" loading="lazy"/></div>` : `<div class="series-panel__poster-ph"><span class="material-icons">live_tv</span></div>`}
         <div class="series-panel__text">
-          ${tagsHtml ? `<div class="detail-tags">${tagsHtml}</div>` : ""}
           ${tagline ? `<p class="series-panel__tagline">${esc(tagline)}</p>` : ""}
           <p class="series-panel__overview">${esc(tv.overview || "No overview available.")}</p>
         </div>
@@ -1598,7 +1583,7 @@ async function handleCardClick(e) {
   await loadDetailFor(mt, id, posterImg ? posterImg.src : null);
 }
 async function loadDetailFor(mt, id, posterUrl) {
-  detailTitle.textContent="Loading…"; detailMeta.textContent=""; renderDetailSkeleton(mt, posterUrl);
+  renderDetailSkeleton(mt, posterUrl);
   if (detailFetch) detailFetch.abort();
   detailFetch = new AbortController();
   try {
@@ -1607,7 +1592,7 @@ async function loadDetailFor(mt, id, posterUrl) {
     detailFetch = null;
   } catch(err) {
     detailFetch=null; if (err.name==="AbortError") return;
-    detailTitle.textContent="Error loading details"; detailBody.innerHTML=`<p class="overview overview--error" style="padding:1rem;">Could not fetch from TMDB. <button class="btn btn--ghost btn--sm" id="retryDetailBtn2">Retry</button></p>`;
+    detailBody.innerHTML=`<p class="overview overview--error" style="padding:1rem;">Could not fetch from TMDB. <button class="btn btn--ghost btn--sm" id="retryDetailBtn2">Retry</button></p>`;
     const rb = $("retryDetailBtn2"); if (rb) rb.onclick = () => loadDetailFor(mt, id);
   }
 }

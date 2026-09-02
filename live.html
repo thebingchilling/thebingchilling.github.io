@@ -11,7 +11,7 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <!-- Kept in sync with the current surface color — see index.html for the
      full rationale. -->
-<meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
+<meta name="theme-color" id="themeColorMeta" content="#ffffff" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="Bingqilin" />
@@ -166,12 +166,6 @@
   .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   body, .view { scrollbar-width: none; }
   body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
-
-  /* Page-specific extra: the reload button in the top bar spins while
-     reloading channel lists — .icon-btn itself lives in chrome.css. */
-  .icon-btn--spinning .material-icons { animation: icon-spin 0.7s linear infinite; }
-  @keyframes icon-spin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .icon-btn--spinning .material-icons { animation: none; } }
 
   /* ── Mini-player: a native music/radio app's now-playing bar. Lets a
      channel keep playing while browsing instead of always killing it on
@@ -409,9 +403,6 @@
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div class="top-bar__actions">
-      <button id="reloadBtn" class="icon-btn" type="button" aria-label="Reload channel lists" title="Reload channel lists">
-        <span class="material-icons">refresh</span>
-      </button>
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
         <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
       </button>
@@ -1254,13 +1245,6 @@ $("clearBtn").addEventListener("click", () => {
   $("searchInput").value = ""; $("clearBtn").classList.add("hidden");
   state.query = ""; renderStatus(); renderGrid(); $("searchInput").focus();
 });
-
-function reload() {
-  const btn = $("reloadBtn");
-  btn.classList.add("icon-btn--spinning");
-  init().finally(() => btn.classList.remove("icon-btn--spinning"));
-}
-$("reloadBtn").addEventListener("click", reload);
 
 /* ═══════════ Settings sheet: import channel playlists ═══════════ */
 const settingsSheet = $("settingsSheet");

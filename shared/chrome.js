@@ -43,11 +43,13 @@ window.BQChrome = (function () {
   const THEME_ORDER  = ["system", "light", "dark"];
   const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
   const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
-  // Matches --md-surface-container (the bottom nav bar's own tint), not
-  // --md-surface/--bg, so the OS status bar / gesture nav bar reads as a
-  // continuation of the app's own bottom nav bar instead of a different
-  // shade sitting right above it.
-  const SURFACE_LIGHT = "#f7ebdd", SURFACE_DARK = "#241e18";
+  // theme-color governs the OS status bar (and browser chrome), so it's
+  // matched to --md-surface — the app's own top bar tint — not the bottom
+  // nav's --md-surface-container. There's no separate web API to tint the
+  // OS gesture/nav bar independently; it's left to render edge-to-edge
+  // (viewport-fit=cover + safe-area-inset padding) so the app's own
+  // bottom-nav background shows through behind it instead.
+  const SURFACE_LIGHT = "#ffffff", SURFACE_DARK = "#17120d";
   const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
   function syncThemeColorMeta() {
