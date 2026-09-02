@@ -192,14 +192,13 @@
     .convert-headline__value { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
     .convert-headline__tip { margin: 0.5rem 0 0; font-size: 0.78rem; color: var(--text-faint); }
 
-    /* PPP gets its own tonal treatment (the tertiary color, unused
-       elsewhere on this page) so it reads as a distinct kind of figure —
-       an estimate/interpretation, not a live fact like the rate above. */
-    .ppp-box { display: flex; justify-content: space-between; align-items: center; gap: 0.7rem; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); border-radius: 14px; padding: 0.75rem 0.9rem; margin-top: 1rem; }
-    .ppp-box__label { font-size: 0.78rem; font-weight: 600; }
-    .ppp-box__note { margin: 0.15rem 0 0; font-size: 0.7rem; opacity: 0.8; }
-    .ppp-box__value { font-size: 0.95rem; font-weight: 700; text-align: right; flex-shrink: 0; }
-    .ppp-box .chip--muted { background: color-mix(in srgb, var(--md-on-tertiary-container) 12%, transparent); color: var(--md-on-tertiary-container); }
+    /* A quiet footnote, not a callout — separated from the headline by a
+       hairline rather than a color block, so it reads as a secondary
+       reference point rather than competing with "Converts to" above. */
+    .ppp-box { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.7rem; padding: 0.7rem 0.15rem 0.1rem; margin-top: 0.7rem; border-top: 1px solid var(--border); }
+    .ppp-box__label { font-size: 0.72rem; font-weight: 500; color: var(--text-faint); }
+    .ppp-box__note { margin: 0.15rem 0 0; font-size: 0.68rem; color: var(--text-faint); }
+    .ppp-box__value { font-size: 0.82rem; font-weight: 500; color: var(--text-muted); text-align: right; flex-shrink: 0; }
 
     .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
     .error-banner.hidden { display: none; }
