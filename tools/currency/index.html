@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Travel Currency Converter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Convert to and from a main currency, get a quick mental-math rule of thumb, and check purchasing power with the Big Mac Index." />
+  <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Currency" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <script src="/shared/theme-init.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/chrome.css" />
+  <style>
+    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
+       token set to the rest of the toolbox. ── */
+    :root {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+
+      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
+      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
+      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+
+      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
+      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
+      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
+      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
+      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
+      --radius: 12px;
+      --t: 0.2s cubic-bezier(0.2,0,0,1);
+      --good: #146c2e; --good-bg: #d7f5df;
+      --warn: #7a5900; --warn-bg: #fff3cd;
+    }
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-primary: #ffb77c; --md-on-primary: #4a2800;
+        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+        --md-error: #ffb4ab; --md-on-error: #690005;
+        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+        --md-surface: #17120d;
+        --md-surface-container-lowest: #100c08;
+        --md-surface-container-low: #201a14;
+        --md-surface-container: #241e18;
+        --md-surface-container-high: #2f2822;
+        --md-surface-container-highest: #3a332c;
+        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+        --primary-dark: #ffcda0;
+        --text-faint: #a89686;
+        --good: #6fdb8f; --good-bg: #163a24;
+        --warn: #ffd668; --warn-bg: #4d3b00;
+      }
+    }
+    :root[data-theme="dark"] {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+      --good: #6fdb8f; --good-bg: #163a24;
+      --warn: #ffd668; --warn-bg: #4d3b00;
+    }
+    :root[data-theme="light"] {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+      --primary-dark: #632f00;
+      --text-faint: #8a7a6d;
+      --good: #146c2e; --good-bg: #d7f5df;
+      --warn: #7a5900; --warn-bg: #fff3cd;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body { -webkit-tap-highlight-color: transparent; }
+    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button, .btn { -webkit-touch-callout: none; user-select: none; }
+    .btn { position: relative; overflow: hidden; }
+
+    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    body { scrollbar-width: none; }
+    body::-webkit-scrollbar { display: none; }
+
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
+    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
+    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
+    .btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
+    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .btn--block { width: 100%; }
+    .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
+
+    .icon-btn { border: none; background: none; color: var(--text-muted); cursor: pointer; padding: 0.4rem; border-radius: 999px; display: inline-flex; }
+    .icon-btn:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); color: var(--primary); }
+    .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Page content ── */
+    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem 1rem calc(4.6rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
+    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
+    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
+    .hero__icon .material-icons { font-size: 30px; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+
+    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; gap: 0.5rem; }
+    .section-title h2 { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
+    .section-hint { margin: -0.5rem 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+    .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 0 0 0.4rem; }
+    .select-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
+    .select-row select { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--text); padding: 0.65rem 0.3rem 0.65rem 0; cursor: pointer; }
+
+    /* ── Converter ── */
+    .convert-row { display: flex; align-items: center; gap: 0.6rem; background: var(--bg2); border-radius: 14px; padding: 0.4rem 0.6rem 0.4rem 0.9rem; }
+    .convert-row select { flex: 0 0 auto; max-width: 42%; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--text); padding: 0.5rem 0.2rem; cursor: pointer; }
+    .convert-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.25rem; color: var(--primary-dark); text-align: right; padding: 0.5rem 0.2rem; }
+    .convert-row input::placeholder { color: var(--text-faint); }
+    .convert-row--a { position: relative; }
+    .swap-row { display: flex; align-items: center; justify-content: center; margin: 0.15rem 0; }
+    .swap-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--md-primary-container); color: var(--md-on-primary-container); border: 3px solid var(--md-surface-container-low); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .swap-btn .material-icons { font-size: 20px; }
+    .rate-line { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.8rem; }
+    .rates-status { text-align: center; font-size: 0.72rem; color: var(--text-faint); margin-top: 0.3rem; }
+    .use-main-btn { flex-shrink: 0; }
+
+    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
+    .error-banner.hidden { display: none; }
+    .error-banner .material-icons { flex-shrink: 0; }
+    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
+    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
+
+    /* ── Rule of thumb ── */
+    .thumb-box { text-align: center; padding: 0.5rem 0.5rem 0.2rem; }
+    .thumb-box__headline { font-family: 'Fraunces', serif; font-size: 1.55rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
+    .thumb-box__tip { margin: 0.6rem 0 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+    .thumb-box__idle { padding: 1rem; text-align: center; color: var(--text-faint); font-size: 0.85rem; }
+
+    /* ── Purchasing power ── */
+    .bigmac-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-bottom: 0.9rem; }
+    .bigmac-field .input-row { display: flex; align-items: center; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.7rem; }
+    .bigmac-field .input-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: ui-monospace, monospace; font-size: 0.95rem; color: var(--text); padding: 0.6rem 0; }
+
+    .result-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
+    .result-row:last-child { border-bottom: none; }
+    .result-row__label { font-size: 0.78rem; color: var(--text-muted); flex: 1 1 auto; min-width: 0; padding-top: 0.15rem; }
+    .result-row__note { display: block; margin-top: 0.15rem; font-size: 0.72rem; color: var(--text-faint); }
+    .result-row__value { font-size: 0.85rem; color: var(--text); text-align: right; word-break: break-word; flex: 0 1 auto; min-width: 0; max-width: 58%; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0.3rem; }
+
+    .chip { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 600; padding: 0.18rem 0.55rem; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
+    .chip--good { background: var(--good-bg); color: var(--good); }
+    .chip--warn { background: var(--warn-bg); color: var(--warn); }
+    .chip--muted { background: var(--bg2); color: var(--text-faint); }
+
+    .verdict-box { display: flex; gap: 0.6rem; border-radius: 14px; padding: 0.8rem 0.9rem; margin-top: 0.9rem; font-size: 0.82rem; line-height: 1.5; }
+    .verdict-box--good { background: var(--good-bg); color: var(--good); }
+    .verdict-box--warn { background: var(--warn-bg); color: var(--warn); }
+    .verdict-box--muted { background: var(--bg2); color: var(--text-muted); }
+    .verdict-box .material-icons { flex-shrink: 0; margin-top: 0.05rem; }
+
+    .caveat { display: flex; gap: 0.55rem; background: var(--bg2); border-radius: 12px; padding: 0.7rem 0.8rem; margin-top: 0.8rem; font-size: 0.76rem; line-height: 1.45; color: var(--text-muted); }
+    .caveat .material-icons { font-size: 17px; color: var(--text-faint); flex-shrink: 0; margin-top: 0.05rem; }
+    .caveat-text { margin: 0; font-size: 0.8rem; color: var(--text-faint); text-align: center; padding: 0.5rem 0; }
+
+    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
+    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
+    .note-card p { margin: 0 0 0.6rem; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
+    .note-card p:last-child { margin-bottom: 0; }
+    .note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <div class="top-bar__brand">
+      <span class="top-bar__name">🍦 Bingqilin</span>
+    </div>
+    <div class="top-bar__actions">
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="hero">
+      <div class="hero__icon"><span class="material-icons">currency_exchange</span></div>
+      <h1 class="hero__title">Travel Currency Converter</h1>
+      <p class="hero__sub">Convert to and from a main currency, get a quick rule of thumb for mental math, and check what your money is really worth with the Big Mac Index.</p>
+    </div>
+
+    <!-- Main currency ── -->
+    <div class="card">
+      <div class="section-title"><h2><span class="material-icons">home</span>Main currency</h2></div>
+      <p class="section-hint">The currency the converter, rule of thumb, and purchasing-power check default to. Remembered on this device.</p>
+      <div class="select-row">
+        <select id="mainSelect" aria-label="Main currency"></select>
+      </div>
+    </div>
+
+    <!-- Converter ── -->
+    <div class="card">
+      <div class="section-title"><h2><span class="material-icons">sync_alt</span>Convert</h2></div>
+      <div class="convert-row convert-row--a">
+        <select id="curASelect" aria-label="From currency"></select>
+        <input type="text" inputmode="decimal" id="amountA" placeholder="0" aria-label="Amount in first currency" />
+        <button class="icon-btn use-main-btn" id="useMainBtn" type="button" aria-label="Reset to main currency" title="Reset to main currency"><span class="material-icons">home</span></button>
+      </div>
+      <div class="swap-row">
+        <button class="swap-btn" id="swapBtn" type="button" aria-label="Swap currencies"><span class="material-icons">swap_vert</span></button>
+      </div>
+      <div class="convert-row">
+        <select id="curBSelect" aria-label="To currency"></select>
+        <input type="text" inputmode="decimal" id="amountB" placeholder="0" aria-label="Amount in second currency" />
+      </div>
+      <p class="rate-line" id="rateLine">Loading rates…</p>
+      <p class="rates-status" id="ratesStatus"></p>
+      <div class="error-banner hidden" id="ratesError" role="alert">
+        <span class="material-icons">error_outline</span>
+        <div>
+          <p class="error-banner__title">Couldn't load exchange rates</p>
+          <p class="error-banner__body" id="ratesErrorBody"></p>
+          <button class="btn btn--ghost" id="retryRatesBtn" type="button" style="margin-top:0.6rem;">
+            <span class="material-icons" style="font-size:16px;">refresh</span>Retry
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rule of thumb ── -->
+    <div class="card">
+      <div class="section-title">
+        <h2><span class="material-icons">tips_and_updates</span>Quick rule of thumb</h2>
+        <button class="icon-btn" id="refreshRatesBtn" type="button" aria-label="Refresh rates" title="Refresh rates"><span class="material-icons">refresh</span></button>
+      </div>
+      <div id="thumbContent"><p class="thumb-box__idle">Waiting on rates…</p></div>
+    </div>
+
+    <!-- Purchasing power ── -->
+    <div class="card">
+      <div class="section-title"><h2><span class="material-icons">lunch_dining</span>Purchasing power check</h2></div>
+      <p class="section-hint">A rough sanity check using the <a href="https://www.economist.com/big-mac-index" target="_blank" rel="noopener">Big Mac Index</a> — comparing what a Big Mac costs in each currency shows whether prices are cheaper or pricier here than the exchange rate alone would suggest. Figures below are approximate reference values — edit them if you know current local pricing.</p>
+      <div class="bigmac-inputs">
+        <div class="bigmac-field">
+          <label class="field-label" id="pppLabelA" for="pppInputA">Big Mac price</label>
+          <div class="input-row"><input type="text" inputmode="decimal" id="pppInputA" /></div>
+        </div>
+        <div class="bigmac-field">
+          <label class="field-label" id="pppLabelB" for="pppInputB">Big Mac price</label>
+          <div class="input-row"><input type="text" inputmode="decimal" id="pppInputB" /></div>
+        </div>
+      </div>
+      <div id="pppResult"></div>
+    </div>
+
+    <div class="card note-card">
+      <span class="material-icons">shield</span>
+      <div>
+        <p>Like the IP tool, this one can't run fully offline: exchange rates come from a third-party rate service (open.er-api.com, falling back to frankfurter.app) called directly from your browser. Your main-currency choice and any Big Mac price edits are saved only in this browser's local storage — never uploaded anywhere.</p>
+        <p>These are reference exchange rates, not what you'll actually get — banks, ATMs, and currency counters add their own margin and fees on top. The Big Mac prices are approximate figures based on generally published data and drift over time, so treat the purchasing-power check as a rough signal, not a precise calculation.</p>
+      </div>
+    </div>
+  </main>
+
+  <div class="bottom-dock">
+    <nav class="bottom-nav" aria-label="Primary">
+      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+        <span class="bottom-nav__label">Media</span>
+      </a>
+      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Live</span>
+      </a>
+      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+        <span class="bottom-nav__label">Tools</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<script src="/shared/chrome.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  BQChrome.initRipple(".icon-btn, .btn, .swap-btn, .bottom-nav__item");
+  BQChrome.initTheme();
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  async function fetchJson(url, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs || 8000);
+    try {
+      const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Currency name lookup — display only. The actual selectable currency
+     list always comes from whichever rate provider answered, so a code
+     missing from this map still works fine (falls back to the bare code).
+     ═══════════════════════════════════════════════════════════════════ */
+  const CURRENCY_NAMES = {
+    USD: "US Dollar", EUR: "Euro", GBP: "British Pound", JPY: "Japanese Yen", CNY: "Chinese Yuan",
+    AUD: "Australian Dollar", CAD: "Canadian Dollar", CHF: "Swiss Franc", HKD: "Hong Kong Dollar",
+    SGD: "Singapore Dollar", SEK: "Swedish Krona", NOK: "Norwegian Krone", DKK: "Danish Krone",
+    NZD: "New Zealand Dollar", MXN: "Mexican Peso", INR: "Indian Rupee", BRL: "Brazilian Real",
+    ZAR: "South African Rand", RUB: "Russian Ruble", KRW: "South Korean Won", TRY: "Turkish Lira",
+    PLN: "Polish Zloty", THB: "Thai Baht", IDR: "Indonesian Rupiah", MYR: "Malaysian Ringgit",
+    PHP: "Philippine Peso", VND: "Vietnamese Dong", CZK: "Czech Koruna", HUF: "Hungarian Forint",
+    ILS: "Israeli Shekel", AED: "UAE Dirham", SAR: "Saudi Riyal", EGP: "Egyptian Pound",
+    NGN: "Nigerian Naira", KES: "Kenyan Shilling", ARS: "Argentine Peso", CLP: "Chilean Peso",
+    COP: "Colombian Peso", PEN: "Peruvian Sol", UYU: "Uruguayan Peso", RON: "Romanian Leu",
+    BGN: "Bulgarian Lev", ISK: "Icelandic Krona", PKR: "Pakistani Rupee", BDT: "Bangladeshi Taka",
+    LKR: "Sri Lankan Rupee", NPR: "Nepalese Rupee", KHR: "Cambodian Riel", MMK: "Myanmar Kyat",
+    LAK: "Laotian Kip", MAD: "Moroccan Dirham", TND: "Tunisian Dinar", GHS: "Ghanaian Cedi",
+    XOF: "West African CFA Franc", XAF: "Central African CFA Franc", TWD: "New Taiwan Dollar",
+    QAR: "Qatari Riyal", KWD: "Kuwaiti Dinar", BHD: "Bahraini Dinar", OMR: "Omani Rial",
+    JOD: "Jordanian Dinar", LBP: "Lebanese Pound", UAH: "Ukrainian Hryvnia", KZT: "Kazakhstani Tenge",
+    GEL: "Georgian Lari", AZN: "Azerbaijani Manat", RSD: "Serbian Dinar", ALL: "Albanian Lek",
+  };
+  function currencyName(code) { return CURRENCY_NAMES[code] || code; }
+
+  const ZERO_DECIMAL = new Set(["BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "PYG", "RWF", "UGX", "UYI", "VND", "VUV", "XAF", "XOF", "XPF"]);
+  function decimalsFor(code) { return ZERO_DECIMAL.has(code) ? 0 : 2; }
+  function formatAmount(value, code) {
+    if (!isFinite(value)) return "";
+    const d = decimalsFor(code);
+    return value.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function parseAmount(str) {
+    const cleaned = String(str).replace(/,/g, "").trim();
+    if (cleaned === "") return null;
+    const n = parseFloat(cleaned);
+    return isFinite(n) ? n : null;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Exchange rates — a single USD-based table, fetched once. Every pair
+     is then derived by cross-division (ratesUSD[b] / ratesUSD[a]), which
+     avoids a network round-trip every time the user changes a currency.
+     open.er-api.com is tried first (free, keyless, ~160 currencies);
+     frankfurter.app (ECB-based, ~30 major currencies) is the fallback.
+     ═══════════════════════════════════════════════════════════════════ */
+  async function fetchRatesUSD() {
+    try {
+      const d = await fetchJson("https://open.er-api.com/v6/latest/USD", 8000);
+      if (!d || d.result !== "success" || !d.rates) throw new Error("Lookup failed");
+      return { rates: Object.assign({ USD: 1 }, d.rates), date: d.time_last_update_utc || null, source: "open.er-api.com" };
+    } catch (e1) {
+      const d = await fetchJson("https://api.frankfurter.app/latest?from=USD", 8000);
+      if (!d || !d.rates) throw new Error("Lookup failed");
+      return { rates: Object.assign({ USD: 1 }, d.rates), date: d.date || null, source: "frankfurter.app" };
+    }
+  }
+
+  let ratesUSD = null;
+
+  const mainSelect = $("mainSelect"), curASelect = $("curASelect"), curBSelect = $("curBSelect");
+  const amountAInput = $("amountA"), amountBInput = $("amountB");
+  const rateLine = $("rateLine"), ratesStatus = $("ratesStatus");
+  const ratesError = $("ratesError"), ratesErrorBody = $("ratesErrorBody");
+
+  function populateCurrencySelects(codes) {
+    const sorted = codes.slice().sort();
+    const optionsHtml = sorted.map((c) => '<option value="' + c + '">' + c + " — " + escapeHtml(currencyName(c)) + "</option>").join("");
+    mainSelect.innerHTML = optionsHtml;
+    curASelect.innerHTML = optionsHtml;
+    curBSelect.innerHTML = optionsHtml;
+  }
+
+  function loadPrefs() {
+    try { return JSON.parse(localStorage.getItem("bq_currency_prefs") || "null"); } catch (e) { return null; }
+  }
+  function savePrefs() {
+    try {
+      localStorage.setItem("bq_currency_prefs", JSON.stringify({ main: mainSelect.value, curA: curASelect.value, curB: curBSelect.value }));
+    } catch (e) {}
+  }
+
+  function restoreSelections() {
+    const prefs = loadPrefs();
+    const codes = Object.keys(ratesUSD);
+    const has = (c) => c && codes.indexOf(c) !== -1;
+    const main = has(prefs && prefs.main) ? prefs.main : "USD";
+    const a = has(prefs && prefs.curA) ? prefs.curA : main;
+    let b = has(prefs && prefs.curB) ? prefs.curB : null;
+    if (!b) {
+      b = has("EUR") && "EUR" !== a ? "EUR" : codes.filter((c) => c !== a)[0] || a;
+    }
+    mainSelect.value = main;
+    curASelect.value = a;
+    curBSelect.value = b;
+  }
+
+  let lastEdited = "A";
+
+  function currentRateAtoB() {
+    if (!ratesUSD) return null;
+    const a = curASelect.value, b = curBSelect.value;
+    if (!ratesUSD[a] || !ratesUSD[b]) return null;
+    return ratesUSD[b] / ratesUSD[a];
+  }
+
+  function recomputeConverter() {
+    const rate = currentRateAtoB();
+    if (!rate) { rateLine.textContent = "Rates unavailable for this pair."; return; }
+    rateLine.textContent = "1 " + curASelect.value + " = " + formatAmount(rate, curBSelect.value) + " " + curBSelect.value;
+    if (lastEdited === "A") {
+      const amt = parseAmount(amountAInput.value);
+      amountBInput.value = amt == null ? "" : (amt * rate).toFixed(decimalsFor(curBSelect.value));
+    } else {
+      const amt = parseAmount(amountBInput.value);
+      amountAInput.value = amt == null ? "" : (amt / rate).toFixed(decimalsFor(curASelect.value));
+    }
+  }
+
+  function onPairOrRatesChanged() {
+    recomputeConverter();
+    updateRuleOfThumb();
+    updatePpp();
+    savePrefs();
+  }
+
+  amountAInput.addEventListener("input", () => { lastEdited = "A"; recomputeConverter(); });
+  amountBInput.addEventListener("input", () => { lastEdited = "B"; recomputeConverter(); });
+  curASelect.addEventListener("change", onPairOrRatesChanged);
+  curBSelect.addEventListener("change", onPairOrRatesChanged);
+  mainSelect.addEventListener("change", () => { curASelect.value = mainSelect.value; onPairOrRatesChanged(); });
+  $("useMainBtn").addEventListener("click", () => { curASelect.value = mainSelect.value; onPairOrRatesChanged(); });
+  $("swapBtn").addEventListener("click", () => {
+    const tempCur = curASelect.value; curASelect.value = curBSelect.value; curBSelect.value = tempCur;
+    const tempAmt = amountAInput.value; amountAInput.value = amountBInput.value; amountBInput.value = tempAmt;
+    lastEdited = "A";
+    onPairOrRatesChanged();
+  });
+
+  function hideRatesError() { ratesError.classList.add("hidden"); }
+  function showRatesError(msg) { ratesErrorBody.textContent = msg; ratesError.classList.remove("hidden"); }
+
+  let selectionsInitialized = false;
+
+  async function loadRates() {
+    hideRatesError();
+    rateLine.textContent = "Loading rates…";
+    ratesStatus.textContent = "";
+    try {
+      const r = await fetchRatesUSD();
+      ratesUSD = r.rates;
+      populateCurrencySelects(Object.keys(ratesUSD));
+      if (!selectionsInitialized) { restoreSelections(); selectionsInitialized = true; }
+      ratesStatus.textContent = "Rates via " + r.source + (r.date ? " · " + r.date : "");
+      onPairOrRatesChanged();
+    } catch (err) {
+      rateLine.textContent = "Rates unavailable.";
+      showRatesError((err && err.message) || String(err));
+    }
+  }
+
+  $("retryRatesBtn").addEventListener("click", () => loadRates());
+  $("refreshRatesBtn").addEventListener("click", () => loadRates());
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Quick rule of thumb — a simplified mental-math shortcut for the
+     current currency pair. Picks whichever direction gives a ratio ≥ 1,
+     then rounds it to the nearest number from a curated "easy to do in
+     your head while shopping" list.
+     ═══════════════════════════════════════════════════════════════════ */
+  const NICE_NUMBERS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100, 120, 125, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 25000];
+  function nearestNiceNumber(x) {
+    let best = NICE_NUMBERS[0], bestErr = Infinity;
+    for (const n of NICE_NUMBERS) {
+      const err = Math.abs(Math.log(n / x));
+      if (err < bestErr) { bestErr = err; best = n; }
+    }
+    return best;
+  }
+  function formatNice(n) { return Number.isInteger(n) ? n.toLocaleString("en-US") : String(n); }
+
+  function ruleOfThumb(mainCode, localCode, mainToLocal) {
+    if (mainToLocal >= 0.9 && mainToLocal <= 1.11) {
+      const pct = Math.round((mainToLocal - 1) * 100);
+      return {
+        headline: "1 " + mainCode + " ≈ 1 " + localCode,
+        tip: "These are roughly 1:1" + (pct === 0 ? "" : " (" + (pct > 0 ? "+" : "") + pct + "%)") + " — treat prices as the same number for quick estimates.",
+      };
+    }
+    if (mainToLocal > 1) {
+      const nice = nearestNiceNumber(mainToLocal);
+      return {
+        headline: "1 " + mainCode + " ≈ " + formatNice(nice) + " " + localCode,
+        tip: "Divide " + localCode + " prices by " + formatNice(nice) + " to estimate the cost in " + mainCode + ".",
+      };
+    }
+    const inv = 1 / mainToLocal; // main units per 1 local unit
+    const nice = nearestNiceNumber(inv);
+    return {
+      headline: "1 " + localCode + " ≈ " + formatNice(nice) + " " + mainCode,
+      tip: "Multiply " + localCode + " prices by " + formatNice(nice) + " to estimate the cost in " + mainCode + ".",
+    };
+  }
+
+  function updateRuleOfThumb() {
+    const rate = currentRateAtoB();
+    const content = $("thumbContent");
+    if (!rate) { content.innerHTML = '<p class="thumb-box__idle">Waiting on rates…</p>'; return; }
+    const a = curASelect.value, b = curBSelect.value;
+    if (a === b) { content.innerHTML = '<p class="thumb-box__idle">Pick two different currencies to see a rule of thumb.</p>'; return; }
+    const r = ruleOfThumb(a, b, rate);
+    content.innerHTML = '<div class="thumb-box"><div class="thumb-box__headline">' + escapeHtml(r.headline) + '</div><p class="thumb-box__tip">' + escapeHtml(r.tip) + "</p></div>";
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Purchasing power check (Big Mac Index). BIGMAC_DEFAULTS is a small,
+     approximate reference table — not a live feed. It exists to prefill
+     the two price fields below with a reasonable starting point; the
+     actual calculation always uses whatever is in those fields, so
+     editing them (with current local pricing, e.g. from a menu board or
+     economist.com/big-mac-index) makes the result as accurate as the
+     numbers you put in.
+     ═══════════════════════════════════════════════════════════════════ */
+  const BIGMAC_DEFAULTS = {
+    USD: 5.69, EUR: 5.34, GBP: 4.49, JPY: 480, CNY: 24.4, INR: 215, THB: 132,
+    MYR: 11.2, SGD: 6.6, PHP: 155, IDR: 36000, KRW: 5500, AUD: 7.05, NZD: 7.6,
+    CAD: 7.99, CHF: 6.7, MXN: 72, BRL: 26.75, ZAR: 39.6, TRY: 129, AED: 19,
+    EGP: 88, PLN: 17.85, SEK: 57.7, NOK: 62,
+  };
+
+  let bigMacOverrides = {};
+  try { bigMacOverrides = JSON.parse(localStorage.getItem("bq_currency_bigmac") || "{}") || {}; } catch (e) { bigMacOverrides = {}; }
+  function saveBigMacOverrides() { try { localStorage.setItem("bq_currency_bigmac", JSON.stringify(bigMacOverrides)); } catch (e) {} }
+  function bigMacPriceFor(code) {
+    if (Object.prototype.hasOwnProperty.call(bigMacOverrides, code)) return bigMacOverrides[code];
+    return Object.prototype.hasOwnProperty.call(BIGMAC_DEFAULTS, code) ? BIGMAC_DEFAULTS[code] : null;
+  }
+
+  const pppLabelA = $("pppLabelA"), pppLabelB = $("pppLabelB");
+  const pppInputA = $("pppInputA"), pppInputB = $("pppInputB");
+  const pppResult = $("pppResult");
+
+  function chip(kind, text) { return '<span class="chip chip--' + kind + '">' + escapeHtml(text) + "</span>"; }
+  function resultRow(label, valueHtml, note) {
+    return '<div class="result-row"><span class="result-row__label">' + escapeHtml(label) + (note ? '<span class="result-row__note">' + escapeHtml(note) + "</span>" : "") + '</span><span class="result-row__value">' + valueHtml + "</span></div>";
+  }
+
+  function updatePpp() {
+    const a = curASelect.value, b = curBSelect.value;
+    pppLabelA.textContent = "Big Mac price in " + a;
+    pppLabelB.textContent = "Big Mac price in " + b;
+    const defA = bigMacPriceFor(a), defB = bigMacPriceFor(b);
+    pppInputA.value = defA != null ? String(defA) : "";
+    pppInputB.value = defB != null ? String(defB) : "";
+    pppInputA.placeholder = defA == null ? "e.g. 5.69" : "";
+    pppInputB.placeholder = defB == null ? "e.g. 5.69" : "";
+    computePppResult();
+  }
+
+  function onBigMacInput(input, code) {
+    const v = parseAmount(input.value);
+    if (v == null) delete bigMacOverrides[code];
+    else bigMacOverrides[code] = v;
+    saveBigMacOverrides();
+    computePppResult();
+  }
+  pppInputA.addEventListener("input", () => onBigMacInput(pppInputA, curASelect.value));
+  pppInputB.addEventListener("input", () => onBigMacInput(pppInputB, curBSelect.value));
+
+  function computePppResult() {
+    const a = curASelect.value, b = curBSelect.value;
+    const priceA = parseAmount(pppInputA.value);
+    const priceB = parseAmount(pppInputB.value);
+    if (a === b) {
+      pppResult.innerHTML = '<p class="caveat-text">Pick two different currencies to compare.</p>';
+      return;
+    }
+    if (!ratesUSD || priceA == null || priceA <= 0 || priceB == null || priceB <= 0) {
+      pppResult.innerHTML = '<p class="caveat-text">Enter a Big Mac price for both currencies to see a purchasing-power comparison.</p>';
+      return;
+    }
+    const actualRate = ratesUSD[b] / ratesUSD[a];
+    const pppRate = priceB / priceA;
+    const ratio = actualRate / pppRate;
+
+    let html = "";
+    html += resultRow("PPP-implied rate", "1 " + a + " ≈ " + formatAmount(pppRate, b) + " " + b, "Based on the Big Mac prices above.");
+    html += resultRow("Actual exchange rate", "1 " + a + " ≈ " + formatAmount(actualRate, b) + " " + b, "");
+
+    let verdictClass, verdictLabel;
+    if (ratio >= 1.05) {
+      verdictClass = "good";
+      verdictLabel = "~" + Math.round((ratio - 1) * 100) + "% cheaper than the exchange rate suggests";
+    } else if (ratio <= 0.95) {
+      verdictClass = "warn";
+      verdictLabel = "~" + Math.round((1 - ratio) * 100) + "% pricier than the exchange rate suggests";
+    } else {
+      verdictClass = "muted";
+      verdictLabel = "About in line with the exchange rate";
+    }
+    html += resultRow("Purchasing power", chip(verdictClass, verdictLabel), "");
+
+    const equiv = formatAmount(100 * ratio, a);
+    const icon = ratio >= 1.05 ? "trending_down" : ratio <= 0.95 ? "trending_up" : "check_circle";
+    html += '<div class="verdict-box verdict-box--' + verdictClass + '"><span class="material-icons">' + icon + '</span><span>Every 100 ' + escapeHtml(a) + ' you spend here has roughly the local purchasing power of ' + equiv + " " + escapeHtml(a) + " back home, based on Big Mac prices.</span></div>";
+
+    pppResult.innerHTML = html;
+  }
+
+  loadRates();
+})();
+</script>
+</body>
+</html>
