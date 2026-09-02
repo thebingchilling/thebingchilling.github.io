@@ -172,7 +172,6 @@
     .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; gap: 0.5rem; }
     .section-title h2 { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
     .section-hint { margin: -0.5rem 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
-    .section-actions { display: flex; align-items: center; gap: 0.1rem; }
 
     .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 0 0 0.4rem; }
     .select-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
@@ -257,10 +256,7 @@
     <div class="card">
       <div class="section-title">
         <h2><span class="material-icons">sync_alt</span>Convert</h2>
-        <div class="section-actions">
-          <button class="icon-btn" id="refreshRatesBtn" type="button" aria-label="Refresh rates" title="Refresh rates"><span class="material-icons">refresh</span></button>
-          <button class="icon-btn" id="useMainBtn" type="button" aria-label="Reset to main currency" title="Reset to main currency"><span class="material-icons">home</span></button>
-        </div>
+        <button class="icon-btn" id="refreshRatesBtn" type="button" aria-label="Refresh rates and reset to main currency" title="Refresh rates and reset to main currency"><span class="material-icons">refresh</span></button>
       </div>
       <div class="convert-row convert-row--a">
         <select id="curASelect" aria-label="From currency"></select>
@@ -480,14 +476,15 @@
       return String.fromCodePoint.apply(null, points);
     } catch (e) { return ""; }
   }
-  function currencyOptionLabel(code) {
+  function currencyOptionLabel(code, withName) {
     const meta = CURRENCY_META[code] || {};
     const bits = [];
     const flag = flagEmoji(meta.c);
     if (flag) bits.push(flag);
     bits.push(code);
     if (meta.s && meta.s !== code) bits.push(meta.s);
-    return bits.join(" ") + " — " + (meta.n || code);
+    const label = bits.join(" ");
+    return withName ? label + " — " + (meta.n || code) : label;
   }
 
   /* Same idea as the country codes in CURRENCY_META above, but World
@@ -552,12 +549,15 @@
 
   function populateCurrencySelects(codes) {
     const sorted = codes.slice().sort();
-    const optionsHtml = sorted.map((c) =>
-      '<option value="' + c + '" title="' + escapeHtml(currencyName(c)) + '">' + escapeHtml(currencyOptionLabel(c)) + "</option>"
+    // Main currency gets a full width row, so it's worth spelling out —
+    // the two converter dropdowns share a tight row with an amount
+    // field, so they stay to the compact flag/code/symbol form.
+    const optionsFor = (withName) => sorted.map((c) =>
+      '<option value="' + c + '" title="' + escapeHtml(currencyName(c)) + '">' + escapeHtml(currencyOptionLabel(c, withName)) + "</option>"
     ).join("");
-    mainSelect.innerHTML = optionsHtml;
-    curASelect.innerHTML = optionsHtml;
-    curBSelect.innerHTML = optionsHtml;
+    mainSelect.innerHTML = optionsFor(true);
+    curASelect.innerHTML = optionsFor(false);
+    curBSelect.innerHTML = optionsFor(false);
   }
 
   function loadPrefs() {
@@ -618,7 +618,6 @@
   curASelect.addEventListener("change", onPairOrRatesChanged);
   curBSelect.addEventListener("change", onPairOrRatesChanged);
   mainSelect.addEventListener("change", () => { curASelect.value = mainSelect.value; onPairOrRatesChanged(); });
-  $("useMainBtn").addEventListener("click", () => { curASelect.value = mainSelect.value; onPairOrRatesChanged(); });
   $("swapBtn").addEventListener("click", () => {
     const tempCur = curASelect.value; curASelect.value = curBSelect.value; curBSelect.value = tempCur;
     const tempAmt = amountAInput.value; amountAInput.value = amountBInput.value; amountBInput.value = tempAmt;
@@ -663,7 +662,16 @@
   }
 
   $("retryRatesBtn").addEventListener("click", () => loadRates());
-  $("refreshRatesBtn").addEventListener("click", () => loadRates());
+  $("refreshRatesBtn").addEventListener("click", async () => {
+    // Unlike a plain refresh (which keeps whatever pair was selected),
+    // this button also snaps the "from" side back to the main currency —
+    // the travel pattern is "how much is this local price in NZD right
+    // now", so refresh doubles as "and make sure I'm converting from
+    // home" without touching whatever local currency is being checked.
+    await loadRates();
+    curASelect.value = mainSelect.value;
+    onPairOrRatesChanged();
+  });
 
   /* ═══════════════════════════════════════════════════════════════════
      Quick reference — always resolves to your actual main currency (not
