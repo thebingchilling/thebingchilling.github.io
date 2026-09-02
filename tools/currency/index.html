@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Travel Currency Converter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Convert to and from a main currency, get a quick mental-math rule of thumb, and check purchasing power with the Big Mac Index." />
+  <meta name="description" content="Convert to and from a main currency, see a quick reference rate, and check what things are really worth with the Big Mac Index." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -188,7 +188,6 @@
     .swap-btn .material-icons { font-size: 20px; }
     .rate-line { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.8rem; }
     .rates-status { text-align: center; font-size: 0.72rem; color: var(--text-faint); margin-top: 0.3rem; }
-    .use-main-btn { flex-shrink: 0; }
 
     .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
     .error-banner.hidden { display: none; }
@@ -196,16 +195,21 @@
     .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
     .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
 
-    /* ── Rule of thumb ── */
+    /* ── Quick reference ── */
     .thumb-box { text-align: center; padding: 0.5rem 0.5rem 0.2rem; }
     .thumb-box__headline { font-family: 'Fraunces', serif; font-size: 1.55rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
     .thumb-box__tip { margin: 0.6rem 0 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
     .thumb-box__idle { padding: 1rem; text-align: center; color: var(--text-faint); font-size: 0.85rem; }
 
     /* ── Purchasing power ── */
-    .bigmac-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-bottom: 0.9rem; }
+    .bigmac-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
     .bigmac-field .input-row { display: flex; align-items: center; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.7rem; }
     .bigmac-field .input-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: ui-monospace, monospace; font-size: 0.95rem; color: var(--text); padding: 0.6rem 0; }
+
+    .adv-toggle { display: flex; align-items: center; gap: 0.3rem; border: none; background: none; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; padding: 0.9rem 0.1rem 0; }
+    .adv-toggle .material-icons { font-size: 18px; transition: transform var(--t); }
+    .adv-toggle[aria-expanded="true"] .material-icons { transform: rotate(180deg); }
+    .adv-body { margin-top: 0.7rem; }
 
     .result-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
     .result-row:last-child { border-bottom: none; }
@@ -252,25 +256,18 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">currency_exchange</span></div>
       <h1 class="hero__title">Travel Currency Converter</h1>
-      <p class="hero__sub">Convert to and from a main currency, get a quick rule of thumb for mental math, and check what your money is really worth with the Big Mac Index.</p>
-    </div>
-
-    <!-- Main currency ── -->
-    <div class="card">
-      <div class="section-title"><h2><span class="material-icons">home</span>Main currency</h2></div>
-      <p class="section-hint">The currency the converter, rule of thumb, and purchasing-power check default to. Remembered on this device.</p>
-      <div class="select-row">
-        <select id="mainSelect" aria-label="Main currency"></select>
-      </div>
+      <p class="hero__sub">Convert to and from a main currency, see a quick reference rate, and check what things are really worth with the Big Mac Index.</p>
     </div>
 
     <!-- Converter ── -->
     <div class="card">
-      <div class="section-title"><h2><span class="material-icons">sync_alt</span>Convert</h2></div>
+      <div class="section-title">
+        <h2><span class="material-icons">sync_alt</span>Convert</h2>
+        <button class="icon-btn" id="useMainBtn" type="button" aria-label="Reset to main currency" title="Reset to main currency"><span class="material-icons">home</span></button>
+      </div>
       <div class="convert-row convert-row--a">
         <select id="curASelect" aria-label="From currency"></select>
         <input type="text" inputmode="decimal" id="amountA" placeholder="0" aria-label="Amount in first currency" />
-        <button class="icon-btn use-main-btn" id="useMainBtn" type="button" aria-label="Reset to main currency" title="Reset to main currency"><span class="material-icons">home</span></button>
       </div>
       <div class="swap-row">
         <button class="swap-btn" id="swapBtn" type="button" aria-label="Swap currencies"><span class="material-icons">swap_vert</span></button>
@@ -293,10 +290,10 @@
       </div>
     </div>
 
-    <!-- Rule of thumb ── -->
+    <!-- Quick reference ── -->
     <div class="card">
       <div class="section-title">
-        <h2><span class="material-icons">tips_and_updates</span>Quick rule of thumb</h2>
+        <h2><span class="material-icons">tips_and_updates</span>Quick reference</h2>
         <button class="icon-btn" id="refreshRatesBtn" type="button" aria-label="Refresh rates" title="Refresh rates"><span class="material-icons">refresh</span></button>
       </div>
       <div id="thumbContent"><p class="thumb-box__idle">Waiting on rates…</p></div>
@@ -304,19 +301,39 @@
 
     <!-- Purchasing power ── -->
     <div class="card">
-      <div class="section-title"><h2><span class="material-icons">lunch_dining</span>Purchasing power check</h2></div>
-      <p class="section-hint">A rough sanity check using the <a href="https://www.economist.com/big-mac-index" target="_blank" rel="noopener">Big Mac Index</a> — comparing what a Big Mac costs in each currency shows whether prices are cheaper or pricier here than the exchange rate alone would suggest. Figures below are approximate reference values — edit them if you know current local pricing.</p>
-      <div class="bigmac-inputs">
-        <div class="bigmac-field">
-          <label class="field-label" id="pppLabelA" for="pppInputA">Big Mac price</label>
-          <div class="input-row"><input type="text" inputmode="decimal" id="pppInputA" /></div>
-        </div>
-        <div class="bigmac-field">
-          <label class="field-label" id="pppLabelB" for="pppInputB">Big Mac price</label>
-          <div class="input-row"><input type="text" inputmode="decimal" id="pppInputB" /></div>
+      <div class="section-title"><h2><span class="material-icons">lunch_dining</span>What's it really worth?</h2></div>
+      <p class="section-hint">Type in a price you see locally to compare what you're paying against what it's really worth in local purchasing power, using the <a href="https://www.economist.com/big-mac-index" target="_blank" rel="noopener">Big Mac Index</a> as a rough yardstick.</p>
+      <div class="bigmac-field">
+        <label class="field-label" id="itemPriceLabel" for="itemPriceInput">Price</label>
+        <div class="input-row"><input type="text" inputmode="decimal" id="itemPriceInput" placeholder="e.g. 24" /></div>
+      </div>
+      <div id="itemPriceResult"></div>
+
+      <button type="button" class="adv-toggle" id="bigMacToggle" aria-expanded="false" aria-controls="bigMacBody">
+        <span class="material-icons">expand_more</span>Reference Big Mac prices used for this
+      </button>
+      <div class="adv-body" id="bigMacBody" hidden>
+        <p class="section-hint" style="margin-top:0;">Approximate reference values, not a live feed — edit them if you know current local pricing.</p>
+        <div class="bigmac-inputs">
+          <div class="bigmac-field">
+            <label class="field-label" id="pppLabelA" for="pppInputA">Big Mac price</label>
+            <div class="input-row"><input type="text" inputmode="decimal" id="pppInputA" /></div>
+          </div>
+          <div class="bigmac-field">
+            <label class="field-label" id="pppLabelB" for="pppInputB">Big Mac price</label>
+            <div class="input-row"><input type="text" inputmode="decimal" id="pppInputB" /></div>
+          </div>
         </div>
       </div>
-      <div id="pppResult"></div>
+    </div>
+
+    <!-- Main currency ── -->
+    <div class="card">
+      <div class="section-title"><h2><span class="material-icons">home</span>Main currency</h2></div>
+      <p class="section-hint">The currency the converter, reference rate, and purchasing-power check default to. Remembered on this device.</p>
+      <div class="select-row">
+        <select id="mainSelect" aria-label="Main currency"></select>
+      </div>
     </div>
 
     <div class="card note-card">
@@ -397,6 +414,43 @@
   };
   function currencyName(code) { return CURRENCY_NAMES[code] || code; }
 
+  /* Primary country per currency (for a flag icon) and common symbol —
+     display-only conveniences, same spirit as CURRENCY_NAMES above: a
+     currency missing from either map just shows without a flag/symbol,
+     it's never excluded from the actual currency list. */
+  const CURRENCY_COUNTRY = {
+    USD: "US", EUR: "EU", GBP: "GB", JPY: "JP", CNY: "CN", AUD: "AU", CAD: "CA", CHF: "CH",
+    HKD: "HK", SGD: "SG", SEK: "SE", NOK: "NO", DKK: "DK", NZD: "NZ", MXN: "MX", INR: "IN",
+    BRL: "BR", ZAR: "ZA", RUB: "RU", KRW: "KR", TRY: "TR", PLN: "PL", THB: "TH", IDR: "ID",
+    MYR: "MY", PHP: "PH", VND: "VN", CZK: "CZ", HUF: "HU", ILS: "IL", AED: "AE", SAR: "SA",
+    EGP: "EG", NGN: "NG", KES: "KE", ARS: "AR", CLP: "CL", COP: "CO", PEN: "PE", UYU: "UY",
+    RON: "RO", BGN: "BG", ISK: "IS", PKR: "PK", BDT: "BD", LKR: "LK", NPR: "NP", KHR: "KH",
+    MMK: "MM", LAK: "LA", MAD: "MA", TND: "TN", GHS: "GH", TWD: "TW", QAR: "QA", KWD: "KW",
+    BHD: "BH", OMR: "OM", JOD: "JO", LBP: "LB", UAH: "UA", KZT: "KZ", GEL: "GE", AZN: "AZ",
+    RSD: "RS", ALL: "AL",
+  };
+  const CURRENCY_SYMBOLS = {
+    USD: "$", EUR: "€", GBP: "£", JPY: "¥", CNY: "¥", AUD: "$", CAD: "$", CHF: "CHF",
+    HKD: "$", SGD: "$", SEK: "kr", NOK: "kr", DKK: "kr", NZD: "$", MXN: "$", INR: "₹",
+    BRL: "R$", ZAR: "R", RUB: "₽", KRW: "₩", TRY: "₺", PLN: "zł", THB: "฿", IDR: "Rp",
+    MYR: "RM", PHP: "₱", VND: "₫", CZK: "Kč", HUF: "Ft", ILS: "₪", EGP: "£", NGN: "₦",
+    KES: "KSh", ARS: "$", CLP: "$", COP: "$", PEN: "S/", UYU: "$", RON: "lei", BGN: "лв",
+    ISK: "kr", PKR: "₨", BDT: "৳", LKR: "₨", NPR: "₨", KHR: "៛", MMK: "K", LAK: "₭",
+    GHS: "₵", TWD: "NT$", UAH: "₴", KZT: "₸", GEL: "₾", AZN: "₼", ALL: "L",
+  };
+  function flagEmoji(countryCode) {
+    if (!countryCode || countryCode.length !== 2) return "";
+    try {
+      const points = countryCode.toUpperCase().split("").map((c) => 127397 + c.charCodeAt(0));
+      return String.fromCodePoint.apply(null, points);
+    } catch (e) { return ""; }
+  }
+  function currencyOptionLabel(code) {
+    const flag = flagEmoji(CURRENCY_COUNTRY[code]);
+    const symbol = CURRENCY_SYMBOLS[code];
+    return (flag ? flag + " " : "") + code + (symbol && symbol !== code ? " " + symbol : "");
+  }
+
   const ZERO_DECIMAL = new Set(["BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "PYG", "RWF", "UGX", "UYI", "VND", "VUV", "XAF", "XOF", "XPF"]);
   function decimalsFor(code) { return ZERO_DECIMAL.has(code) ? 0 : 2; }
   function formatAmount(value, code) {
@@ -439,7 +493,9 @@
 
   function populateCurrencySelects(codes) {
     const sorted = codes.slice().sort();
-    const optionsHtml = sorted.map((c) => '<option value="' + c + '">' + c + " — " + escapeHtml(currencyName(c)) + "</option>").join("");
+    const optionsHtml = sorted.map((c) =>
+      '<option value="' + c + '" title="' + escapeHtml(currencyName(c)) + '">' + escapeHtml(currencyOptionLabel(c)) + "</option>"
+    ).join("");
     mainSelect.innerHTML = optionsHtml;
     curASelect.innerHTML = optionsHtml;
     curBSelect.innerHTML = optionsHtml;
@@ -458,7 +514,7 @@
     const prefs = loadPrefs();
     const codes = Object.keys(ratesUSD);
     const has = (c) => c && codes.indexOf(c) !== -1;
-    const main = has(prefs && prefs.main) ? prefs.main : "USD";
+    const main = has(prefs && prefs.main) ? prefs.main : "NZD";
     const a = has(prefs && prefs.curA) ? prefs.curA : main;
     let b = has(prefs && prefs.curB) ? prefs.curB : null;
     if (!b) {
@@ -493,7 +549,7 @@
 
   function onPairOrRatesChanged() {
     recomputeConverter();
-    updateRuleOfThumb();
+    updateQuickReference();
     updatePpp();
     savePrefs();
   }
@@ -537,53 +593,19 @@
   $("refreshRatesBtn").addEventListener("click", () => loadRates());
 
   /* ═══════════════════════════════════════════════════════════════════
-     Quick rule of thumb — a simplified mental-math shortcut for the
-     current currency pair. Picks whichever direction gives a ratio ≥ 1,
-     then rounds it to the nearest number from a curated "easy to do in
-     your head while shopping" list.
+     Quick reference — a plain "100 local = X main" conversion at a
+     glance, no rounding or approximation, so it's always exactly what
+     the live rate says.
      ═══════════════════════════════════════════════════════════════════ */
-  const NICE_NUMBERS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100, 120, 125, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 25000];
-  function nearestNiceNumber(x) {
-    let best = NICE_NUMBERS[0], bestErr = Infinity;
-    for (const n of NICE_NUMBERS) {
-      const err = Math.abs(Math.log(n / x));
-      if (err < bestErr) { bestErr = err; best = n; }
-    }
-    return best;
-  }
-  function formatNice(n) { return Number.isInteger(n) ? n.toLocaleString("en-US") : String(n); }
-
-  function ruleOfThumb(mainCode, localCode, mainToLocal) {
-    if (mainToLocal >= 0.9 && mainToLocal <= 1.11) {
-      const pct = Math.round((mainToLocal - 1) * 100);
-      return {
-        headline: "1 " + mainCode + " ≈ 1 " + localCode,
-        tip: "These are roughly 1:1" + (pct === 0 ? "" : " (" + (pct > 0 ? "+" : "") + pct + "%)") + " — treat prices as the same number for quick estimates.",
-      };
-    }
-    if (mainToLocal > 1) {
-      const nice = nearestNiceNumber(mainToLocal);
-      return {
-        headline: "1 " + mainCode + " ≈ " + formatNice(nice) + " " + localCode,
-        tip: "Divide " + localCode + " prices by " + formatNice(nice) + " to estimate the cost in " + mainCode + ".",
-      };
-    }
-    const inv = 1 / mainToLocal; // main units per 1 local unit
-    const nice = nearestNiceNumber(inv);
-    return {
-      headline: "1 " + localCode + " ≈ " + formatNice(nice) + " " + mainCode,
-      tip: "Multiply " + localCode + " prices by " + formatNice(nice) + " to estimate the cost in " + mainCode + ".",
-    };
-  }
-
-  function updateRuleOfThumb() {
-    const rate = currentRateAtoB();
+  function updateQuickReference() {
     const content = $("thumbContent");
-    if (!rate) { content.innerHTML = '<p class="thumb-box__idle">Waiting on rates…</p>'; return; }
+    if (!ratesUSD) { content.innerHTML = '<p class="thumb-box__idle">Waiting on rates…</p>'; return; }
     const a = curASelect.value, b = curBSelect.value;
-    if (a === b) { content.innerHTML = '<p class="thumb-box__idle">Pick two different currencies to see a rule of thumb.</p>'; return; }
-    const r = ruleOfThumb(a, b, rate);
-    content.innerHTML = '<div class="thumb-box"><div class="thumb-box__headline">' + escapeHtml(r.headline) + '</div><p class="thumb-box__tip">' + escapeHtml(r.tip) + "</p></div>";
+    if (a === b) { content.innerHTML = '<p class="thumb-box__idle">Pick two different currencies to see a reference rate.</p>'; return; }
+    if (!ratesUSD[a] || !ratesUSD[b]) { content.innerHTML = '<p class="thumb-box__idle">Rates unavailable for this pair.</p>'; return; }
+    const rateBtoA = ratesUSD[a] / ratesUSD[b]; // A units per 1 B
+    const headline = "100 " + b + " ≈ " + formatAmount(100 * rateBtoA, a) + " " + a;
+    content.innerHTML = '<div class="thumb-box"><div class="thumb-box__headline">' + escapeHtml(headline) + '</div><p class="thumb-box__tip">A quick anchor for mental math while you\'re out and about.</p></div>';
   }
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -612,7 +634,7 @@
 
   const pppLabelA = $("pppLabelA"), pppLabelB = $("pppLabelB");
   const pppInputA = $("pppInputA"), pppInputB = $("pppInputB");
-  const pppResult = $("pppResult");
+  const itemPriceLabel = $("itemPriceLabel"), itemPriceInput = $("itemPriceInput"), itemPriceResult = $("itemPriceResult");
 
   function chip(kind, text) { return '<span class="chip chip--' + kind + '">' + escapeHtml(text) + "</span>"; }
   function resultRow(label, valueHtml, note) {
@@ -628,7 +650,8 @@
     pppInputB.value = defB != null ? String(defB) : "";
     pppInputA.placeholder = defA == null ? "e.g. 5.69" : "";
     pppInputB.placeholder = defB == null ? "e.g. 5.69" : "";
-    computePppResult();
+    itemPriceLabel.textContent = "Price in " + b;
+    computeItemPriceResult();
   }
 
   function onBigMacInput(input, code) {
@@ -636,49 +659,65 @@
     if (v == null) delete bigMacOverrides[code];
     else bigMacOverrides[code] = v;
     saveBigMacOverrides();
-    computePppResult();
+    computeItemPriceResult();
   }
   pppInputA.addEventListener("input", () => onBigMacInput(pppInputA, curASelect.value));
   pppInputB.addEventListener("input", () => onBigMacInput(pppInputB, curBSelect.value));
+  itemPriceInput.addEventListener("input", computeItemPriceResult);
 
-  function computePppResult() {
+  const bigMacToggle = $("bigMacToggle"), bigMacBody = $("bigMacBody");
+  bigMacToggle.addEventListener("click", () => {
+    const open = bigMacBody.hidden;
+    bigMacBody.hidden = !open;
+    bigMacToggle.setAttribute("aria-expanded", String(open));
+  });
+
+  /* "What you pay" is a plain live-rate conversion of the price you typed
+     in. "Local value" re-expresses that same local price using the
+     Big-Mac-implied PPP rate instead of the market rate — i.e. what a
+     resident effectively experiences it as, purchasing-power-wise. When
+     a currency is undervalued against the main currency (the common case
+     for many popular budget destinations), local value comes out higher
+     than what you pay: the item is a bigger bargain for you than its
+     sticker exchange-rate conversion alone suggests. */
+  function computeItemPriceResult() {
     const a = curASelect.value, b = curBSelect.value;
-    const priceA = parseAmount(pppInputA.value);
-    const priceB = parseAmount(pppInputB.value);
-    if (a === b) {
-      pppResult.innerHTML = '<p class="caveat-text">Pick two different currencies to compare.</p>';
-      return;
-    }
-    if (!ratesUSD || priceA == null || priceA <= 0 || priceB == null || priceB <= 0) {
-      pppResult.innerHTML = '<p class="caveat-text">Enter a Big Mac price for both currencies to see a purchasing-power comparison.</p>';
-      return;
-    }
-    const actualRate = ratesUSD[b] / ratesUSD[a];
-    const pppRate = priceB / priceA;
-    const ratio = actualRate / pppRate;
+    if (a === b) { itemPriceResult.innerHTML = '<p class="caveat-text">Pick two different currencies to compare.</p>'; return; }
+    const localPrice = parseAmount(itemPriceInput.value);
+    if (localPrice == null || localPrice <= 0) { itemPriceResult.innerHTML = ""; return; }
+    if (!ratesUSD || !ratesUSD[a] || !ratesUSD[b]) { itemPriceResult.innerHTML = '<p class="caveat-text">Rates unavailable for this pair.</p>'; return; }
+
+    const actualRate = ratesUSD[b] / ratesUSD[a]; // local (B) per 1 main (A)
+    const marketConverted = localPrice / actualRate;
 
     let html = "";
-    html += resultRow("PPP-implied rate", "1 " + a + " ≈ " + formatAmount(pppRate, b) + " " + b, "Based on the Big Mac prices above.");
-    html += resultRow("Actual exchange rate", "1 " + a + " ≈ " + formatAmount(actualRate, b) + " " + b, "");
+    html += resultRow("What you pay", formatAmount(marketConverted, a) + " " + a, "Converted at the live exchange rate.");
 
-    let verdictClass, verdictLabel;
-    if (ratio >= 1.05) {
-      verdictClass = "good";
-      verdictLabel = "~" + Math.round((ratio - 1) * 100) + "% cheaper than the exchange rate suggests";
-    } else if (ratio <= 0.95) {
-      verdictClass = "warn";
-      verdictLabel = "~" + Math.round((1 - ratio) * 100) + "% pricier than the exchange rate suggests";
+    const priceA = parseAmount(pppInputA.value);
+    const priceB = parseAmount(pppInputB.value);
+    if (priceA != null && priceA > 0 && priceB != null && priceB > 0) {
+      const pppRate = priceB / priceA; // B per 1 A, PPP-implied
+      const localValue = localPrice / pppRate;
+      html += resultRow("Local value", formatAmount(localValue, a) + " " + a, "What this costs in local purchasing-power terms.");
+
+      const diffPct = Math.round((localValue / marketConverted - 1) * 100);
+      let verdictClass, verdictText, icon;
+      if (diffPct >= 8) {
+        verdictClass = "good"; icon = "trending_down";
+        verdictText = "A bargain for you — locals feel this as worth about " + diffPct + "% more than what you're paying.";
+      } else if (diffPct <= -8) {
+        verdictClass = "warn"; icon = "trending_up";
+        verdictText = "Pricier than it looks — locals feel this as worth about " + Math.abs(diffPct) + "% less than what you're paying.";
+      } else {
+        verdictClass = "muted"; icon = "check_circle";
+        verdictText = "About what it's really worth — close to local purchasing power.";
+      }
+      html += '<div class="verdict-box verdict-box--' + verdictClass + '"><span class="material-icons">' + icon + '</span><span>' + escapeHtml(verdictText) + "</span></div>";
     } else {
-      verdictClass = "muted";
-      verdictLabel = "About in line with the exchange rate";
+      html += '<div class="caveat"><span class="material-icons">info</span><span>Add Big Mac reference prices below to see what this is really worth in local purchasing power.</span></div>';
     }
-    html += resultRow("Purchasing power", chip(verdictClass, verdictLabel), "");
 
-    const equiv = formatAmount(100 * ratio, a);
-    const icon = ratio >= 1.05 ? "trending_down" : ratio <= 0.95 ? "trending_up" : "check_circle";
-    html += '<div class="verdict-box verdict-box--' + verdictClass + '"><span class="material-icons">' + icon + '</span><span>Every 100 ' + escapeHtml(a) + ' you spend here has roughly the local purchasing power of ' + equiv + " " + escapeHtml(a) + " back home, based on Big Mac prices.</span></div>";
-
-    pppResult.innerHTML = html;
+    itemPriceResult.innerHTML = html;
   }
 
   loadRates();
