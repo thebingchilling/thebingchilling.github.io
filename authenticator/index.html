@@ -132,7 +132,7 @@
     button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     button, .icon-btn, .btn, .dropzone, .account-card { -webkit-touch-callout: none; user-select: none; }
 
-    .icon-btn, .btn, .dropzone, .account-card { position: relative; overflow: hidden; }
+    .icon-btn, .btn, .dropzone, .account-card, .add-tab { position: relative; overflow: hidden; }
     .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
     @keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .ripple { display: none; } }
@@ -153,7 +153,7 @@
     .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
     .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; background: color-mix(in srgb, var(--md-on-surface) 10%, transparent); }
 
-    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
     .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
     .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
     .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
@@ -169,7 +169,7 @@
     @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
 
     /* ── Page content ── */
-    .app-main { flex: 1; overflow-y: auto; padding: 1.25rem 1rem calc(2rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
+    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem 1rem calc(2rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
@@ -179,6 +179,15 @@
     .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
     .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; }
     .section-title h2 { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
+    /* Collapsed-by-default "Add an account" toggle — same idea as .adv-toggle,
+       just styled to sit as a card's clickable header row instead of a plain
+       button, so "Your accounts" reads as the primary content of the page. */
+    .section-title--toggle { width: 100%; border: none; background: none; padding: 0; margin: 0; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .section-title--toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 8px; }
+    .section-title__chevron { color: var(--text-muted); transition: transform var(--t); }
+    .section-title--toggle[aria-expanded="true"] .section-title__chevron { transform: rotate(180deg); }
+    .section-title--toggle[aria-expanded="false"] { margin-bottom: 0; }
+    .add-body { margin-top: 0.85rem; }
 
     /* ── Add-account entry points ── */
     .add-tabs { display: flex; gap: 0.4rem; background: var(--bg2); border-radius: 999px; padding: 0.25rem; margin-bottom: 1rem; }
@@ -282,103 +291,108 @@
     </div>
 
     <div class="card">
-      <div class="section-title"><h2>Add an account</h2></div>
-
-      <div class="add-tabs" role="tablist">
-        <button class="add-tab add-tab--active" id="tabQr" type="button" role="tab" aria-selected="true">Scan QR</button>
-        <button class="add-tab" id="tabUri" type="button" role="tab" aria-selected="false">Paste URI</button>
-        <button class="add-tab" id="tabManual" type="button" role="tab" aria-selected="false">Manual</button>
-      </div>
-
-      <div class="add-panel add-panel--active" id="panelQr">
-        <label class="dropzone" id="dropzone" for="qrFileInput">
-          <span class="material-icons">qr_code_scanner</span>
-          <span class="dropzone__title">Drop a QR code image here, or tap to choose</span>
-          <span class="dropzone__sub">Decoded locally — the image is never uploaded</span>
-          <input id="qrFileInput" type="file" accept="image/*" aria-label="Choose a QR code image" />
-        </label>
-      </div>
-
-      <div class="add-panel" id="panelUri">
-        <label class="field-label" for="uriInput">otpauth:// setup URI</label>
-        <div class="input-row">
-          <input id="uriInput" type="text" placeholder="otpauth://totp/Example:you@example.com?secret=..." autocomplete="off" autocapitalize="off" spellcheck="false" />
-        </div>
-        <div class="action-row">
-          <button class="btn btn--primary btn--block" id="uriParseBtn" type="button">Continue</button>
-        </div>
-      </div>
-
-      <div class="add-panel" id="panelManual">
-        <form id="manualForm">
-          <label class="field-label" for="manualSecret">Secret key</label>
-          <div class="input-row">
-            <input id="manualSecret" type="text" placeholder="Base32 secret, e.g. JBSWY3DPEHPK3PXP" autocomplete="off" autocapitalize="off" spellcheck="false" />
-          </div>
-          <label class="field-label" for="manualLabel">Account name</label>
-          <div class="input-row">
-            <input id="manualLabel" type="text" placeholder="you@example.com" autocomplete="off" />
-          </div>
-          <label class="field-label" for="manualIssuer">Issuer (optional)</label>
-          <div class="input-row">
-            <input id="manualIssuer" type="text" placeholder="e.g. GitHub" autocomplete="off" />
-          </div>
-
-          <button type="button" class="adv-toggle" id="manualAdvToggle">
-            <span class="material-icons">expand_more</span>Advanced options
-          </button>
-          <div class="adv-grid" id="manualAdvGrid">
-            <div>
-              <label class="field-label" for="manualAlgo">Algorithm</label>
-              <div class="input-row">
-                <select id="manualAlgo">
-                  <option value="SHA-1" selected>SHA-1</option>
-                  <option value="SHA-256">SHA-256</option>
-                  <option value="SHA-512">SHA-512</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="field-label" for="manualDigits">Digits</label>
-              <div class="input-row">
-                <select id="manualDigits">
-                  <option value="6" selected>6</option>
-                  <option value="7">7</option>
-                  <option value="8">8</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="field-label" for="manualPeriod">Period (seconds)</label>
-              <div class="input-row">
-                <input id="manualPeriod" type="number" min="10" max="120" value="30" />
-              </div>
-            </div>
-          </div>
-
-          <div class="action-row">
-            <button class="btn btn--primary btn--block" type="submit">Add account</button>
-          </div>
-        </form>
-      </div>
-
-      <div class="error-banner hidden" id="addError" role="alert">
-        <span class="material-icons">error_outline</span>
-        <div>
-          <p class="error-banner__title">Couldn't add this account</p>
-          <p class="error-banner__body" id="addErrorBody"></p>
-        </div>
-      </div>
-      <p class="status-line hidden" id="addStatus" role="status" aria-live="polite"></p>
-    </div>
-
-    <div class="card">
       <div class="section-title"><h2>Your accounts</h2></div>
       <div class="accounts-empty" id="accountsEmpty">
         <div class="material-icons">shield</div>
-        <p>No accounts yet — scan a QR code or add one manually above.</p>
+        <p>No accounts yet — tap "Add an account" below to get started.</p>
       </div>
       <div id="accountsList"></div>
+    </div>
+
+    <div class="card">
+      <button class="section-title section-title--toggle" id="addToggle" type="button" aria-expanded="false" aria-controls="addBody">
+        <h2>Add an account</h2>
+        <span class="material-icons section-title__chevron" id="addToggleIcon">expand_more</span>
+      </button>
+
+      <div class="add-body" id="addBody" hidden>
+        <div class="add-tabs" role="tablist">
+          <button class="add-tab add-tab--active" id="tabQr" type="button" role="tab" aria-selected="true">Scan QR</button>
+          <button class="add-tab" id="tabUri" type="button" role="tab" aria-selected="false">Paste URI</button>
+          <button class="add-tab" id="tabManual" type="button" role="tab" aria-selected="false">Manual</button>
+        </div>
+
+        <div class="add-panel add-panel--active" id="panelQr">
+          <label class="dropzone" id="dropzone" for="qrFileInput">
+            <span class="material-icons">qr_code_scanner</span>
+            <span class="dropzone__title">Drop a QR code image here, or tap to choose</span>
+            <span class="dropzone__sub">Decoded locally — the image is never uploaded</span>
+            <input id="qrFileInput" type="file" accept="image/*" aria-label="Choose a QR code image" />
+          </label>
+        </div>
+
+        <div class="add-panel" id="panelUri">
+          <label class="field-label" for="uriInput">otpauth:// setup URI</label>
+          <div class="input-row">
+            <input id="uriInput" type="text" placeholder="otpauth://totp/Example:you@example.com?secret=..." autocomplete="off" autocapitalize="off" spellcheck="false" />
+          </div>
+          <div class="action-row">
+            <button class="btn btn--primary btn--block" id="uriParseBtn" type="button">Continue</button>
+          </div>
+        </div>
+
+        <div class="add-panel" id="panelManual">
+          <form id="manualForm">
+            <label class="field-label" for="manualSecret">Secret key</label>
+            <div class="input-row">
+              <input id="manualSecret" type="text" placeholder="Base32 secret, e.g. JBSWY3DPEHPK3PXP" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            </div>
+            <label class="field-label" for="manualLabel">Account name</label>
+            <div class="input-row">
+              <input id="manualLabel" type="text" placeholder="you@example.com" autocomplete="off" />
+            </div>
+            <label class="field-label" for="manualIssuer">Issuer (optional)</label>
+            <div class="input-row">
+              <input id="manualIssuer" type="text" placeholder="e.g. GitHub" autocomplete="off" />
+            </div>
+
+            <button type="button" class="adv-toggle" id="manualAdvToggle">
+              <span class="material-icons">expand_more</span>Advanced options
+            </button>
+            <div class="adv-grid" id="manualAdvGrid">
+              <div>
+                <label class="field-label" for="manualAlgo">Algorithm</label>
+                <div class="input-row">
+                  <select id="manualAlgo">
+                    <option value="SHA-1" selected>SHA-1</option>
+                    <option value="SHA-256">SHA-256</option>
+                    <option value="SHA-512">SHA-512</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="field-label" for="manualDigits">Digits</label>
+                <div class="input-row">
+                  <select id="manualDigits">
+                    <option value="6" selected>6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="field-label" for="manualPeriod">Period (seconds)</label>
+                <div class="input-row">
+                  <input id="manualPeriod" type="number" min="10" max="120" value="30" />
+                </div>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="btn btn--primary btn--block" type="submit">Add account</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="error-banner hidden" id="addError" role="alert">
+          <span class="material-icons">error_outline</span>
+          <div>
+            <p class="error-banner__title">Couldn't add this account</p>
+            <p class="error-banner__body" id="addErrorBody"></p>
+          </div>
+        </div>
+        <p class="status-line hidden" id="addStatus" role="status" aria-live="polite"></p>
+      </div>
     </div>
 
     <div class="card">
@@ -622,6 +636,16 @@
 
   let accounts = loadAccounts();
 
+  /* ── UI: collapsed-by-default "Add an account" section — the accounts
+     list is the primary content of the page, so this stays tucked away
+     until the user actually wants to add something. ── */
+  const addToggle = $("addToggle"), addBody = $("addBody");
+  function setAddBodyOpen(open) {
+    addToggle.setAttribute("aria-expanded", String(open));
+    addBody.hidden = !open;
+  }
+  addToggle.addEventListener("click", () => setAddBodyOpen(addBody.hidden));
+
   /* ── UI: add-account tabs ── */
   const tabs = { qr: $("tabQr"), uri: $("tabUri"), manual: $("tabManual") };
   const panels = { qr: $("panelQr"), uri: $("panelUri"), manual: $("panelManual") };
@@ -733,6 +757,10 @@
     $("manualDigits").value = "6"; $("manualAlgo").value = "SHA-1"; $("manualPeriod").value = "30";
     manualAdvGrid.classList.remove("adv-grid--open");
     manualAdvToggle.classList.remove("adv-toggle--open");
+    // Account added — collapse back down so the accounts list (the primary
+    // content of the page) is what's in view, not the form that just did its job.
+    selectTab("qr");
+    setAddBodyOpen(false);
   });
 
   /* ── Confirm-and-add flow shared by QR + URI paths: reuse the manual
