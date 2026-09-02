@@ -571,14 +571,14 @@
     <div class="settings__section">
       <div class="settings__section-label">Playlist URLs</div>
       <p class="settings__hint">
-        Paste your playlist URLs below, one per line as <code>key, value</code>.
-        Keys: <code>tv</code>, <code>radio</code>, <code>epg</code> — add more than one <code>tv,</code> or
-        <code>radio,</code> line to combine several playlists into one list.
+        Paste your playlist URLs below, one per line as <code>key: value</code>.
+        Keys: <code>tv</code>, <code>radio</code>, <code>epg</code> — add more than one <code>tv:</code> or
+        <code>radio:</code> line to combine several playlists into one list.
       </p>
       <div class="config-area">
         <div class="config-textarea-wrap">
           <textarea id="configTextarea" class="config-textarea"
-            placeholder="tv, https://example.com/tv.m3u8&#10;radio, https://example.com/radio.json&#10;epg, https://example.com/epg.xml"
+            placeholder="tv: https://example.com/tv.m3u8&#10;radio: https://example.com/radio.json&#10;epg: https://example.com/epg.xml"
             spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
         <div class="config-actions">
@@ -986,15 +986,13 @@ function saveStoredConfig(cfg) { return PinStore.set(CONFIG_KEY, JSON.stringify(
 function clearStoredConfig() { return PinStore.delete(CONFIG_KEY); }
 
 // tv/radio accumulate — repeat the key on its own line to combine several
-// playlists (e.g. two "radio, ..." lines) into one merged channel list.
-// Only the first comma on a line is a separator, so a url containing its
-// own commas (e.g. a query string) still comes through intact.
+// playlists (e.g. two "radio: ..." lines) into one merged channel list.
 function parseConfigText(text) {
   const cfg = { tv: [], radio: [], epg: "" };
   for (let line of String(text || "").split(/\r?\n/)) {
     line = line.trim();
     if (!line || line.startsWith("#")) continue;
-    const idx = line.indexOf(",");
+    const idx = line.indexOf(":");
     if (idx === -1) continue;
     const key = line.slice(0, idx).trim().toLowerCase();
     const val = line.slice(idx + 1).trim();
@@ -1006,9 +1004,9 @@ function parseConfigText(text) {
 }
 function serialiseConfigText(cfg) {
   const lines = [];
-  for (const url of cfg.tv || []) lines.push(`tv, ${url}`);
-  for (const url of cfg.radio || []) lines.push(`radio, ${url}`);
-  if (cfg.epg) lines.push(`epg, ${cfg.epg}`);
+  for (const url of cfg.tv || []) lines.push(`tv: ${url}`);
+  for (const url of cfg.radio || []) lines.push(`radio: ${url}`);
+  if (cfg.epg) lines.push(`epg: ${cfg.epg}`);
   return lines.join("\n");
 }
 
