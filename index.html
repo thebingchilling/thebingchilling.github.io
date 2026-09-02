@@ -294,11 +294,7 @@
 
     /* ── Back button ── */
     .player-back { display: flex; align-items: center; gap: 0.35rem; min-width: 0; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
-    /* backFromPlayerLabel can be a full show title (see loadPlayer's caller
-       in goBackFromPlayer) — ellipsize it instead of letting it hard-clip
-       or push the header's right-hand controls off-screen. */
-    #backFromPlayerLabel { min-width: 0; }
-    /* playerTitle can be a full episode name — let it wrap instead of
+    /* playerTitle can be a full movie/show name — let it wrap instead of
        truncating to one ellipsized line and hiding most of it. */
     #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
     .player-back:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
@@ -611,7 +607,7 @@
       <div class="player-header-row">
         <button id="backFromPlayer" class="player-back" type="button" aria-label="Back">
           <span class="material-icons">arrow_back</span>
-          <span id="backFromPlayerLabel">Back</span>
+          <span>Back</span>
         </button>
         <div class="player-header-right">
           <button id="shareBtn" class="share-btn" type="button" aria-label="Copy link">
@@ -1028,7 +1024,6 @@ const viewDetail       = $("viewDetail");
 const viewPlayer       = $("viewPlayer");
 const backFromDetail   = $("backFromDetail");
 const backFromPlayer   = $("backFromPlayer");
-const backFromPlayerLabel = $("backFromPlayerLabel");
 const detailTitle      = $("detailTitle");
 const detailMeta       = $("detailMeta");
 const detailBody       = $("detailBody");
@@ -1272,13 +1267,15 @@ function loadPlayer({ mediaType, id, season, episode, label, rolledEpData = null
 
   const epData = rolledEpData || (season && episode && loadedSeasons[id]?.[season]?.find(e => e.episode_number === episode)) || null;
 
-  playerTitle.textContent = mediaType === "tv" ? (epData?.name || label || "Player") : (label || "Player");
+  // The title above the player is the movie/show's own name — on its own
+  // line, same as always — not the episode name (that lives on the episode
+  // card below instead). Back always just says "Back"; only its aria-label
+  // stays descriptive for accessibility.
+  playerTitle.textContent = label || currentDetail.title || "Player";
 
   if (mediaType === "tv" && currentDetail.title) {
-    backFromPlayerLabel.textContent = currentDetail.title;
     backFromPlayer.setAttribute("aria-label", `Back to ${currentDetail.title}`);
   } else {
-    backFromPlayerLabel.textContent = "Search";
     backFromPlayer.setAttribute("aria-label", "Back to search");
   }
 

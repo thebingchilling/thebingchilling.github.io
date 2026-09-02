@@ -184,8 +184,11 @@
     .tool-card__icon { flex-shrink: 0; width: 44px; height: 44px; border-radius: 14px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; }
     .tool-card__icon .material-icons { font-size: 24px; }
     .tool-card__body { min-width: 0; }
-    .tool-card__title { font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0 0 0.2rem; }
-    .tool-card__desc { font-size: 0.8rem; line-height: 1.45; color: var(--text-muted); margin: 0; }
+    /* Both are <span>s (valid inside the <a>), so they need an explicit
+       block display — without it the desc runs on inline right after the
+       title instead of sitting on its own line underneath. */
+    .tool-card__title { display: block; font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0 0 0.2rem; }
+    .tool-card__desc { display: block; font-size: 0.8rem; line-height: 1.45; color: var(--text-muted); margin: 0; }
     .tool-card__chevron { margin-left: auto; flex-shrink: 0; color: var(--text-faint); align-self: center; }
 
     /* ── Bottom navigation (M3 NavigationBar) — see index.html for the full
