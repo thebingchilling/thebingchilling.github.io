@@ -468,9 +468,9 @@
     .now-playing-card.hidden { display: none; }
     .now-playing-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
     .now-playing-card__eyebrow { font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary); }
-    .now-playing-card__title { font-size: 0.88rem; font-weight: 500; color: var(--text); line-height: 1.3; }
+    .now-playing-card__title { font-size: 0.88rem; font-weight: 500; color: var(--text); line-height: 1.3; white-space: normal; overflow: visible; }
     .now-playing-card__meta { font-size: 0.72rem; color: var(--text-faint); }
-    .now-playing-card__overview { font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 0.15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .now-playing-card__overview { font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 0.15rem; }
     .reroll-btn { flex-shrink: 0; width: 36px; height: 36px; border-radius: 999px; border: none; background: var(--md-secondary-container); color: var(--md-on-secondary-container); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--el1); transition: background var(--t), transform var(--t), box-shadow var(--t); }
     .reroll-btn:hover { box-shadow: var(--el2); transform: rotate(30deg); }
     .reroll-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -1362,10 +1362,14 @@ async function updateEpCard(tvId, season, episode, rolledEpData) {
   if (!loadedSeasons[tvId]?.[season]) { try { await fetchSeasonEps(tvId, season); } catch {} }
 
   const ep = rolledEpData || (loadedSeasons[tvId]?.[season] || []).find(e => e.episode_number === episode) || null;
-  epCardTitle.textContent = ep?.name ? `S${season} · E${episode} — ${ep.name}` : `S${season} · E${episode}`;
-  epCardMeta.textContent = ep?.air_date
+  // The episode name is the card's actual title — its own line, full text —
+  // with "S{n} · E{m}" demoted to the small meta line alongside the air
+  // date instead of being crammed in front of the title.
+  epCardTitle.textContent = ep?.name || currentDetail.title || "Episode";
+  const airDate = ep?.air_date
     ? new Date(ep.air_date + "T00:00:00").toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" })
     : "";
+  epCardMeta.textContent = [`S${season} · E${episode}`, airDate].filter(Boolean).join(" · ");
   epCardOverview.textContent = ep?.overview || "";
 
   epCardRollBtn.onclick = async () => {
