@@ -113,5 +113,39 @@ window.BQChrome = (function () {
     return { setThemePref };
   }
 
-  return { initRipple, initTheme, syncThemeColorMeta };
+  /* ── Update toast: sw.js calls skipWaiting()+clients.claim() on every
+     new deploy, so a new service worker silently takes over in the
+     background — but the already-loaded page keeps running on whatever
+     shell it started with until reloaded. Without this, "why isn't it
+     updating" is the only outcome a manual hard-reload can fix. A
+     `controllerchange` after this page's own load already had a
+     controller is exactly that "new build took over" signal; the very
+     first-ever install (no prior controller) also fires it once but
+     isn't a real update, so it's ignored. ── */
+  function watchForUpdate() {
+    if (!("serviceWorker" in navigator)) return;
+    const hadController = !!navigator.serviceWorker.controller;
+    let shown = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController || shown) return;
+      shown = true;
+      showUpdateToast();
+    });
+  }
+  function showUpdateToast() {
+    if ($("bqUpdateToast")) return;
+    const toast = document.createElement("div");
+    toast.id = "bqUpdateToast";
+    toast.className = "update-toast";
+    toast.hidden = true; // starts in the [hidden] transition-in state, see chrome.css
+    toast.setAttribute("role", "status");
+    toast.innerHTML =
+      '<span class="update-toast__text">Update available</span>' +
+      '<button type="button" class="update-toast__btn">Reload</button>';
+    toast.querySelector(".update-toast__btn").addEventListener("click", () => location.reload());
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => requestAnimationFrame(() => { toast.hidden = false; }));
+  }
+
+  return { initRipple, initTheme, syncThemeColorMeta, watchForUpdate };
 })();

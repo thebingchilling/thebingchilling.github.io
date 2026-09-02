@@ -4,7 +4,7 @@
 // same-origin GET requests for the shell itself (HTML/manifest/icons).
 // TMDB requests, video-source iframes, fonts, and streaming payloads are
 // never intercepted — those must always hit the network live.
-const CACHE_VERSION = "bq-shell-v7";
+const CACHE_VERSION = "bq-shell-v8";
 const SHELL_URLS = [
   "/", "/index.html", "/live", "/live.html", "/tools/", "/tools/index.html",
   "/manifest.webmanifest",

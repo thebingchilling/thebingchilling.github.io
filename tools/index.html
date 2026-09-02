@@ -238,6 +238,7 @@
   BQChrome.initTheme();
 
   if ("serviceWorker" in navigator) {
+    BQChrome.watchForUpdate();
     window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
   }
 })();

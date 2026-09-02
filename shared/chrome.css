@@ -62,3 +62,13 @@
 .bottom-nav__item--active .bottom-nav__label { color: var(--text); font-weight: 600; }
 .bottom-nav__item:hover .bottom-nav__icon-wrap { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
 .bottom-nav__item--active:hover .bottom-nav__icon-wrap { background: var(--md-secondary-container); }
+
+/* ── Update toast (M3 snackbar) — appears once a new service-worker build
+   has already installed and taken over in the background (see
+   BQChrome.watchForUpdate). Reloading is the only way to actually load the
+   new shell, so this exists to make that reachable without DevTools. ── */
+.update-toast { position: fixed; left: 50%; bottom: calc(4.6rem + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(0); z-index: 60; display: flex; align-items: center; gap: 0.9rem; max-width: calc(100vw - 2rem); padding: 0.7rem 0.6rem 0.7rem 1rem; border-radius: 999px; background: var(--md-inverse-surface, #33302a); color: var(--md-inverse-on-surface, #f6efe6); box-shadow: var(--el3); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; transition: transform var(--t), opacity var(--t); }
+.update-toast[hidden] { display: flex; pointer-events: none; opacity: 0; transform: translateX(-50%) translateY(12px); }
+.update-toast__text { white-space: nowrap; }
+.update-toast__btn { flex-shrink: 0; border: none; background: none; color: var(--md-inverse-primary, #ffb787); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.02em; padding: 0.4rem 0.7rem; border-radius: 999px; cursor: pointer; }
+.update-toast__btn:hover, .update-toast__btn:focus-visible { background: color-mix(in srgb, var(--md-inverse-on-surface, #f6efe6) 12%, transparent); outline: none; }
