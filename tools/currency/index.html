@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Travel Currency Converter</title>
+  <title>Currency Converter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Convert a foreign currency against your main currency, with the real exchange rate and what it's really worth in local purchasing power." />
+  <meta name="description" content="Convert a foreign currency against your main currency, with the real exchange rate and what it feels like to locals living there." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -251,8 +251,8 @@
   <main class="app-main">
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">currency_exchange</span></div>
-      <h1 class="hero__title">Travel Currency Converter</h1>
-      <p class="hero__sub">Convert a foreign currency against your main currency, with the real exchange rate and what it's really worth in local purchasing power.</p>
+      <h1 class="hero__title">Currency Converter</h1>
+      <p class="hero__sub">Convert a foreign currency against your main currency, with the real exchange rate and what it feels like to locals living there.</p>
     </div>
 
     <!-- Converter ── -->
@@ -268,7 +268,7 @@
       <div id="conversionInfo"></div>
 
       <button type="button" class="adv-toggle" id="pppDetailsToggle" aria-expanded="false" aria-controls="pppDetailsBody">
-        <span class="material-icons">expand_more</span>How the purchasing-power figure is calculated
+        <span class="material-icons">expand_more</span>How "feels like to locals" is calculated
       </button>
       <div class="adv-body" id="pppDetailsBody" hidden></div>
 
@@ -671,17 +671,19 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════
-     The three numbers shown for a conversion, each answering a
-     different question rather than repeating one figure three ways:
-       - Exchange rate: the plain per-unit market rate (always shown).
-       - Converts to: that rate applied to whatever amount was typed.
-       - Really worth (PPP): the same local price re-expressed using the
-         PPP rate instead of the market rate — what a resident
-         effectively experiences it as, purchasing-power-wise. When the
-         local currency is undervalued against main (the common case for
-         many popular budget destinations), this comes out higher than
-         "Converts to": the item is a bigger bargain than the nominal
-         exchange rate alone suggests.
+     The two things shown for a conversion, each answering a different
+     question rather than repeating one figure two ways:
+       - Converts to: the plain per-unit market rate applied to whatever
+         amount was typed (the per-unit rate itself is folded in as a
+         caption underneath, rather than a separate row).
+       - Feels like to locals: the same local price re-expressed using
+         the PPP rate instead of the market rate — not "what it's worth"
+         in some objective sense, but roughly how much of a resident's
+         own budget it eats into, translated into your main currency.
+         When the local currency is undervalued against main (the common
+         case for many popular budget destinations), this comes out
+         higher than "Converts to": the price barely registers for you,
+         but it isn't as trivial to someone living there.
      ═══════════════════════════════════════════════════════════════════ */
   function updateConversionInfo() {
     if (!ratesUSD) { conversionInfo.innerHTML = '<p class="caveat-text">Waiting on rates…</p>'; return; }
@@ -701,21 +703,21 @@
       html += '<div class="convert-headline"><div class="convert-headline__value">' + escapeHtml(converted) + '</div><p class="convert-headline__tip">' + escapeHtml(rateLine) + "</p></div>";
 
       if (pppFactorPending(local) || pppFactorPending(main)) {
-        html += '<div class="ppp-box"><span class="ppp-box__label">Really worth (PPP)</span>' + chip("muted", "Loading…") + "</div>";
+        html += '<div class="ppp-box"><span class="ppp-box__label">Feels like to locals</span>' + chip("muted", "Loading…") + "</div>";
       } else {
         const factorLocal = pppFactorFor(local), factorMain = pppFactorFor(main);
         if (factorLocal && factorMain) {
           const pppRate = factorLocal.value / factorMain.value; // local per main, PPP-implied
           const localValue = amt / pppRate;
-          html += '<div class="ppp-box"><div><span class="ppp-box__label">Really worth (PPP)</span><p class="ppp-box__note">In local purchasing power, via the World Bank.</p></div><span class="ppp-box__value">' + escapeHtml(formatAmount(localValue, main) + " " + main) + "</span></div>";
+          html += '<div class="ppp-box"><div><span class="ppp-box__label">Feels like to locals</span><p class="ppp-box__note">Adjusted for local purchasing power, via the World Bank.</p></div><span class="ppp-box__value">' + escapeHtml(formatAmount(localValue, main) + " " + main) + "</span></div>";
         } else {
           const missing = !factorLocal ? local : main;
-          html += '<div class="ppp-box"><div><span class="ppp-box__label">Really worth (PPP)</span><p class="ppp-box__note">No World Bank data for ' + escapeHtml(missing) + '.</p></div>' + chip("muted", "No data") + "</div>";
+          html += '<div class="ppp-box"><div><span class="ppp-box__label">Feels like to locals</span><p class="ppp-box__note">No World Bank data for ' + escapeHtml(missing) + '.</p></div>' + chip("muted", "No data") + "</div>";
         }
       }
     } else {
       html += resultRow("Exchange rate", rateLine, "");
-      html += '<p class="caveat-text">Type an amount above to see it converted and what it\'s really worth.</p>';
+      html += '<p class="caveat-text">Type an amount above to see it converted, and what it feels like to locals.</p>';
     }
 
     conversionInfo.innerHTML = html;
