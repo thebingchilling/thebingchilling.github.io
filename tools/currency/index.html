@@ -377,55 +377,108 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════
-     Currency name lookup — display only. The actual selectable currency
-     list always comes from whichever rate provider answered, so a code
-     missing from this map still works fine (falls back to the bare code).
+     Currency display metadata — name, primary country (for a flag icon),
+     and common symbol, all display-only. Aims to cover every currency
+     code the live rate providers actually return (~160), not just major
+     travel destinations — a code missing here just falls back to
+     showing its bare ISO code, never excluded from the currency list.
+     Some entries deliberately omit a country (currencies not tied to a
+     single nation, e.g. EUR/XOF/XAF/XCD/XPF) or a symbol (where none is
+     well established), rather than guess.
      ═══════════════════════════════════════════════════════════════════ */
-  const CURRENCY_NAMES = {
-    USD: "US Dollar", EUR: "Euro", GBP: "British Pound", JPY: "Japanese Yen", CNY: "Chinese Yuan",
-    AUD: "Australian Dollar", CAD: "Canadian Dollar", CHF: "Swiss Franc", HKD: "Hong Kong Dollar",
-    SGD: "Singapore Dollar", SEK: "Swedish Krona", NOK: "Norwegian Krone", DKK: "Danish Krone",
-    NZD: "New Zealand Dollar", MXN: "Mexican Peso", INR: "Indian Rupee", BRL: "Brazilian Real",
-    ZAR: "South African Rand", RUB: "Russian Ruble", KRW: "South Korean Won", TRY: "Turkish Lira",
-    PLN: "Polish Zloty", THB: "Thai Baht", IDR: "Indonesian Rupiah", MYR: "Malaysian Ringgit",
-    PHP: "Philippine Peso", VND: "Vietnamese Dong", CZK: "Czech Koruna", HUF: "Hungarian Forint",
-    ILS: "Israeli Shekel", AED: "UAE Dirham", SAR: "Saudi Riyal", EGP: "Egyptian Pound",
-    NGN: "Nigerian Naira", KES: "Kenyan Shilling", ARS: "Argentine Peso", CLP: "Chilean Peso",
-    COP: "Colombian Peso", PEN: "Peruvian Sol", UYU: "Uruguayan Peso", RON: "Romanian Leu",
-    BGN: "Bulgarian Lev", ISK: "Icelandic Krona", PKR: "Pakistani Rupee", BDT: "Bangladeshi Taka",
-    LKR: "Sri Lankan Rupee", NPR: "Nepalese Rupee", KHR: "Cambodian Riel", MMK: "Myanmar Kyat",
-    LAK: "Laotian Kip", MAD: "Moroccan Dirham", TND: "Tunisian Dinar", GHS: "Ghanaian Cedi",
-    XOF: "West African CFA Franc", XAF: "Central African CFA Franc", TWD: "New Taiwan Dollar",
-    QAR: "Qatari Riyal", KWD: "Kuwaiti Dinar", BHD: "Bahraini Dinar", OMR: "Omani Rial",
-    JOD: "Jordanian Dinar", LBP: "Lebanese Pound", UAH: "Ukrainian Hryvnia", KZT: "Kazakhstani Tenge",
-    GEL: "Georgian Lari", AZN: "Azerbaijani Manat", RSD: "Serbian Dinar", ALL: "Albanian Lek",
-  };
-  function currencyName(code) { return CURRENCY_NAMES[code] || code; }
+  const CURRENCY_META = {
+    USD: { n: "US Dollar", c: "US", s: "$" }, EUR: { n: "Euro", c: "EU", s: "€" },
+    GBP: { n: "British Pound", c: "GB", s: "£" }, JPY: { n: "Japanese Yen", c: "JP", s: "¥" },
+    CNY: { n: "Chinese Yuan", c: "CN", s: "¥" }, AUD: { n: "Australian Dollar", c: "AU", s: "$" },
+    CAD: { n: "Canadian Dollar", c: "CA", s: "$" }, CHF: { n: "Swiss Franc", c: "CH", s: "CHF" },
+    HKD: { n: "Hong Kong Dollar", c: "HK", s: "$" }, SGD: { n: "Singapore Dollar", c: "SG", s: "$" },
+    SEK: { n: "Swedish Krona", c: "SE", s: "kr" }, NOK: { n: "Norwegian Krone", c: "NO", s: "kr" },
+    DKK: { n: "Danish Krone", c: "DK", s: "kr" }, NZD: { n: "New Zealand Dollar", c: "NZ", s: "$" },
+    MXN: { n: "Mexican Peso", c: "MX", s: "$" }, INR: { n: "Indian Rupee", c: "IN", s: "₹" },
+    BRL: { n: "Brazilian Real", c: "BR", s: "R$" }, ZAR: { n: "South African Rand", c: "ZA", s: "R" },
+    RUB: { n: "Russian Ruble", c: "RU", s: "₽" }, KRW: { n: "South Korean Won", c: "KR", s: "₩" },
+    TRY: { n: "Turkish Lira", c: "TR", s: "₺" }, PLN: { n: "Polish Zloty", c: "PL", s: "zł" },
+    THB: { n: "Thai Baht", c: "TH", s: "฿" }, IDR: { n: "Indonesian Rupiah", c: "ID", s: "Rp" },
+    MYR: { n: "Malaysian Ringgit", c: "MY", s: "RM" }, PHP: { n: "Philippine Peso", c: "PH", s: "₱" },
+    VND: { n: "Vietnamese Dong", c: "VN", s: "₫" }, CZK: { n: "Czech Koruna", c: "CZ", s: "Kč" },
+    HUF: { n: "Hungarian Forint", c: "HU", s: "Ft" }, ILS: { n: "Israeli Shekel", c: "IL", s: "₪" },
+    AED: { n: "UAE Dirham", c: "AE", s: "د.إ" }, SAR: { n: "Saudi Riyal", c: "SA", s: "﷼" },
+    EGP: { n: "Egyptian Pound", c: "EG", s: "£" }, NGN: { n: "Nigerian Naira", c: "NG", s: "₦" },
+    KES: { n: "Kenyan Shilling", c: "KE", s: "KSh" }, ARS: { n: "Argentine Peso", c: "AR", s: "$" },
+    CLP: { n: "Chilean Peso", c: "CL", s: "$" }, COP: { n: "Colombian Peso", c: "CO", s: "$" },
+    PEN: { n: "Peruvian Sol", c: "PE", s: "S/" }, UYU: { n: "Uruguayan Peso", c: "UY", s: "$" },
+    RON: { n: "Romanian Leu", c: "RO", s: "lei" }, BGN: { n: "Bulgarian Lev", c: "BG", s: "лв" },
+    ISK: { n: "Icelandic Krona", c: "IS", s: "kr" }, PKR: { n: "Pakistani Rupee", c: "PK", s: "₨" },
+    BDT: { n: "Bangladeshi Taka", c: "BD", s: "৳" }, LKR: { n: "Sri Lankan Rupee", c: "LK", s: "₨" },
+    NPR: { n: "Nepalese Rupee", c: "NP", s: "₨" }, KHR: { n: "Cambodian Riel", c: "KH", s: "៛" },
+    MMK: { n: "Myanmar Kyat", c: "MM", s: "K" }, LAK: { n: "Laotian Kip", c: "LA", s: "₭" },
+    MAD: { n: "Moroccan Dirham", c: "MA", s: "د.م." }, TND: { n: "Tunisian Dinar", c: "TN", s: "د.ت" },
+    GHS: { n: "Ghanaian Cedi", c: "GH", s: "₵" },
+    XOF: { n: "West African CFA Franc", s: "Fr" }, XAF: { n: "Central African CFA Franc", s: "Fr" },
+    TWD: { n: "New Taiwan Dollar", c: "TW", s: "NT$" }, QAR: { n: "Qatari Riyal", c: "QA", s: "﷼" },
+    KWD: { n: "Kuwaiti Dinar", c: "KW", s: "د.ك" }, BHD: { n: "Bahraini Dinar", c: "BH", s: ".د.ب" },
+    OMR: { n: "Omani Rial", c: "OM", s: "﷼" }, JOD: { n: "Jordanian Dinar", c: "JO", s: "د.ا" },
+    LBP: { n: "Lebanese Pound", c: "LB", s: "ل.ل" }, UAH: { n: "Ukrainian Hryvnia", c: "UA", s: "₴" },
+    KZT: { n: "Kazakhstani Tenge", c: "KZ", s: "₸" }, GEL: { n: "Georgian Lari", c: "GE", s: "₾" },
+    AZN: { n: "Azerbaijani Manat", c: "AZ", s: "₼" }, RSD: { n: "Serbian Dinar", c: "RS", s: "дин." },
+    ALL: { n: "Albanian Lek", c: "AL", s: "L" },
 
-  /* Primary country per currency (for a flag icon) and common symbol —
-     display-only conveniences, same spirit as CURRENCY_NAMES above: a
-     currency missing from either map just shows without a flag/symbol,
-     it's never excluded from the actual currency list. */
-  const CURRENCY_COUNTRY = {
-    USD: "US", EUR: "EU", GBP: "GB", JPY: "JP", CNY: "CN", AUD: "AU", CAD: "CA", CHF: "CH",
-    HKD: "HK", SGD: "SG", SEK: "SE", NOK: "NO", DKK: "DK", NZD: "NZ", MXN: "MX", INR: "IN",
-    BRL: "BR", ZAR: "ZA", RUB: "RU", KRW: "KR", TRY: "TR", PLN: "PL", THB: "TH", IDR: "ID",
-    MYR: "MY", PHP: "PH", VND: "VN", CZK: "CZ", HUF: "HU", ILS: "IL", AED: "AE", SAR: "SA",
-    EGP: "EG", NGN: "NG", KES: "KE", ARS: "AR", CLP: "CL", COP: "CO", PEN: "PE", UYU: "UY",
-    RON: "RO", BGN: "BG", ISK: "IS", PKR: "PK", BDT: "BD", LKR: "LK", NPR: "NP", KHR: "KH",
-    MMK: "MM", LAK: "LA", MAD: "MA", TND: "TN", GHS: "GH", TWD: "TW", QAR: "QA", KWD: "KW",
-    BHD: "BH", OMR: "OM", JOD: "JO", LBP: "LB", UAH: "UA", KZT: "KZ", GEL: "GE", AZN: "AZ",
-    RSD: "RS", ALL: "AL",
+    // Americas
+    BZD: { n: "Belize Dollar", c: "BZ", s: "$" }, BOB: { n: "Bolivian Boliviano", c: "BO", s: "Bs." },
+    BSD: { n: "Bahamian Dollar", c: "BS", s: "$" }, BBD: { n: "Barbadian Dollar", c: "BB", s: "$" },
+    BMD: { n: "Bermudian Dollar", c: "BM", s: "$" }, CRC: { n: "Costa Rican Colón", c: "CR", s: "₡" },
+    CUP: { n: "Cuban Peso", c: "CU", s: "$" }, DOP: { n: "Dominican Peso", c: "DO", s: "RD$" },
+    GTQ: { n: "Guatemalan Quetzal", c: "GT", s: "Q" }, GYD: { n: "Guyanese Dollar", c: "GY", s: "$" },
+    HNL: { n: "Honduran Lempira", c: "HN", s: "L" }, HTG: { n: "Haitian Gourde", c: "HT", s: "G" },
+    JMD: { n: "Jamaican Dollar", c: "JM", s: "$" }, KYD: { n: "Cayman Islands Dollar", c: "KY", s: "$" },
+    NIO: { n: "Nicaraguan Córdoba", c: "NI", s: "C$" }, PAB: { n: "Panamanian Balboa", c: "PA", s: "B/." },
+    PYG: { n: "Paraguayan Guarani", c: "PY", s: "₲" }, SRD: { n: "Surinamese Dollar", c: "SR", s: "$" },
+    TTD: { n: "Trinidad & Tobago Dollar", c: "TT", s: "$" }, VES: { n: "Venezuelan Bolívar", c: "VE", s: "Bs." },
+    AWG: { n: "Aruban Florin", c: "AW", s: "ƒ" }, ANG: { n: "Netherlands Antillean Guilder", c: "CW", s: "ƒ" },
+    XCD: { n: "East Caribbean Dollar", s: "$" },
+
+    // Europe (non-euro)
+    GIP: { n: "Gibraltar Pound", c: "GI", s: "£" }, MDL: { n: "Moldovan Leu", c: "MD", s: "L" },
+    MKD: { n: "Macedonian Denar", c: "MK", s: "ден" }, BAM: { n: "Bosnia-Herzegovina Convertible Mark", c: "BA", s: "KM" },
+    BYN: { n: "Belarusian Ruble", c: "BY", s: "Br" },
+
+    // Middle East / Central Asia
+    IQD: { n: "Iraqi Dinar", c: "IQ", s: "ع.د" }, IRR: { n: "Iranian Rial", c: "IR", s: "﷼" },
+    SYP: { n: "Syrian Pound", c: "SY", s: "£" }, YER: { n: "Yemeni Rial", c: "YE", s: "﷼" },
+    AFN: { n: "Afghan Afghani", c: "AF", s: "؋" }, AMD: { n: "Armenian Dram", c: "AM", s: "դր" },
+    TJS: { n: "Tajikistani Somoni", c: "TJ", s: "ЅМ" }, TMT: { n: "Turkmenistani Manat", c: "TM", s: "m" },
+    UZS: { n: "Uzbekistani Som", c: "UZ", s: "so'm" }, KGS: { n: "Kyrgystani Som", c: "KG", s: "лв" },
+
+    // Africa
+    DZD: { n: "Algerian Dinar", c: "DZ", s: "د.ج" }, AOA: { n: "Angolan Kwanza", c: "AO", s: "Kz" },
+    BIF: { n: "Burundian Franc", c: "BI", s: "FBu" }, BWP: { n: "Botswana Pula", c: "BW", s: "P" },
+    CDF: { n: "Congolese Franc", c: "CD", s: "FC" }, CVE: { n: "Cape Verdean Escudo", c: "CV", s: "$" },
+    DJF: { n: "Djiboutian Franc", c: "DJ", s: "Fdj" }, ERN: { n: "Eritrean Nakfa", c: "ER", s: "Nfk" },
+    ETB: { n: "Ethiopian Birr", c: "ET", s: "Br" }, GMD: { n: "Gambian Dalasi", c: "GM", s: "D" },
+    GNF: { n: "Guinean Franc", c: "GN", s: "FG" }, LRD: { n: "Liberian Dollar", c: "LR", s: "$" },
+    LSL: { n: "Lesotho Loti", c: "LS", s: "L" }, LYD: { n: "Libyan Dinar", c: "LY", s: "ل.د" },
+    MGA: { n: "Malagasy Ariary", c: "MG", s: "Ar" }, MRU: { n: "Mauritanian Ouguiya", c: "MR", s: "UM" },
+    MUR: { n: "Mauritian Rupee", c: "MU", s: "₨" }, MWK: { n: "Malawian Kwacha", c: "MW", s: "MK" },
+    MZN: { n: "Mozambican Metical", c: "MZ", s: "MT" }, NAD: { n: "Namibian Dollar", c: "NA", s: "$" },
+    RWF: { n: "Rwandan Franc", c: "RW", s: "FRw" }, SCR: { n: "Seychellois Rupee", c: "SC", s: "₨" },
+    SDG: { n: "Sudanese Pound", c: "SD", s: "ج.س." }, SLE: { n: "Sierra Leonean Leone", c: "SL", s: "Le" },
+    SOS: { n: "Somali Shilling", c: "SO", s: "S" }, SSP: { n: "South Sudanese Pound", c: "SS", s: "£" },
+    STN: { n: "São Tomé & Príncipe Dobra", c: "ST", s: "Db" }, SZL: { n: "Eswatini Lilangeni", c: "SZ", s: "L" },
+    TZS: { n: "Tanzanian Shilling", c: "TZ", s: "TSh" }, UGX: { n: "Ugandan Shilling", c: "UG", s: "USh" },
+    XPF: { n: "CFP Franc", c: "PF", s: "₣" }, ZMW: { n: "Zambian Kwacha", c: "ZM", s: "ZK" },
+    ZWL: { n: "Zimbabwean Dollar", c: "ZW", s: "$" },
+
+    // Asia-Pacific
+    BND: { n: "Brunei Dollar", c: "BN", s: "$" }, BTN: { n: "Bhutanese Ngultrum", c: "BT", s: "Nu." },
+    FJD: { n: "Fijian Dollar", c: "FJ", s: "$" }, MNT: { n: "Mongolian Tögrög", c: "MN", s: "₮" },
+    MOP: { n: "Macanese Pataca", c: "MO", s: "MOP$" }, MVR: { n: "Maldivian Rufiyaa", c: "MV", s: "Rf" },
+    PGK: { n: "Papua New Guinean Kina", c: "PG", s: "K" }, SBD: { n: "Solomon Islands Dollar", c: "SB", s: "$" },
+    TOP: { n: "Tongan Paʻanga", c: "TO", s: "T$" }, VUV: { n: "Vanuatu Vatu", c: "VU", s: "VT" },
+    WST: { n: "Samoan Tālā", c: "WS", s: "T" }, KPW: { n: "North Korean Won", c: "KP", s: "₩" },
+
+    XDR: { n: "IMF Special Drawing Rights" },
   };
-  const CURRENCY_SYMBOLS = {
-    USD: "$", EUR: "€", GBP: "£", JPY: "¥", CNY: "¥", AUD: "$", CAD: "$", CHF: "CHF",
-    HKD: "$", SGD: "$", SEK: "kr", NOK: "kr", DKK: "kr", NZD: "$", MXN: "$", INR: "₹",
-    BRL: "R$", ZAR: "R", RUB: "₽", KRW: "₩", TRY: "₺", PLN: "zł", THB: "฿", IDR: "Rp",
-    MYR: "RM", PHP: "₱", VND: "₫", CZK: "Kč", HUF: "Ft", ILS: "₪", EGP: "£", NGN: "₦",
-    KES: "KSh", ARS: "$", CLP: "$", COP: "$", PEN: "S/", UYU: "$", RON: "lei", BGN: "лв",
-    ISK: "kr", PKR: "₨", BDT: "৳", LKR: "₨", NPR: "₨", KHR: "៛", MMK: "K", LAK: "₭",
-    GHS: "₵", TWD: "NT$", UAH: "₴", KZT: "₸", GEL: "₾", AZN: "₼", ALL: "L",
-  };
+  function currencyName(code) { return (CURRENCY_META[code] && CURRENCY_META[code].n) || code; }
   function flagEmoji(countryCode) {
     if (!countryCode || countryCode.length !== 2) return "";
     try {
@@ -434,14 +487,19 @@
     } catch (e) { return ""; }
   }
   function currencyOptionLabel(code) {
-    const flag = flagEmoji(CURRENCY_COUNTRY[code]);
-    const symbol = CURRENCY_SYMBOLS[code];
-    return (flag ? flag + " " : "") + code + (symbol && symbol !== code ? " " + symbol : "");
+    const meta = CURRENCY_META[code] || {};
+    const bits = [];
+    const flag = flagEmoji(meta.c);
+    if (flag) bits.push(flag);
+    bits.push(code);
+    if (meta.s && meta.s !== code) bits.push(meta.s);
+    return bits.join(" ") + " — " + (meta.n || code);
   }
 
-  /* Same idea as CURRENCY_COUNTRY above, but World Bank's API wants
-     ISO-3166 alpha-3 codes, not alpha-2 — kept as a separate map rather
-     than derived, since a couple of entries need special handling (EUR
+  /* Same idea as the country codes in CURRENCY_META above, but World
+     Bank's API wants ISO-3166 alpha-3 codes, not alpha-2 — kept as a
+     separate map rather than derived, since a couple of entries need
+     special handling (EUR
      has no single country, so it maps to World Bank's "EMU" euro-area
      aggregate; Taiwan isn't a World Bank member and is deliberately
      omitted rather than guessed at). Currencies missing here just fall
