@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NFC Card Reader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Detect and identify NFC/RFID cards tapped against your phone, entirely on-device." />
+  <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="NFC Reader" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <script src="/shared/theme-init.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/chrome.css" />
+  <style>
+    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
+       token set to /tools/authenticator and /tools/pdf, so this tool is
+       visually consistent with the rest of the toolbox. ── */
+    :root {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+
+      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
+      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
+      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+
+      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
+      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
+      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
+      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
+      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
+      --radius: 12px;
+      --t: 0.2s cubic-bezier(0.2,0,0,1);
+      --good: #146c2e; --good-bg: #d7f5df;
+    }
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-primary: #ffb77c; --md-on-primary: #4a2800;
+        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+        --md-error: #ffb4ab; --md-on-error: #690005;
+        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+        --md-surface: #17120d;
+        --md-surface-container-lowest: #100c08;
+        --md-surface-container-low: #201a14;
+        --md-surface-container: #241e18;
+        --md-surface-container-high: #2f2822;
+        --md-surface-container-highest: #3a332c;
+        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+        --primary-dark: #ffcda0;
+        --text-faint: #a89686;
+        --good: #6fdb8f; --good-bg: #163a24;
+      }
+    }
+    :root[data-theme="dark"] {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+      --good: #6fdb8f; --good-bg: #163a24;
+    }
+    :root[data-theme="light"] {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+      --primary-dark: #632f00;
+      --text-faint: #8a7a6d;
+      --good: #146c2e; --good-bg: #d7f5df;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body { -webkit-tap-highlight-color: transparent; }
+    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button, .btn, .history-item { -webkit-touch-callout: none; user-select: none; }
+    .btn, .history-item { position: relative; overflow: hidden; }
+
+    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    body { scrollbar-width: none; }
+    body::-webkit-scrollbar { display: none; }
+
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
+    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
+    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
+    .btn--primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
+    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .btn--block { width: 100%; }
+
+    /* ── Page content ── */
+    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem 1rem calc(4.6rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
+    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
+    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
+    .hero__icon .material-icons { font-size: 30px; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+
+    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .card.hidden { display: none; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; gap: 0.5rem; }
+    .section-title h2 { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
+
+    /* ── Scan zone ── */
+    .nfc-scan-zone { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 0.75rem 1rem 1.25rem; text-align: center; }
+    .nfc-pulse { position: relative; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nfc-pulse__ring { position: absolute; inset: 0; border-radius: 50%; background: var(--md-primary-container); opacity: 0.55; animation: nfc-pulse 1.8s ease-out infinite; }
+    .nfc-pulse__ring--d2 { animation-delay: 0.6s; }
+    .nfc-scan-zone:not(.nfc-scan-zone--scanning) .nfc-pulse__ring { display: none; }
+    .nfc-pulse__icon { position: relative; width: 72px; height: 72px; border-radius: 50%; background: var(--md-primary-container); color: var(--md-on-primary-container); display: flex; align-items: center; justify-content: center; box-shadow: var(--el1); }
+    .nfc-pulse__icon .material-icons { font-size: 36px; }
+    @keyframes nfc-pulse { 0% { transform: scale(0.82); opacity: 0.55; } 100% { transform: scale(1.55); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .nfc-pulse__ring { animation: none; display: none !important; } }
+    .nfc-scan-zone__label { font-size: 0.92rem; font-weight: 500; color: var(--text); margin: 0; }
+    .nfc-scan-zone__sub { font-size: 0.8rem; color: var(--text-faint); margin: 0; }
+
+    .req-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    .req-list li { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; color: var(--text-muted); }
+    .req-list .material-icons { font-size: 18px; flex-shrink: 0; }
+    .req-list .ok .material-icons { color: var(--good); }
+    .req-list .bad .material-icons { color: var(--md-error); }
+
+    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
+    .error-banner.hidden { display: none; }
+    .error-banner .material-icons { flex-shrink: 0; }
+    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
+    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
+
+    /* ── Result ── */
+    .result-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+    .result-row:last-child { border-bottom: none; }
+    .result-row__label { font-size: 0.78rem; color: var(--text-muted); flex-shrink: 0; padding-top: 0.15rem; }
+    .result-row__value { font-size: 0.85rem; color: var(--text); text-align: right; word-break: break-word; }
+    .result-row__value--mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 0.01em; }
+    .chip { display: inline-flex; align-items: center; font-size: 0.66rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); margin-left: 0.4rem; white-space: nowrap; vertical-align: middle; }
+    .copy-btn { border: none; background: none; color: var(--text-faint); cursor: pointer; padding: 0.2rem; border-radius: 8px; display: inline-flex; vertical-align: middle; margin-left: 0.3rem; }
+    .copy-btn .material-icons { font-size: 16px; }
+    .copy-btn:hover { color: var(--primary); }
+
+    .caveat { display: flex; gap: 0.55rem; background: var(--bg2); border-radius: 12px; padding: 0.7rem 0.8rem; margin-top: 0.8rem; font-size: 0.76rem; line-height: 1.45; color: var(--text-muted); }
+    .caveat .material-icons { font-size: 17px; color: var(--text-faint); flex-shrink: 0; margin-top: 0.05rem; }
+
+    .record-list { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.9rem; }
+    .record-card { display: flex; gap: 0.65rem; background: var(--bg2); border-radius: 14px; padding: 0.7rem 0.8rem; }
+    .record-card .material-icons { font-size: 20px; color: var(--primary); flex-shrink: 0; margin-top: 0.05rem; }
+    .record-card__type { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-faint); margin: 0 0 0.2rem; }
+    .record-card__body { font-size: 0.84rem; color: var(--text); word-break: break-word; margin: 0; }
+    .record-card__body a { color: var(--primary-dark); }
+    .record-card__meta { font-size: 0.72rem; color: var(--text-faint); margin: 0.15rem 0 0; }
+
+    .raw-toggle { display: flex; align-items: center; gap: 0.3rem; border: none; background: none; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; padding: 0.7rem 0.1rem 0; }
+    .raw-toggle .material-icons { font-size: 18px; transition: transform var(--t); }
+    .raw-toggle--open .material-icons { transform: rotate(180deg); }
+    .raw-dump { display: none; margin-top: 0.6rem; background: var(--bg2); border-radius: 12px; padding: 0.7rem 0.8rem; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted); white-space: pre-wrap; word-break: break-all; }
+    .raw-dump--open { display: block; }
+
+    /* ── History ── */
+    .history-empty { text-align: center; padding: 1.25rem 1rem; color: var(--text-faint); font-size: 0.82rem; }
+    .history-empty.hidden { display: none; }
+    .history-item { display: flex; align-items: center; gap: 0.75rem; background: var(--bg2); border-radius: 14px; padding: 0.65rem 0.85rem; margin-bottom: 0.5rem; cursor: pointer; text-align: left; width: 100%; border: none; font: inherit; color: inherit; }
+    .history-item:last-child { margin-bottom: 0; }
+    .history-item__icon { flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; }
+    .history-item__icon .material-icons { font-size: 18px; }
+    .history-item__body { min-width: 0; flex: 1; }
+    .history-item__uid { font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .history-item__meta { font-size: 0.72rem; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
+    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
+    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <div class="top-bar__brand">
+      <span class="top-bar__name">🍦 Bingqilin</span>
+    </div>
+    <div class="top-bar__actions">
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="hero">
+      <div class="hero__icon"><span class="material-icons">contactless</span></div>
+      <h1 class="hero__title">NFC Card Reader</h1>
+      <p class="hero__sub">Tap an NFC/RFID card against the back of your phone to read its serial number and any data it carries — decoded entirely on your device.</p>
+    </div>
+
+    <!-- Unsupported-device notice ── shown instead of the scan card when
+         Web NFC isn't available here. -->
+    <div class="card hidden" id="unsupportedCard">
+      <div class="section-title"><h2>NFC isn't available here</h2></div>
+      <ul class="req-list" id="reqList"></ul>
+      <div class="caveat">
+        <span class="material-icons">info</span>
+        <span>Web NFC (the browser API this tool relies on) currently only ships in Chrome and other Chromium browsers on Android, on pages served over HTTPS, with a device that has NFC hardware.</span>
+      </div>
+    </div>
+
+    <!-- Scan card ── shown when Web NFC is available. -->
+    <div class="card hidden" id="scanCard">
+      <div class="section-title"><h2>Scan</h2></div>
+      <div class="nfc-scan-zone" id="scanZone">
+        <div class="nfc-pulse">
+          <span class="nfc-pulse__ring"></span>
+          <span class="nfc-pulse__ring nfc-pulse__ring--d2"></span>
+          <span class="nfc-pulse__icon"><span class="material-icons" id="scanIcon">contactless</span></span>
+        </div>
+        <p class="nfc-scan-zone__label" id="scanLabel">Tap "Start scanning" to begin</p>
+        <p class="nfc-scan-zone__sub" id="scanSub">You'll be asked to allow NFC access the first time.</p>
+        <button class="btn btn--primary" id="scanToggleBtn" type="button">
+          <span class="material-icons" style="font-size:18px;">contactless</span>Start scanning
+        </button>
+      </div>
+      <div class="error-banner hidden" id="scanError" role="alert">
+        <span class="material-icons">error_outline</span>
+        <div>
+          <p class="error-banner__title">Couldn't start scanning</p>
+          <p class="error-banner__body" id="scanErrorBody"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result card ── the most recently read card. -->
+    <div class="card hidden" id="resultCard">
+      <div class="section-title"><h2>Card detected</h2></div>
+      <div id="resultBody"></div>
+      <button class="raw-toggle" id="rawToggle" type="button">
+        <span class="material-icons">expand_more</span>Raw data
+      </button>
+      <div class="raw-dump" id="rawDump"></div>
+    </div>
+
+    <!-- History ── every card read this session (in-memory only). -->
+    <div class="card" id="historyCard">
+      <div class="section-title"><h2>This session</h2></div>
+      <p class="history-empty" id="historyEmpty">Cards you scan will show up here — this list clears when you leave the page.</p>
+      <div id="historyList"></div>
+    </div>
+
+    <div class="card note-card">
+      <span class="material-icons">shield</span>
+      <p>Everything happens on-device via the browser's built-in Web NFC API — nothing is ever uploaded. Web NFC only exposes a tag's serial number and any NDEF message it carries, not low-level chip details, so the card family and manufacturer shown here are best-effort guesses from that serial number, not a certain identification.</p>
+    </div>
+  </main>
+
+  <div class="bottom-dock">
+    <nav class="bottom-nav" aria-label="Primary">
+      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+        <span class="bottom-nav__label">Media</span>
+      </a>
+      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Live</span>
+      </a>
+      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+        <span class="bottom-nav__label">Tools</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<script src="/shared/chrome.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  BQChrome.initRipple(".icon-btn, .btn, .history-item, .bottom-nav__item");
+  BQChrome.initTheme();
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Identification heuristics.
+
+     Web NFC exposes exactly two things per read: the tag's serial number
+     (`serialNumber`, colon-hex) and any NDEF message on it. It does NOT
+     expose ATQA/SAK, tech list, or chip identity — browsers deliberately
+     keep that out of reach for fingerprinting/privacy reasons. So "card
+     family" and "manufacturer" below are inferences from serial-number
+     length and the ISO/IEC 7816-6 IC-manufacturer registry, not a real
+     tag-typing API. That limitation is stated in the UI, not hidden.
+     ═══════════════════════════════════════════════════════════════════ */
+  const MANUFACTURERS = {
+    0x01: "Motorola (UK)", 0x02: "STMicroelectronics", 0x03: "Hitachi",
+    0x04: "NXP Semiconductors", 0x05: "Infineon Technologies", 0x06: "Cylink",
+    0x07: "Texas Instruments", 0x08: "Fujitsu", 0x09: "Matsushita Electronics (Panasonic)",
+    0x0A: "NEC", 0x0B: "Oki Electric", 0x0C: "Toshiba",
+    0x0D: "Mitsubishi Electric", 0x0E: "Samsung Electronics", 0x0F: "SK Hynix",
+    0x10: "LG Semiconductors",
+  };
+
+  function uidBytes(serialNumber) {
+    if (!serialNumber) return [];
+    return serialNumber.split(":").filter(Boolean).map((h) => parseInt(h, 16)).filter((n) => !isNaN(n));
+  }
+
+  function identifyCard(serialNumber) {
+    const bytes = uidBytes(serialNumber);
+    const len = bytes.length;
+    let family, manufacturer = null, caveat = "";
+
+    if (!serialNumber || len === 0) {
+      family = "Unknown — this reading didn't include a serial number";
+    } else if (len === 8) {
+      family = "8-byte IDm — consistent with a Sony FeliCa card (e.g. transit or e-money cards)";
+      manufacturer = "Sony (FeliCa)";
+    } else if (len === 4) {
+      family = "4-byte UID — consistent with MIFARE Classic 1K/4K/Mini or another simple ISO 14443 Type A tag";
+      manufacturer = MANUFACTURERS[bytes[0]] || null;
+      caveat = "4-byte UIDs are sometimes generated per-session rather than fixed, so the manufacturer guess isn't as reliable here as it is for longer UIDs.";
+    } else if (len === 7) {
+      family = "7-byte UID — consistent with NTAG213/215/216, MIFARE Ultralight/Ultralight C/DESFire, or a contactless ID/bank card";
+      manufacturer = MANUFACTURERS[bytes[0]] || null;
+    } else if (len === 10) {
+      family = "10-byte UID — a double-size ISO 14443 Type A serial number (uncommon)";
+      manufacturer = MANUFACTURERS[bytes[0]] || null;
+    } else {
+      family = len + "-byte serial number — not a standard ISO 14443/FeliCa length";
+    }
+
+    return { family, manufacturer, caveat, len };
+  }
+
+  /* ── NDEF record decoding. The browser already parses text/url records
+     into plain bytes + convenience fields (record.encoding, record.lang),
+     so this just picks the right decoder per recordType. ── */
+  function bytesToHex(view) {
+    if (!view || !view.byteLength) return "(empty)";
+    const out = [];
+    for (let i = 0; i < view.byteLength; i++) out.push(view.getUint8(i).toString(16).padStart(2, "0"));
+    return out.join(" ");
+  }
+
+  function tryDecodeUtf8(view) {
+    try { return new TextDecoder("utf-8", { fatal: true }).decode(view); }
+    catch (e) { return null; }
+  }
+
+  function decodeRecord(record) {
+    const type = record.recordType;
+    if (type === "empty") return { kind: "empty" };
+    if (type === "text") {
+      try {
+        const text = new TextDecoder(record.encoding || "utf-8").decode(record.data);
+        return { kind: "text", text, lang: record.lang || "" };
+      } catch (e) { /* fall through to raw */ }
+    }
+    if (type === "url" || type === "absolute-url") {
+      try {
+        const url = new TextDecoder(record.encoding || "utf-8").decode(record.data);
+        return { kind: "url", url };
+      } catch (e) { /* fall through to raw */ }
+    }
+    if (type === "mime") {
+      const text = tryDecodeUtf8(record.data);
+      if (text !== null) return { kind: "mime", mediaType: record.mediaType, text };
+      return { kind: "mime-binary", mediaType: record.mediaType, hex: bytesToHex(record.data) };
+    }
+    if (type === "smart-poster") {
+      return { kind: "smart-poster", hex: bytesToHex(record.data) };
+    }
+    // External/unknown type
+    const text = tryDecodeUtf8(record.data);
+    if (text !== null) return { kind: "external", type, text };
+    return { kind: "external-binary", type, hex: bytesToHex(record.data) };
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  const RECORD_ICONS = {
+    empty: "block", text: "notes", url: "link", mime: "description",
+    "mime-binary": "description", "smart-poster": "auto_stories",
+    external: "extension", "external-binary": "extension",
+  };
+  const RECORD_LABELS = {
+    empty: "Empty record", text: "Text", url: "Link", mime: "Media",
+    "mime-binary": "Media (binary)", "smart-poster": "Smart poster",
+    external: "Custom record", "external-binary": "Custom record (binary)",
+  };
+
+  function renderRecordBody(decoded) {
+    switch (decoded.kind) {
+      case "empty": return "This record carries no data.";
+      case "text": return escapeHtml(decoded.text) + (decoded.lang ? ' <span class="record-card__meta" style="display:inline;">(' + escapeHtml(decoded.lang) + ")</span>" : "");
+      case "url": return '<a href="' + escapeHtml(decoded.url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(decoded.url) + "</a>";
+      case "mime": return escapeHtml(decoded.text);
+      case "mime-binary": return "Binary payload (" + escapeHtml(decoded.mediaType || "unknown type") + ") — see raw data below.";
+      case "smart-poster": return "Nested Smart Poster message — see raw data below.";
+      case "external": return escapeHtml(decoded.text);
+      case "external-binary": return "Binary payload — see raw data below.";
+      default: return "";
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Support detection & requirement checklist.
+     ═══════════════════════════════════════════════════════════════════ */
+  const hasWebNfc = "NDEFReader" in window;
+  const isSecure = !!window.isSecureContext;
+  const supported = hasWebNfc && isSecure;
+
+  function renderReqList() {
+    const items = [
+      { ok: isSecure, label: "Served over a secure (HTTPS) connection" },
+      { ok: hasWebNfc, label: "Browser supports Web NFC (Chrome/Chromium on Android)" },
+    ];
+    $("reqList").innerHTML = items.map((it) =>
+      '<li class="' + (it.ok ? "ok" : "bad") + '"><span class="material-icons">' + (it.ok ? "check_circle" : "cancel") + "</span>" + escapeHtml(it.label) + "</li>"
+    ).join("");
+  }
+
+  if (!supported) {
+    renderReqList();
+    $("unsupportedCard").classList.remove("hidden");
+  } else {
+    $("scanCard").classList.remove("hidden");
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Scanning.
+     ═══════════════════════════════════════════════════════════════════ */
+  let ndef = null;
+  let controller = null;
+  let scanning = false;
+  let history = [];
+
+  const scanZone = $("scanZone"), scanLabel = $("scanLabel"), scanSub = $("scanSub");
+  const scanToggleBtn = $("scanToggleBtn");
+  const scanError = $("scanError"), scanErrorBody = $("scanErrorBody");
+
+  function hideScanError() { scanError.classList.add("hidden"); }
+  function showScanError(msg) { scanErrorBody.textContent = msg; scanError.classList.remove("hidden"); }
+
+  function setScanningUi(isScanning) {
+    scanning = isScanning;
+    scanZone.classList.toggle("nfc-scan-zone--scanning", isScanning);
+    if (isScanning) {
+      scanLabel.textContent = "Hold a card against the back of your phone";
+      scanSub.textContent = "Scanning continuously — tap different cards one after another.";
+      scanToggleBtn.innerHTML = '<span class="material-icons" style="font-size:18px;">stop_circle</span>Stop scanning';
+      scanToggleBtn.className = "btn btn--ghost";
+    } else {
+      scanLabel.textContent = 'Tap "Start scanning" to begin';
+      scanSub.textContent = "You'll be asked to allow NFC access the first time.";
+      scanToggleBtn.innerHTML = '<span class="material-icons" style="font-size:18px;">contactless</span>Start scanning';
+      scanToggleBtn.className = "btn btn--primary";
+    }
+  }
+
+  function friendlyErrorMessage(err) {
+    const name = err && err.name;
+    if (name === "NotAllowedError") return "Permission to use NFC was denied. Check this site's permissions in your browser settings and try again.";
+    if (name === "NotSupportedError") return "This device doesn't have NFC hardware, or NFC scanning isn't supported here.";
+    if (name === "NotReadableError") return "NFC appears to be turned off. Enable NFC in your phone's system settings (usually Settings → Connected devices → NFC) and try again.";
+    if (name === "InvalidStateError") return "A scan is already running.";
+    if (name === "AbortError") return "The scan was cancelled.";
+    return (err && err.message) || String(err);
+  }
+
+  async function startScan() {
+    hideScanError();
+    try {
+      ndef = new window.NDEFReader();
+      controller = new AbortController();
+      controller.signal.addEventListener("abort", () => setScanningUi(false));
+      await ndef.scan({ signal: controller.signal });
+      setScanningUi(true);
+      ndef.addEventListener("reading", onReading);
+      ndef.addEventListener("readingerror", () => {
+        showScanError("Couldn't read that tag — try holding it flatter and steadier against the back of the phone.");
+      });
+    } catch (err) {
+      setScanningUi(false);
+      showScanError(friendlyErrorMessage(err));
+    }
+  }
+
+  function stopScan() {
+    if (controller) controller.abort();
+    setScanningUi(false);
+  }
+
+  scanToggleBtn.addEventListener("click", () => {
+    if (scanning) stopScan();
+    else startScan();
+  });
+
+  /* ── Handling a read ── */
+  const resultCard = $("resultCard"), resultBody = $("resultBody");
+  const rawToggle = $("rawToggle"), rawDump = $("rawDump");
+  rawToggle.addEventListener("click", () => {
+    const open = rawDump.classList.toggle("raw-dump--open");
+    rawToggle.classList.toggle("raw-toggle--open", open);
+  });
+
+  function onReading(event) {
+    hideScanError();
+    const serialNumber = event.serialNumber || "";
+    const records = (event.message && event.message.records) || [];
+    const decodedRecords = records.map((r) => ({ raw: r, decoded: decodeRecord(r) }));
+    const info = identifyCard(serialNumber);
+
+    const entry = {
+      time: new Date(),
+      serialNumber,
+      info,
+      records: decodedRecords,
+      recordCount: records.length,
+    };
+    history.unshift(entry);
+    renderResult(entry);
+    renderHistory();
+  }
+
+  async function copyText(text, btn) {
+    let copied = false;
+    try { await navigator.clipboard.writeText(text); copied = true; } catch (e) {}
+    if (!copied) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        copied = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch (e) {}
+    }
+    if (copied && btn) {
+      const original = btn.textContent;
+      btn.querySelector(".material-icons").textContent = "check";
+      setTimeout(() => { btn.querySelector(".material-icons").textContent = "content_copy"; }, 1200);
+    }
+  }
+
+  function renderResult(entry) {
+    resultCard.classList.remove("hidden");
+    const uidDisplay = entry.serialNumber ? entry.serialNumber.toUpperCase() : "Not provided by this device";
+
+    let html = "";
+    html += '<div class="result-row"><span class="result-row__label">Serial number (UID)</span><span class="result-row__value result-row__value--mono">' + escapeHtml(uidDisplay) +
+      (entry.serialNumber ? '<button class="copy-btn" type="button" aria-label="Copy serial number" data-copy="' + escapeHtml(entry.serialNumber) + '"><span class="material-icons">content_copy</span></button>' : "") +
+      "</span></div>";
+    html += '<div class="result-row"><span class="result-row__label">Likely card family</span><span class="result-row__value">' + escapeHtml(entry.info.family) + '<span class="chip">best-effort guess</span></span></div>';
+    if (entry.info.manufacturer) {
+      html += '<div class="result-row"><span class="result-row__label">Likely manufacturer</span><span class="result-row__value">' + escapeHtml(entry.info.manufacturer) + "</span></div>";
+    }
+    html += '<div class="result-row"><span class="result-row__label">NDEF data</span><span class="result-row__value">' + (entry.recordCount > 0 ? entry.recordCount + " record" + (entry.recordCount === 1 ? "" : "s") : "None found") + "</span></div>";
+
+    if (entry.info.caveat) {
+      html += '<div class="caveat"><span class="material-icons">info</span><span>' + escapeHtml(entry.info.caveat) + "</span></div>";
+    }
+    if (entry.recordCount === 0) {
+      html += '<div class="caveat"><span class="material-icons">info</span><span>No NDEF message was found. This may be a blank tag, or a card (like a MIFARE Classic sector) that stores data in a proprietary format Web NFC can\'t read — only the serial number was available.</span></div>';
+    }
+
+    if (entry.records.length > 0) {
+      html += '<div class="record-list">';
+      for (const { decoded } of entry.records) {
+        const icon = RECORD_ICONS[decoded.kind] || "extension";
+        const label = decoded.kind === "external" || decoded.kind === "external-binary" ? decoded.type : (RECORD_LABELS[decoded.kind] || decoded.kind);
+        html += '<div class="record-card"><span class="material-icons">' + icon + '</span><div><p class="record-card__type">' + escapeHtml(label) + '</p><p class="record-card__body">' + renderRecordBody(decoded) + "</p></div></div>";
+      }
+      html += "</div>";
+    }
+
+    resultBody.innerHTML = html;
+    const copyBtn = resultBody.querySelector("[data-copy]");
+    if (copyBtn) copyBtn.addEventListener("click", () => copyText(copyBtn.getAttribute("data-copy"), copyBtn));
+
+    // Raw dump: UID + every record's raw bytes.
+    let raw = "Serial number: " + (entry.serialNumber || "(none)") + "\n";
+    entry.records.forEach((r, i) => {
+      raw += "\nRecord " + (i + 1) + " — type: " + r.raw.recordType + (r.raw.mediaType ? ", mediaType: " + r.raw.mediaType : "") + (r.raw.id ? ", id: " + r.raw.id : "") + "\n";
+      raw += bytesToHex(r.raw.data) + "\n";
+    });
+    rawDump.textContent = raw.trim();
+    rawDump.classList.remove("raw-dump--open");
+    rawToggle.classList.remove("raw-toggle--open");
+
+    resultCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  /* ── History ── */
+  const historyList = $("historyList"), historyEmpty = $("historyEmpty");
+  function renderHistory() {
+    historyEmpty.classList.toggle("hidden", history.length > 0);
+    historyList.innerHTML = "";
+    history.forEach((entry, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "history-item";
+      btn.type = "button";
+      const uidShort = entry.serialNumber ? entry.serialNumber.toUpperCase() : "No serial number";
+      btn.innerHTML =
+        '<span class="history-item__icon"><span class="material-icons">contactless</span></span>' +
+        '<span class="history-item__body">' +
+          '<span class="history-item__uid">' + escapeHtml(uidShort) + "</span>" +
+          '<span class="history-item__meta">' + escapeHtml(entry.info.family.split(" — ")[0]) + " · " + entry.time.toLocaleTimeString() + "</span>" +
+        "</span>";
+      btn.addEventListener("click", () => renderResult(entry));
+      historyList.appendChild(btn);
+    });
+  }
+
+  renderHistory();
+})();
+</script>
+</body>
+</html>
