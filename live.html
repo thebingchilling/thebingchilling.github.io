@@ -11,7 +11,7 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <!-- Kept in sync with the current surface color — see index.html for the
      full rationale. -->
-<meta name="theme-color" id="themeColorMeta" content="#fff8f4" />
+<meta name="theme-color" id="themeColorMeta" content="#ffffff" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="Bingqilin" />
@@ -197,7 +197,14 @@
   .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
   /* ── Bottom dock: mini-player stacked above the bottom nav ── */
-  .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; }
+  /* Hidden via transform+opacity rather than display:none so the dock's box
+     never collapses to zero height — inside a View Transition that kind of
+     size change gets captured as a squash/scale animation instead of a
+     clean slide, since .bottom-dock carries its own view-transition-name
+     (see the @view-transition rule above). Staying position:fixed the whole
+     time means this costs nothing layout-wise even while "hidden". */
+  .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; transition: transform var(--t), opacity var(--t); }
+  .bottom-dock--hidden { transform: translateY(100%); opacity: 0; pointer-events: none; }
 
   /* ── Mini-player: a native music/radio app's now-playing bar. Lets a
      channel keep playing while browsing instead of always killing it on
@@ -217,7 +224,6 @@
 
   /* ── Bottom navigation (M3 NavigationBar) — see index.html for the full rationale ── */
   .bottom-nav { display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
-  .bottom-nav.hidden { display: none; }
   .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
   .bottom-nav__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 12px; }
   .bottom-nav__icon-wrap { display: flex; align-items: center; justify-content: center; width: 58px; height: 30px; border-radius: 16px; transition: background var(--t), color var(--t); }
@@ -229,13 +235,10 @@
   .bottom-nav__item--active:hover .bottom-nav__icon-wrap { background: var(--md-secondary-container); }
 
   main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  .view { position: relative; display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; overscroll-behavior-y: contain; }
-  /* ── Pull-to-refresh indicator — see initPullToRefresh() for the gesture ── */
-  .pull-indicator { position: absolute; top: 0.5rem; left: 50%; width: 34px; height: 34px; margin-left: -17px; border-radius: 50%; background: var(--md-surface-container-high); box-shadow: var(--el2); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; z-index: 5; color: var(--primary); }
-  .pull-indicator .material-icons { font-size: 18px; }
-  .pull-indicator--spinning .material-icons { animation: pull-spin 0.7s linear infinite; }
-  @keyframes pull-spin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .pull-indicator--spinning .material-icons { animation: none; } }
+  /* overscroll-behavior-y left at its default (not "contain") so a pull
+     past the top of this scroll container chains to the document and the
+     browser's own native pull-to-refresh still fires. */
+  .view { position: relative; display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; }
   /* Browse is the only screen that shows the bottom nav — reserve room so
      its content never sits underneath the fixed bar. */
   #viewBrowse { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
@@ -459,7 +462,6 @@
   <main class="app-main">
     <!-- Browse view -->
     <section id="viewBrowse" class="view view--active" aria-label="Browse channels">
-      <div class="pull-indicator" id="pullIndicatorBrowse" aria-hidden="true"><span class="material-icons">refresh</span></div>
       <div class="tab-bar" role="tablist">
         <button class="tab-btn tab-btn--active" id="tabRadio" type="button" role="tab" aria-selected="true">
           <span class="material-icons">radio</span>Radio <span class="tab-btn__count" id="countRadio"></span>
@@ -681,52 +683,6 @@ document.addEventListener("pointerdown", (e) => {
   if (!el || el.disabled) return;
   spawnRipple(el, e.clientX, e.clientY);
 }, { passive: true });
-
-/* ── Pull-to-refresh — see index.html for the full rationale. Same
-   mechanism, kept in sync; the invocation is wired up at the bottom of
-   this script, after init()/reload() exist. ── */
-function initPullToRefresh(container, indicatorEl, onRefresh) {
-  const THRESHOLD = 64, MAX_PULL = 100;
-  let startY = 0, pulling = false, engaged = false, currentPull = 0, refreshing = false;
-
-  container.addEventListener("touchstart", e => {
-    if (refreshing) { pulling = false; return; }
-    startY = e.touches[0].clientY;
-    pulling = container.scrollTop <= 0;
-    engaged = false;
-  }, { passive: true });
-
-  container.addEventListener("touchmove", e => {
-    if (!pulling || refreshing) return;
-    const dy = e.touches[0].clientY - startY;
-    if (dy <= 0 || container.scrollTop > 0) { pulling = false; return; }
-    engaged = true;
-    e.preventDefault();
-    currentPull = Math.min(MAX_PULL, dy * 0.5);
-    const progress = Math.min(1, currentPull / THRESHOLD);
-    indicatorEl.style.opacity = String(progress);
-    indicatorEl.style.transform = `translateY(${currentPull}px) rotate(${progress * 360}deg)`;
-  }, { passive: false });
-
-  container.addEventListener("touchend", async () => {
-    if (!pulling || !engaged || refreshing) { pulling = false; engaged = false; return; }
-    pulling = false; engaged = false;
-    if (currentPull >= THRESHOLD) {
-      refreshing = true;
-      indicatorEl.classList.add("pull-indicator--spinning");
-      indicatorEl.style.transform = `translateY(${THRESHOLD}px)`;
-      indicatorEl.style.opacity = "1";
-      try { await onRefresh(); } catch (e) {}
-      refreshing = false;
-      indicatorEl.classList.remove("pull-indicator--spinning");
-    }
-    currentPull = 0;
-    indicatorEl.style.transition = "opacity 0.2s, transform 0.2s";
-    indicatorEl.style.transform = "";
-    indicatorEl.style.opacity = "0";
-    setTimeout(() => { indicatorEl.style.transition = ""; }, 220);
-  }, { passive: true });
-}
 
 /* ── Swipe-back — see index.html for the full rationale. Same mechanism,
    kept in sync; the invocation is wired up at the bottom of this script. ── */
@@ -1790,7 +1746,7 @@ function openPlayer(channel) {
     $("viewPlayer").classList.add("view--active");
     // Bottom nav is the root-level tab bar — Player pushes over it
     // full-screen, like a native app's tab bar hiding on pushed screens.
-    bottomNav.classList.add("hidden");
+    bottomDock.classList.add("bottom-dock--hidden");
   });
   $("backFromPlayerLabel").textContent = isTv ? "TV" : "Radio";
   $("pipBtn").classList.toggle("hidden", !isTv || !document.pictureInPictureEnabled);
@@ -1856,7 +1812,7 @@ function openPlayer(channel) {
   }
 }
 
-const bottomNav = $("bottomNav");
+const bottomDock = $("bottomDock");
 const navBrowseBtn = $("navBrowseBtn");
 navBrowseBtn.addEventListener("click", () => {
   if ($("viewBrowse").classList.contains("view--active")) return;
@@ -1917,7 +1873,7 @@ miniPlayer.addEventListener("click", () => {
   switchView(() => {
     $("viewBrowse").classList.remove("view--active");
     $("viewPlayer").classList.add("view--active");
-    bottomNav.classList.add("hidden");
+    bottomDock.classList.add("bottom-dock--hidden");
   });
   clearInterval(epgPanelInterval);
   updateEpgPanel();
@@ -1956,7 +1912,7 @@ $("backFromPlayer").addEventListener("click", () => {
   switchView(() => {
     $("viewPlayer").classList.remove("view--active");
     $("viewBrowse").classList.add("view--active");
-    bottomNav.classList.remove("hidden");
+    bottomDock.classList.remove("bottom-dock--hidden");
   });
   clearInterval(epgPanelInterval);
   if (keepPlaying) showMiniPlayer(currentPlayerChannel);
@@ -1973,7 +1929,6 @@ try {
 } catch (e) { /* pushState unavailable in this context — leave the URL as-is */ }
 init();
 initTheme();
-initPullToRefresh($("viewBrowse"), $("pullIndicatorBrowse"), () => init());
 initSwipeBack(document, () => {
   if ($("viewPlayer").classList.contains("view--active")) $("backFromPlayer").click();
 });
