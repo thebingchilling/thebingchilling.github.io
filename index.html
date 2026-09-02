@@ -9,9 +9,9 @@
        (own icon, own window, no address bar) rather than a browser tab. ── -->
   <link rel="manifest" href="/manifest.webmanifest" />
   <!-- Kept in sync with the current surface color (light/dark, plus any manual
-       override) by initTheme()/applyTheme() below, so the OS status bar and
-       gesture nav bar blend into the app's own top/bottom bars instead of
-       showing a mismatched browser color. -->
+       override) by /shared/chrome.js's BQChrome.initTheme() below, so the OS
+       status bar and gesture nav bar blend into the app's own top/bottom
+       bars instead of showing a mismatched browser color. -->
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -21,20 +21,12 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
-  <script>
-    // Runs before first paint so a saved manual Light/Dark choice applies
-    // immediately instead of flashing the system-default theme first.
-    // "System" (no saved choice) intentionally does nothing here — the
-    // @media (prefers-color-scheme) CSS handles that case with zero JS.
-    try {
-      var t = localStorage.getItem("bq_theme");
-      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
-    } catch (e) {}
-  </script>
+  <script src="/shared/theme-init.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/chrome.css" />
   <style>
     :root {
       /* ── Material Design 3 tonal palette (warm terracotta seed) ── */
@@ -162,21 +154,20 @@
        default so the browser's native pull-to-refresh still works. */
     body { -webkit-tap-highlight-color: transparent; }
     button, a, [role="button"], .card, .chip, .ep-card, .source-card { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    button, .icon-btn, .btn, .chip, .card, .ep-card, .source-card,
-    .play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item {
+    button, .btn, .chip, .card, .ep-card, .source-card,
+    .play-btn, .reroll-btn, .share-btn, .player-back, .segmented__item, .source-menu__item {
       -webkit-touch-callout: none; user-select: none;
     }
     /* ── Ripple: Material state-layer touch feedback. Hover states above
        only fire for a mouse — touch has nothing today, which is the single
        biggest reason the app currently *feels* like a webpage instead of a
-       native surface. JS (spawnRipple) appends/removes the .ripple span. ── */
-    .icon-btn, .btn, .chip, .card, .ep-card, .source-card,
-    .play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item {
+       native surface. JS (spawnRipple) appends/removes the .ripple span.
+       .icon-btn/.bottom-nav__item's own position/overflow for this live in
+       /shared/chrome.css since every page ripples them. ── */
+    .btn, .chip, .card, .ep-card, .source-card,
+    .play-btn, .reroll-btn, .share-btn, .player-back, .segmented__item, .source-menu__item {
       position: relative; overflow: hidden;
     }
-    .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
-    @keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
-    @media (prefers-reduced-motion: reduce) { .ripple { display: none; } }
 
     /* ── View Transitions: fade-through motion for setView() navigation ── */
     ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; animation-timing-function: cubic-bezier(0.2,0,0,1); }
@@ -204,27 +195,6 @@
     body, .view { scrollbar-width: none; }
     body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
 
-    /* ── Cross-document view transitions: Search (/) and Live TV (/live) are
-       separate pages, so switching between them is a full navigation —
-       without this it's a hard flash-to-white. Chrome morphs the shared
-       top-bar/bottom-dock chrome across the navigation instead of crossfading
-       two full-page snapshots, so the app shell reads as staying in place
-       while only the content underneath changes — matching how the same
-       tap feels within index.html's own setView()/switchView(). Both this
-       page and live.html declare the same rule + view-transition-names, and
-       it's inert (silently ignored, normal navigation) on browsers that
-       don't support it yet. ── */
-    @view-transition { navigation: auto; }
-    .top-bar { view-transition-name: top-bar; }
-    .bottom-dock { view-transition-name: bottom-dock; }
-
-    /* ── Top app bar (M3) ── */
-    .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-    /* Not interactive — just the app's wordmark, same on every page. */
-    .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; }
-    .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
-    .top-bar__actions { display: flex; align-items: center; gap: 0.2rem; }
-
     /* ── Quick source-switch menu (top bar) ── */
     .source-menu-wrap { position: relative; }
     .source-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 180px; max-width: 260px; max-height: 60vh; overflow-y: auto; background: var(--md-surface-container-low); border-radius: 14px; box-shadow: var(--el3); padding: 0.35rem; z-index: 40; display: flex; flex-direction: column; gap: 0.1rem; }
@@ -236,34 +206,8 @@
     .source-menu__item--active .material-icons { visibility: visible; }
     .source-menu__item span:not(.material-icons) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* ── Shared buttons (M3 icon button / filled / outlined / danger) ── */
-    .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); flex-shrink: 0; }
-    .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
-    .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; background: color-mix(in srgb, var(--md-on-surface) 10%, transparent); }
-
-    /* ── Bottom navigation (M3 NavigationBar) ── */
-    /* ── Bottom dock: wraps the nav so index.html and live.html share the
-       same structure and the same view-transition-name (see the
-       @view-transition rule below) for a seamless cross-page navigation. ── */
-    /* Hidden via transform+opacity rather than display:none so the dock's
-       box never collapses to zero height — inside a View Transition that
-       kind of size change gets captured as a squash/scale animation instead
-       of a clean slide, since .bottom-dock carries its own
-       view-transition-name (see the @view-transition rule below). Staying
-       position:fixed the whole time means this costs nothing layout-wise
-       even while "hidden". */
-    .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; transition: transform var(--t), opacity var(--t); }
-    .bottom-dock--hidden { transform: translateY(100%); opacity: 0; pointer-events: none; }
-    .bottom-nav { display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
-    .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-    .bottom-nav__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 12px; }
-    .bottom-nav__icon-wrap { display: flex; align-items: center; justify-content: center; width: 58px; height: 30px; border-radius: 16px; transition: background var(--t), color var(--t); }
-    .bottom-nav__icon-wrap .material-icons { font-size: 22px; }
-    .bottom-nav__item--active .bottom-nav__icon-wrap { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
-    .bottom-nav__label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.01em; }
-    .bottom-nav__item--active .bottom-nav__label { color: var(--text); font-weight: 600; }
-    .bottom-nav__item:hover .bottom-nav__icon-wrap { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
-    .bottom-nav__item--active:hover .bottom-nav__icon-wrap { background: var(--md-secondary-container); }
+    /* ── Shared buttons (M3 filled / outlined / danger — .icon-btn lives in
+       /shared/chrome.css) ── */
     .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
     .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
     .btn--primary:hover { box-shadow: var(--el1); filter: brightness(1.06); }
@@ -748,6 +692,7 @@
   </div>
 </div>
 
+<script src="/shared/chrome.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    NATIVE APP SHELL: ripple feedback + service worker
@@ -759,25 +704,8 @@
    SW registration is best-effort: on failure the app just runs exactly as
    it did before (no offline shell / install prompt), never broken.
 ═══════════════════════════════════════════════════════ */
-const RIPPLE_SELECTOR = ".icon-btn, .btn, .chip, .card, .ep-card, .source-card, " +
-  ".play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item";
-function spawnRipple(el, x, y) {
-  const rect = el.getBoundingClientRect();
-  const size = Math.max(rect.width, rect.height) * 1.8;
-  const span = document.createElement("span");
-  span.className = "ripple";
-  span.style.width = span.style.height = size + "px";
-  span.style.left = (x - rect.left - size / 2) + "px";
-  span.style.top  = (y - rect.top  - size / 2) + "px";
-  el.appendChild(span);
-  span.addEventListener("animationend", () => span.remove(), { once: true });
-}
-document.addEventListener("pointerdown", (e) => {
-  if (e.button !== 0) return;
-  const el = e.target.closest(RIPPLE_SELECTOR);
-  if (!el || el.disabled) return;
-  spawnRipple(el, e.clientX, e.clientY);
-}, { passive: true });
+BQChrome.initRipple(".icon-btn, .btn, .chip, .card, .ep-card, .source-card, " +
+  ".play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item");
 
 /* ── Swipe-back ───────────────────────────────────────────────────────
    An edge swipe (start within EDGE px of the left edge, drag right past
@@ -894,68 +822,6 @@ const Store = (() => {
 })();
 
 /* ═══════════════════════════════════════════════════════
-   THEME (top-bar toggle)
-   ─────────────────────────────────────────────────────
-   "system" = no data-theme attribute = the prefers-color-scheme media
-   query alone decides (zero JS, zero flash). "light"/"dark" set the
-   attribute, which outranks that media query via CSS specificity — see
-   the :root[data-theme] rules. A tiny synchronous script in <head> already
-   applied a saved choice before first paint; this reconciles against the
-   async Store (needed for the artifact-storage backend) and wires the UI.
-   One button cycles System → Light → Dark → System.
-═══════════════════════════════════════════════════════ */
-const THEME_KEY    = "bq_theme";
-const THEME_ORDER  = ["system", "light", "dark"];
-const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
-const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
-
-// Matches --md-surface-container (the bottom nav bar's own tint), not
-// --md-surface/--bg, so the OS status bar / gesture nav bar reads as a
-// continuation of the app's own bottom nav bar instead of a different shade
-// sitting right above it.
-const SURFACE_LIGHT = "#f7ebdd", SURFACE_DARK = "#241e18";
-const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
-function syncThemeColorMeta() {
-  // The <meta name=theme-color> tint the OS uses for the status bar / task
-  // switcher can't itself see the manual data-theme override (only actual
-  // prefers-color-scheme), so JS keeps it aligned to whichever surface is
-  // actually showing — system, or the explicit Light/Dark choice.
-  const meta = document.getElementById("themeColorMeta");
-  if (!meta) return;
-  const attr = document.documentElement.getAttribute("data-theme");
-  const isDark = attr === "dark" || (attr !== "light" && !!(systemDarkMQ && systemDarkMQ.matches));
-  meta.setAttribute("content", isDark ? SURFACE_DARK : SURFACE_LIGHT);
-}
-if (systemDarkMQ && systemDarkMQ.addEventListener) {
-  systemDarkMQ.addEventListener("change", () => {
-    if (!document.documentElement.hasAttribute("data-theme")) syncThemeColorMeta();
-  });
-}
-function applyTheme(pref) {
-  if (pref === "light" || pref === "dark") document.documentElement.setAttribute("data-theme", pref);
-  else document.documentElement.removeAttribute("data-theme");
-  syncThemeColorMeta();
-}
-function updateThemeToggleUI(pref) {
-  const icon = $("themeToggleIcon");
-  if (icon) icon.textContent = THEME_ICONS[pref] || THEME_ICONS.system;
-  const btn = $("themeToggleBtn");
-  if (btn) btn.setAttribute("aria-label", `Theme: ${THEME_LABELS[pref] || "System"} (tap to change)`);
-  document.querySelectorAll("#themeSegmented .segmented__item").forEach(el => {
-    const active = el.dataset.themeChoice === pref;
-    el.classList.toggle("segmented__item--active", active);
-    el.setAttribute("aria-checked", String(active));
-  });
-}
-async function initTheme() {
-  let pref = "system";
-  try { pref = localStorage.getItem(THEME_KEY) || "system"; } catch (e) {}
-  try { const stored = await Store.get(THEME_KEY); if (stored) pref = stored; } catch (e) {}
-  applyTheme(pref);
-  updateThemeToggleUI(pref);
-}
-
-/* ═══════════════════════════════════════════════════════
    SOURCES
 ═══════════════════════════════════════════════════════ */
 let SOURCES = [];               // populated by initSources() before first paint
@@ -1057,7 +923,6 @@ const shareBtnLabel    = $("shareBtnLabel");
 const shareDetailBtn      = $("shareDetailBtn");
 const shareDetailBtnLabel = $("shareDetailBtnLabel");
 const settingsBtn      = $("settingsBtn");
-const themeToggleBtn   = $("themeToggleBtn");
 const bottomDock        = $("bottomDock");
 const navSearchBtn      = $("navSearchBtn");
 const settingsSheet    = $("settingsSheet");
@@ -1917,19 +1782,30 @@ settingsClose.addEventListener("click", closeSettings);
 settingsBackdrop.addEventListener("click", closeSettings);
 
 /* ── Theme toggle ── */
-function setThemePref(pref) {
-  applyTheme(pref);
-  updateThemeToggleUI(pref);
-  Store.set(THEME_KEY, pref);
-  try { localStorage.setItem(THEME_KEY, pref); } catch (e) {}
-}
-themeToggleBtn.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme") || "system";
-  const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
-  setThemePref(next);
+// "system" = no data-theme attribute = the prefers-color-scheme media query
+// alone decides (zero JS, zero flash). A tiny synchronous script in <head>
+// already applied a saved choice before first paint; resolvePref below
+// reconciles that against the async Store (needed for the artifact-storage
+// backend). onChange also drives the Settings sheet's segmented control,
+// which BQChrome doesn't know about.
+const bqTheme = BQChrome.initTheme({
+  resolvePref: async () => {
+    let pref = "system";
+    try { pref = localStorage.getItem("bq_theme") || "system"; } catch (e) {}
+    try { const stored = await Store.get("bq_theme"); if (stored) pref = stored; } catch (e) {}
+    return pref;
+  },
+  onChange: (pref) => {
+    Store.set("bq_theme", pref);
+    document.querySelectorAll("#themeSegmented .segmented__item").forEach(el => {
+      const active = el.dataset.themeChoice === pref;
+      el.classList.toggle("segmented__item--active", active);
+      el.setAttribute("aria-checked", String(active));
+    });
+  },
 });
 document.querySelectorAll("#themeSegmented .segmented__item").forEach(btn => {
-  btn.addEventListener("click", () => setThemePref(btn.dataset.themeChoice));
+  btn.addEventListener("click", () => bqTheme.setThemePref(btn.dataset.themeChoice));
 });
 
 
@@ -1970,7 +1846,6 @@ try {
   updateSourceMenuButton();
   handleHashRoute();
 })();
-initTheme();
 initSwipeBack(document, () => {
   if (!settingsSheet.classList.contains("hidden")) return; // let the sheet's own backdrop/close handle that
   if (viewPlayer.classList.contains("view--active")) goBackFromPlayer();

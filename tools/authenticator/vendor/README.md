@@ -1,6 +1,6 @@
 # Vendored: jsQR
 
-`jsQR.js` is vendored (not fetched from a CDN at runtime) so `/authenticator`
+`jsQR.js` is vendored (not fetched from a CDN at runtime) so `/tools/authenticator`
 works fully offline and never depends on a third-party host.
 
 - Source package: [`jsqr`](https://github.com/cozmo/jsQR) v1.4.0 (npm), Apache-2.0

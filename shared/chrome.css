@@ -1,0 +1,64 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Bingqilin shared chrome — top app bar + bottom navigation.
+   Loaded by every page (index.html, live.html, tools/, tools/authenticator/,
+   tools/pdf/) so there is exactly one definition of what these look like.
+   Depends on the MD3 color tokens (--md-*, --bg, --text, --border, --t,
+   etc.) each page still defines for itself in its own <style> block — only
+   the chrome's structural/visual rules live here, not the palette.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Cross-document view transitions: Media/Live/Tools/Authenticator/PDF are
+   all separate pages, so switching between them is a full navigation —
+   without this it's a hard flash-to-white. Naming .top-bar/.bottom-dock
+   morphs that shared chrome across the navigation instead of crossfading
+   two full-page snapshots, so the app shell reads as staying in place
+   while only the content underneath changes. Inert (silently ignored,
+   normal navigation) on browsers that don't support it yet. */
+@view-transition { navigation: auto; }
+.top-bar { view-transition-name: top-bar; }
+.bottom-dock { view-transition-name: bottom-dock; }
+
+/* ── Top app bar (M3) ── */
+.top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+/* Not interactive — just the app's wordmark, same on every page. */
+.top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; }
+.top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
+.top-bar__actions { display: flex; align-items: center; gap: 0.2rem; }
+
+.icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); flex-shrink: 0; }
+.icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+.icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; background: color-mix(in srgb, var(--md-on-surface) 10%, transparent); }
+
+/* ── Ripple: Material state-layer touch feedback. Hover states only fire
+   for a mouse — touch has nothing without this, which is the single
+   biggest reason an app feels like a webpage instead of a native surface.
+   JS (BQChrome.initRipple) appends/removes the .ripple span — every page's
+   own ripple selector list adds its own extra elements on top of these
+   two, which every page ripples. ── */
+.icon-btn, .bottom-nav__item { -webkit-touch-callout: none; user-select: none; position: relative; overflow: hidden; }
+.ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
+@keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ripple { display: none; } }
+
+/* ── Bottom navigation (M3 NavigationBar) — Media/Live/Tools, present on
+   every page. Wrapped in .bottom-dock (its own view-transition-name above)
+   so navigating between pages morphs the bar instead of flashing it. Hidden
+   via transform+opacity rather than display:none on pages that push a
+   full-screen sub-view (the player) over it: that kind of size change gets
+   captured as a squash/scale animation instead of a clean slide inside a
+   View Transition, since the box shrinking to zero height is itself what
+   gets animated. Staying position:fixed the whole time means the hidden
+   state costs nothing layout-wise; pages that never toggle
+   .bottom-dock--hidden simply never trigger the transition. ── */
+.bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; transition: transform var(--t), opacity var(--t); }
+.bottom-dock--hidden { transform: translateY(100%); opacity: 0; pointer-events: none; }
+.bottom-nav { display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
+.bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.bottom-nav__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 12px; }
+.bottom-nav__icon-wrap { display: flex; align-items: center; justify-content: center; width: 58px; height: 30px; border-radius: 16px; transition: background var(--t), color var(--t); }
+.bottom-nav__icon-wrap .material-icons { font-size: 22px; }
+.bottom-nav__item--active .bottom-nav__icon-wrap { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.bottom-nav__label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.01em; }
+.bottom-nav__item--active .bottom-nav__label { color: var(--text); font-weight: 600; }
+.bottom-nav__item:hover .bottom-nav__icon-wrap { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+.bottom-nav__item--active:hover .bottom-nav__icon-wrap { background: var(--md-secondary-container); }

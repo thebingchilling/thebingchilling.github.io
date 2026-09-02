@@ -4,8 +4,12 @@
 // same-origin GET requests for the shell itself (HTML/manifest/icons).
 // TMDB requests, video-source iframes, fonts, and streaming payloads are
 // never intercepted — those must always hit the network live.
-const CACHE_VERSION = "bq-shell-v4";
-const SHELL_URLS = ["/", "/index.html", "/live", "/live.html", "/tools/", "/tools/index.html", "/manifest.webmanifest"];
+const CACHE_VERSION = "bq-shell-v5";
+const SHELL_URLS = [
+  "/", "/index.html", "/live", "/live.html", "/tools/", "/tools/index.html",
+  "/manifest.webmanifest",
+  "/shared/chrome.css", "/shared/chrome.js", "/shared/theme-init.js",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -45,8 +49,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static shell assets (icons, manifest): cache-first.
-  if (url.pathname.startsWith("/icons/") || url.pathname === "/manifest.webmanifest") {
+  // Static shell assets (icons, manifest, shared chrome CSS/JS): cache-first.
+  if (url.pathname.startsWith("/icons/") || url.pathname.startsWith("/shared/") || url.pathname === "/manifest.webmanifest") {
     event.respondWith(
       caches.match(req).then((cached) => cached || fetch(req).then((res) => {
         const copy = res.clone();
