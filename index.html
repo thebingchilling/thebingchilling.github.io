@@ -163,7 +163,7 @@
     body { -webkit-tap-highlight-color: transparent; }
     button, a, [role="button"], .card, .chip, .ep-card, .source-card { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     button, .icon-btn, .btn, .chip, .card, .ep-card, .source-card,
-    .top-bar__brand, .play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item {
+    .play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item {
       -webkit-touch-callout: none; user-select: none;
     }
     /* ── Ripple: Material state-layer touch feedback. Hover states above
@@ -171,7 +171,7 @@
        biggest reason the app currently *feels* like a webpage instead of a
        native surface. JS (spawnRipple) appends/removes the .ripple span. ── */
     .icon-btn, .btn, .chip, .card, .ep-card, .source-card,
-    .top-bar__brand, .play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item {
+    .play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item {
       position: relative; overflow: hidden;
     }
     .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
@@ -220,8 +220,8 @@
 
     /* ── Top app bar (M3) ── */
     .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-    .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; cursor: pointer; border-radius: 8px; padding: 0.1rem 0.3rem; margin: -0.1rem -0.3rem; transition: background var(--t); user-select: none; }
-    .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+    /* Not interactive — just the app's wordmark, same on every page. */
+    .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; }
     .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
     .top-bar__actions { display: flex; align-items: center; gap: 0.2rem; }
 
@@ -546,7 +546,7 @@
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__brand" id="topBarBrand" role="button" tabindex="0" aria-label="Go to search">
+    <div class="top-bar__brand">
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div class="top-bar__actions">
@@ -760,7 +760,7 @@
    it did before (no offline shell / install prompt), never broken.
 ═══════════════════════════════════════════════════════ */
 const RIPPLE_SELECTOR = ".icon-btn, .btn, .chip, .card, .ep-card, .source-card, " +
-  ".top-bar__brand, .play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item";
+  ".play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item";
 function spawnRipple(el, x, y) {
   const rect = el.getBoundingClientRect();
   const size = Math.max(rect.width, rect.height) * 1.8;
@@ -1765,9 +1765,6 @@ function goToSearch() {
   teardownPlayer();
   history.pushState(null,"",cleanPath()); setView("search");
 }
-const topBarBrand = $("topBarBrand");
-topBarBrand.addEventListener("click", goToSearch);
-topBarBrand.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); topBarBrand.click(); } });
 navSearchBtn.addEventListener("click", goToSearch);
 backFromDetail.addEventListener("click", goBackFromDetail);
 backFromPlayer.addEventListener("click", goBackFromPlayer);

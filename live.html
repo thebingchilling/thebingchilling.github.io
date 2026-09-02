@@ -147,13 +147,13 @@
   body { -webkit-tap-highlight-color: transparent; }
   button, a, [role="button"], .card, .tab-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   button, .icon-btn, .btn, .tab-btn, .card,
-  .top-bar__brand, .player-back, .card__pin, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item {
+  .player-back, .card__pin, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item {
     -webkit-touch-callout: none; user-select: none;
   }
   /* ── Ripple: Material state-layer touch feedback — see index.html for
      the full rationale. JS (spawnRipple) appends/removes the .ripple span. ── */
   .icon-btn, .btn, .tab-btn, .card,
-  .top-bar__brand, .player-back, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item {
+  .player-back, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item {
     position: relative; overflow: hidden;
   }
   .ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.20; transform: scale(0); pointer-events: none; animation: ripple-anim 0.55s cubic-bezier(0.2,0,0,1) forwards; }
@@ -184,13 +184,13 @@
 
   /* ── Top app bar ── */
   .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-  .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; cursor: pointer; border-radius: 8px; padding: 0.15rem 0.3rem; margin: -0.15rem -0.3rem; transition: background var(--t); }
-  .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
-  .top-bar__brand:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .top-bar__brand--loading .top-bar__name { animation: brand-pulse 0.9s ease-in-out infinite; }
+  /* Not interactive — just the app's wordmark, same on every page. */
+  .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; }
   .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
   .top-bar__actions { display: flex; align-items: center; gap: 0.2rem; }
-  @keyframes brand-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .icon-btn--spinning .material-icons { animation: icon-spin 0.7s linear infinite; }
+  @keyframes icon-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .icon-btn--spinning .material-icons { animation: none; } }
 
   .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); }
   .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
@@ -446,10 +446,13 @@
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__brand" id="brandReload" role="button" tabindex="0" aria-label="Reload channel lists">
+    <div class="top-bar__brand">
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div class="top-bar__actions">
+      <button id="reloadBtn" class="icon-btn" type="button" aria-label="Reload channel lists" title="Reload channel lists">
+        <span class="material-icons">refresh</span>
+      </button>
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
         <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
       </button>
@@ -669,7 +672,7 @@ const $ = id => document.getElementById(id);
    ─────────────────────────────────────────────────────
    See index.html for the full rationale — same mechanism, kept in sync.
 ═══════════════════════════════════════════════════════ */
-const RIPPLE_SELECTOR = ".icon-btn, .btn, .tab-btn, .card, .top-bar__brand, .player-back, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item";
+const RIPPLE_SELECTOR = ".icon-btn, .btn, .tab-btn, .card, .player-back, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item";
 function spawnRipple(el, x, y) {
   const rect = el.getBoundingClientRect();
   const size = Math.max(rect.width, rect.height) * 1.8;
@@ -1351,14 +1354,11 @@ $("clearBtn").addEventListener("click", () => {
 });
 
 function reload() {
-  const brand = $("brandReload");
-  brand.classList.add("top-bar__brand--loading");
-  init().finally(() => brand.classList.remove("top-bar__brand--loading"));
+  const btn = $("reloadBtn");
+  btn.classList.add("icon-btn--spinning");
+  init().finally(() => btn.classList.remove("icon-btn--spinning"));
 }
-$("brandReload").addEventListener("click", reload);
-$("brandReload").addEventListener("keydown", e => {
-  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reload(); }
-});
+$("reloadBtn").addEventListener("click", reload);
 
 /* ═══════════ Settings sheet: import channel playlists ═══════════ */
 const settingsSheet = $("settingsSheet");

@@ -159,8 +159,8 @@
 
     /* ── Top app bar ── */
     .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-    .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; cursor: pointer; border-radius: 8px; padding: 0.1rem 0.3rem; margin: -0.1rem -0.3rem; transition: background var(--t); user-select: none; }
-    .top-bar__brand:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+    /* Not interactive — just the app's wordmark, same on every page. */
+    .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; }
     .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
 
     .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); flex-shrink: 0; }
@@ -213,7 +213,7 @@
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__brand" id="topBarBrand" role="button" tabindex="0" aria-label="Go to Bingqilin">
+    <div class="top-bar__brand">
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
@@ -343,9 +343,6 @@
     const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
     setThemePref(next);
   });
-
-  $("topBarBrand").addEventListener("click", () => { location.href = "/"; });
-  $("topBarBrand").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); location.href = "/"; } });
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
