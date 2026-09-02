@@ -358,13 +358,19 @@
   .btn--danger:hover { background: color-mix(in srgb, var(--md-error) 14%, var(--md-error-container)); }
   .btn:disabled { opacity: 0.38; cursor: not-allowed; filter: none !important; box-shadow: none !important; }
 
-  /* ── Settings sheet (M3 modal bottom sheet) ── */
+  /* ── Settings sheet (M3 modal bottom sheet). Stays display:flex even
+     while "hidden" (overriding the generic .hidden utility) and fades/
+     slides via transition instead of a one-shot @keyframes animation —
+     that's what makes the close reversible/smooth too, not just the
+     open: the old display:none cut meant the backdrop's full-screen
+     tint popped in/out in a single frame instead of fading. ── */
   .settings { position: fixed; inset: 0; z-index: 110; display: flex; align-items: flex-end; justify-content: center; }
-  .settings.hidden { display: none; }
-  .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); }
-  .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem calc(1rem + env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left)); animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; overscroll-behavior-y: contain; }
+  .settings.hidden { display: flex !important; pointer-events: none; }
+  .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); opacity: 1; transition: opacity var(--t); }
+  .settings.hidden .settings__backdrop { opacity: 0; }
+  .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem calc(1rem + env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left)); transform: translateY(0); opacity: 1; transition: transform var(--t), opacity var(--t); max-height: 88vh; overflow-y: auto; overscroll-behavior-y: contain; }
+  .settings.hidden .settings__panel { transform: translateY(16px); opacity: 0; }
   .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
-  @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
   .settings__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 500; color: var(--text); }
   .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
