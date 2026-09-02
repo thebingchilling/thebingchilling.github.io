@@ -660,11 +660,11 @@
     <!-- Import / Export config -->
     <div class="settings__section">
       <div class="settings__section-label">Import / Export</div>
-      <p class="settings__hint">Paste a config here to import sources in bulk, or export your current ones to back up or share. One source per line: name, movie url, tv url.</p>
+      <p class="settings__hint">Paste a config here to import sources in bulk, or export your current ones to back up or share.</p>
       <div class="config-area">
         <div class="config-textarea-wrap">
           <textarea id="configTextarea" class="config-textarea"
-            placeholder="vid, https://example.com/embed/movie/{tmdb}, https://example.com/embed/tv/{tmdb}/{season}/{episode}"
+            placeholder="name: vid&#10;movie: https://example.com/embed/movie/{tmdb}&#10;tv: https://example.com/embed/tv/{tmdb}/{season}/{episode}"
             spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
         <div class="config-actions">
@@ -730,14 +730,14 @@ if ("serviceWorker" in navigator) {
 /* ═══════════════════════════════════════════════════════
    CONFIG FORMAT
    ─────────────────────────────────────────────────────
-   One source per line: name, movie url, tv url
-   The tv url is optional and may itself contain commas —
-   only the first two commas on a line are treated as field
-   separators, so everything after the second belongs to the
-   tv url. Lines starting with # are comments and ignored.
+   One source per block, blocks separated by blank lines.
+   Keys: name, movie, tv
+   Lines starting with # are comments and ignored.
 
    Example:
-     vid, https://video/v2/embed/movie/{tmdb}, https://video/v2/embed/tv/{tmdb}/{season}/{episode}
+     name: vid
+     movie: https://video/v2/embed/movie/{tmdb}
+     tv: https://video/v2/embed/tv/{tmdb}/{season}/{episode}
 ═══════════════════════════════════════════════════════ */
 
 /* ── Config parser ── */
@@ -745,20 +745,30 @@ function parseConfig(text) {
   const errors = [];
   const sources = [];
 
-  const lines = text.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#"));
+  // Split into blocks on blank lines
+  const blocks = text.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
 
-  lines.forEach((line, li) => {
-    const c1 = line.indexOf(",");
-    if (c1 < 1) { errors.push(`Line ${li + 1}: expected "name, movie url[, tv url]"`); return; }
-    const name = line.slice(0, c1).trim();
-    const rest = line.slice(c1 + 1);
-    const c2 = rest.indexOf(",");
-    const movie_url = (c2 === -1 ? rest : rest.slice(0, c2)).trim();
-    const tv_url = (c2 === -1 ? "" : rest.slice(c2 + 1)).trim();
+  blocks.forEach((block, bi) => {
+    const lines = block.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#"));
+    if (!lines.length) return;
 
-    if (!movie_url) { errors.push(`Line ${li + 1} ("${name}"): missing movie URL`); return; }
+    const obj = {};
+    lines.forEach(line => {
+      const colon = line.indexOf(":");
+      if (colon < 1) return;
+      const key = line.slice(0, colon).trim().toLowerCase();
+      const val = line.slice(colon + 1).trim();
+      obj[key] = val;
+    });
 
-    sources.push({ name, movie_url, tv_url: tv_url || null });
+    if (!obj.name) { errors.push(`Block ${bi + 1}: missing "name"`); return; }
+    if (!obj.movie) { errors.push(`Block ${bi + 1} ("${obj.name}"): missing "movie" URL`); return; }
+
+    sources.push({
+      name:      obj.name,
+      movie_url: obj.movie,
+      tv_url:    obj.tv || null,
+    });
   });
 
   return { sources, errors };
@@ -766,7 +776,11 @@ function parseConfig(text) {
 
 /* ── Config serialiser ── */
 function serialiseConfig(sourceList) {
-  return sourceList.map(src => [src.name, src.movie_url, src.tv_url || ""].filter(Boolean).join(", ")).join("\n");
+  return sourceList.map(src => {
+    const lines = [`name: ${src.name}`, `movie: ${src.movie_url}`];
+    if (src.tv_url)  lines.push(`tv: ${src.tv_url}`);
+    return lines.join("\n");
+  }).join("\n\n");
 }
 
 /* ═══════════════════════════════════════════════════════
