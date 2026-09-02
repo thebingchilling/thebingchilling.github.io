@@ -179,8 +179,9 @@
     .select-row select { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--text); padding: 0.65rem 0.3rem 0.65rem 0; cursor: pointer; }
 
     /* ── Converter ── */
-    .convert-row { display: flex; align-items: center; gap: 0.6rem; background: var(--bg2); border-radius: 14px; padding: 0.4rem 0.9rem; }
-    .convert-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.25rem; color: var(--primary-dark); text-align: right; padding: 0.5rem 0.2rem; }
+    .convert-row { display: flex; align-items: center; gap: 0.5rem; background: var(--bg2); border-radius: 14px; padding: 0.5rem 0.9rem; }
+    .convert-row__symbol { flex-shrink: 0; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.2rem; font-weight: 500; color: var(--text-faint); }
+    .convert-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.3rem; color: var(--primary-dark); text-align: right; padding: 0.5rem 0.2rem; }
     .convert-row input::placeholder { color: var(--text-faint); }
     #conversionInfo { margin-top: 1rem; }
     .rates-status { text-align: center; font-size: 0.72rem; color: var(--text-faint); margin-top: 0.6rem; }
@@ -261,6 +262,7 @@
         <select id="curASelect" aria-label="Foreign currency"></select>
       </div>
       <div class="convert-row">
+        <span class="convert-row__symbol" id="amountSymbol"></span>
         <input type="text" inputmode="decimal" id="amountA" placeholder="0" aria-label="Amount in foreign currency" />
       </div>
 
@@ -521,7 +523,7 @@
   let ratesUSD = null;
 
   const mainSelect = $("mainSelect"), curASelect = $("curASelect");
-  const amountAInput = $("amountA");
+  const amountAInput = $("amountA"), amountSymbol = $("amountSymbol");
   const conversionInfo = $("conversionInfo"), ratesStatus = $("ratesStatus");
   const ratesError = $("ratesError"), ratesErrorBody = $("ratesErrorBody");
 
@@ -731,7 +733,13 @@
     updateConversionInfo();
   }
 
+  function updateAmountSymbol() {
+    const meta = CURRENCY_META[curASelect.value] || {};
+    amountSymbol.textContent = meta.s || curASelect.value;
+  }
+
   function onPairChanged() {
+    updateAmountSymbol();
     updateConversionInfo();
     refreshPppFactors();
     savePrefs();
