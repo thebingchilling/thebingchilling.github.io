@@ -19,7 +19,7 @@
 .bottom-dock { view-transition-name: bottom-dock; }
 
 /* ── Top app bar (M3) ── */
-.top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface-container) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
 /* Not interactive — just the app's wordmark, same on every page. */
 .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; }
 .top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
