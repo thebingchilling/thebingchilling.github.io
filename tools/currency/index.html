@@ -222,12 +222,6 @@
     .chip--warn { background: var(--warn-bg); color: var(--warn); }
     .chip--muted { background: var(--bg2); color: var(--text-faint); }
 
-    .verdict-box { display: flex; gap: 0.6rem; border-radius: 14px; padding: 0.8rem 0.9rem; margin-top: 0.9rem; font-size: 0.82rem; line-height: 1.5; }
-    .verdict-box--good { background: var(--good-bg); color: var(--good); }
-    .verdict-box--warn { background: var(--warn-bg); color: var(--warn); }
-    .verdict-box--muted { background: var(--bg2); color: var(--text-muted); }
-    .verdict-box .material-icons { flex-shrink: 0; margin-top: 0.05rem; }
-
     .caveat { display: flex; gap: 0.55rem; background: var(--bg2); border-radius: 12px; padding: 0.7rem 0.8rem; margin-top: 0.8rem; font-size: 0.76rem; line-height: 1.45; color: var(--text-muted); }
     .caveat .material-icons { font-size: 17px; color: var(--text-faint); flex-shrink: 0; margin-top: 0.05rem; }
     .caveat-text { margin: 0; font-size: 0.8rem; color: var(--text-faint); text-align: center; padding: 0.5rem 0; }
@@ -641,11 +635,25 @@
     hideRatesError();
     rateLine.textContent = "Loading rates…";
     ratesStatus.textContent = "";
+    // Rebuilding the <option> lists below resets each <select> to its
+    // first option, so whatever was picked before this refresh has to be
+    // explicitly restored afterward — otherwise every refresh silently
+    // drops back to an alphabetically-first currency instead of keeping
+    // (or defaulting to) the main currency.
+    const prevMain = mainSelect.value, prevA = curASelect.value, prevB = curBSelect.value;
     try {
       const r = await fetchRatesUSD();
       ratesUSD = r.rates;
       populateCurrencySelects(Object.keys(ratesUSD));
-      if (!selectionsInitialized) { restoreSelections(); selectionsInitialized = true; }
+      if (!selectionsInitialized) {
+        restoreSelections();
+        selectionsInitialized = true;
+      } else {
+        const codes = Object.keys(ratesUSD);
+        if (codes.indexOf(prevMain) !== -1) mainSelect.value = prevMain;
+        if (codes.indexOf(prevA) !== -1) curASelect.value = prevA;
+        if (codes.indexOf(prevB) !== -1) curBSelect.value = prevB;
+      }
       ratesStatus.textContent = "Rates via " + r.source + (r.date ? " · " + r.date : "");
       onPairOrRatesChanged();
     } catch (err) {
@@ -790,27 +798,13 @@
     html += resultRow("What you pay", formatAmount(marketConverted, a) + " " + a, "Converted at the live exchange rate.");
 
     if (pppFactorPending(a) || pppFactorPending(b)) {
-      html += resultRow("Local value", '<span class="idle-text">Loading…</span>', "");
+      html += '<div class="thumb-box"><div class="thumb-box__headline">Loading…</div></div>';
     } else {
       const factorA = pppFactorFor(a), factorB = pppFactorFor(b);
       if (factorA && factorB) {
         const pppRate = factorB.value / factorA.value; // local per main, PPP-implied
         const localValue = localPrice / pppRate;
-        html += resultRow("Local value", formatAmount(localValue, a) + " " + a, "What this costs in local purchasing-power terms.");
-
-        const diffPct = Math.round((localValue / marketConverted - 1) * 100);
-        let verdictClass, verdictText, icon;
-        if (diffPct >= 8) {
-          verdictClass = "good"; icon = "trending_down";
-          verdictText = "A bargain for you — locals feel this as worth about " + diffPct + "% more than what you're paying.";
-        } else if (diffPct <= -8) {
-          verdictClass = "warn"; icon = "trending_up";
-          verdictText = "Pricier than it looks — locals feel this as worth about " + Math.abs(diffPct) + "% less than what you're paying.";
-        } else {
-          verdictClass = "muted"; icon = "check_circle";
-          verdictText = "About what it's really worth — close to local purchasing power.";
-        }
-        html += '<div class="verdict-box verdict-box--' + verdictClass + '"><span class="material-icons">' + icon + '</span><span>' + escapeHtml(verdictText) + "</span></div>";
+        html += '<div class="thumb-box"><div class="thumb-box__headline">' + escapeHtml(formatAmount(localValue, a) + " " + a) + '</div><p class="thumb-box__tip">What this is really worth in local purchasing power — roughly what a resident effectively pays for it.</p></div>';
       } else {
         const missing = !factorA ? a : b;
         html += '<div class="caveat"><span class="material-icons">info</span><span>World Bank purchasing-power data isn\'t available for ' + escapeHtml(missing) + ' — showing just the exchange-rate conversion above.</span></div>';
