@@ -174,16 +174,32 @@
     .section-hint { margin: -0.5rem 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
 
     .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 0 0 0.4rem; }
-    .select-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
+    .select-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; margin-bottom: 0.6rem; }
+    .select-row:last-child { margin-bottom: 0; }
     .select-row select { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--text); padding: 0.65rem 0.3rem 0.65rem 0; cursor: pointer; }
 
     /* ── Converter ── */
-    .convert-row { display: flex; align-items: center; gap: 0.6rem; background: var(--bg2); border-radius: 14px; padding: 0.4rem 0.6rem 0.4rem 0.9rem; }
-    .convert-row select { flex: 0 0 auto; width: 6.75rem; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--text); padding: 0.5rem 0.2rem; cursor: pointer; }
+    .convert-row { display: flex; align-items: center; gap: 0.6rem; background: var(--bg2); border-radius: 14px; padding: 0.4rem 0.9rem; }
     .convert-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.25rem; color: var(--primary-dark); text-align: right; padding: 0.5rem 0.2rem; }
     .convert-row input::placeholder { color: var(--text-faint); }
-    #conversionInfo { margin-top: 0.9rem; }
+    #conversionInfo { margin-top: 1rem; }
     .rates-status { text-align: center; font-size: 0.72rem; color: var(--text-faint); margin-top: 0.6rem; }
+
+    /* "Converts to" is the headline result — everything else is
+       supporting detail, so it gets the same big-number treatment the
+       old Quick Reference card used. */
+    .convert-headline { text-align: center; padding: 0.3rem 0.5rem 0.1rem; }
+    .convert-headline__value { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
+    .convert-headline__tip { margin: 0.5rem 0 0; font-size: 0.78rem; color: var(--text-faint); }
+
+    /* PPP gets its own tonal treatment (the tertiary color, unused
+       elsewhere on this page) so it reads as a distinct kind of figure —
+       an estimate/interpretation, not a live fact like the rate above. */
+    .ppp-box { display: flex; justify-content: space-between; align-items: center; gap: 0.7rem; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); border-radius: 14px; padding: 0.75rem 0.9rem; margin-top: 1rem; }
+    .ppp-box__label { font-size: 0.78rem; font-weight: 600; }
+    .ppp-box__note { margin: 0.15rem 0 0; font-size: 0.7rem; opacity: 0.8; }
+    .ppp-box__value { font-size: 0.95rem; font-weight: 700; text-align: right; flex-shrink: 0; }
+    .ppp-box .chip--muted { background: color-mix(in srgb, var(--md-on-tertiary-container) 12%, transparent); color: var(--md-on-tertiary-container); }
 
     .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
     .error-banner.hidden { display: none; }
@@ -242,8 +258,10 @@
     <!-- Converter ── -->
     <div class="card">
       <div class="section-title"><h2><span class="material-icons">sync_alt</span>Convert</h2></div>
-      <div class="convert-row">
+      <div class="select-row">
         <select id="curASelect" aria-label="Foreign currency"></select>
+      </div>
+      <div class="convert-row">
         <input type="text" inputmode="decimal" id="amountA" placeholder="0" aria-label="Amount in foreign currency" />
       </div>
 
@@ -438,15 +456,14 @@
       return String.fromCodePoint.apply(null, points);
     } catch (e) { return ""; }
   }
-  function currencyOptionLabel(code, withName) {
+  function currencyOptionLabel(code) {
     const meta = CURRENCY_META[code] || {};
     const bits = [];
     const flag = flagEmoji(meta.c);
     if (flag) bits.push(flag);
     bits.push(code);
     if (meta.s && meta.s !== code) bits.push(meta.s);
-    const label = bits.join(" ");
-    return withName ? label + " — " + (meta.n || code) : label;
+    return bits.join(" ") + " — " + (meta.n || code);
   }
 
   /* Same idea as the country codes in CURRENCY_META above, but World
@@ -516,14 +533,13 @@
 
   function populateCurrencySelects(codes) {
     const sorted = codes.slice().sort();
-    // Main currency gets a full width row, so it's worth spelling out —
-    // the converter dropdown shares a tight row with an amount field,
-    // so it stays to the compact flag/code/symbol form.
-    const optionsFor = (withName) => sorted.map((c) =>
-      '<option value="' + c + '" title="' + escapeHtml(currencyName(c)) + '">' + escapeHtml(currencyOptionLabel(c, withName)) + "</option>"
+    // Both selects now get their own full-width row, so both can afford
+    // to spell out the full currency name.
+    const optionsHtml = sorted.map((c) =>
+      '<option value="' + c + '" title="' + escapeHtml(currencyName(c)) + '">' + escapeHtml(currencyOptionLabel(c)) + "</option>"
     ).join("");
-    mainSelect.innerHTML = optionsFor(true);
-    curASelect.innerHTML = optionsFor(false);
+    mainSelect.innerHTML = optionsHtml;
+    curASelect.innerHTML = optionsHtml;
   }
 
   function loadPrefs() {
@@ -674,26 +690,31 @@
     if (!ratesUSD[local] || !ratesUSD[main]) { conversionInfo.innerHTML = '<p class="caveat-text">Rates unavailable for this pair.</p>'; return; }
 
     const rate = ratesUSD[main] / ratesUSD[local]; // main per 1 local
-    let html = resultRow("Exchange rate", "1 " + local + " = " + formatAmount(rate, main) + " " + main, "");
-
+    const rateLine = "1 " + local + " = " + formatAmount(rate, main) + " " + main;
     const amt = parseAmount(amountAInput.value);
+
+    let html = "";
     if (amt != null && amt > 0) {
-      html += resultRow("Converts to", formatAmount(amt * rate, main) + " " + main, "At the live exchange rate.");
+      // "Converts to" is the headline result; the plain per-unit rate
+      // becomes its supporting caption rather than a separate row.
+      const converted = formatAmount(amt * rate, main) + " " + main;
+      html += '<div class="convert-headline"><div class="convert-headline__value">' + escapeHtml(converted) + '</div><p class="convert-headline__tip">' + escapeHtml(rateLine) + "</p></div>";
 
       if (pppFactorPending(local) || pppFactorPending(main)) {
-        html += resultRow("Really worth (PPP)", chip("muted", "Loading…"), "");
+        html += '<div class="ppp-box"><span class="ppp-box__label">Really worth (PPP)</span>' + chip("muted", "Loading…") + "</div>";
       } else {
         const factorLocal = pppFactorFor(local), factorMain = pppFactorFor(main);
         if (factorLocal && factorMain) {
           const pppRate = factorLocal.value / factorMain.value; // local per main, PPP-implied
           const localValue = amt / pppRate;
-          html += resultRow("Really worth (PPP)", formatAmount(localValue, main) + " " + main, "In local purchasing power, via the World Bank.");
+          html += '<div class="ppp-box"><div><span class="ppp-box__label">Really worth (PPP)</span><p class="ppp-box__note">In local purchasing power, via the World Bank.</p></div><span class="ppp-box__value">' + escapeHtml(formatAmount(localValue, main) + " " + main) + "</span></div>";
         } else {
           const missing = !factorLocal ? local : main;
-          html += resultRow("Really worth (PPP)", chip("muted", "No data"), "World Bank data isn't available for " + missing + ".");
+          html += '<div class="ppp-box"><div><span class="ppp-box__label">Really worth (PPP)</span><p class="ppp-box__note">No World Bank data for ' + escapeHtml(missing) + '.</p></div>' + chip("muted", "No data") + "</div>";
         }
       }
     } else {
+      html += resultRow("Exchange rate", rateLine, "");
       html += '<p class="caveat-text">Type an amount above to see it converted and what it\'s really worth.</p>';
     }
 
