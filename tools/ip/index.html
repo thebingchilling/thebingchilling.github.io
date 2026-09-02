@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>IP Detector</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Detect your public IP address and location, run latency checks against major and China-blocked sites, and check for VPN/proxy signals." />
+  <meta name="description" content="Detect your public IP address and location, run latency checks against major world and Chinese sites, and check for VPN/proxy signals." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -182,13 +182,14 @@
     .ip-display__country { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem; }
     .ip-display__actions { display: flex; justify-content: center; gap: 0.3rem; margin-top: 0.5rem; }
 
-    .result-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
+    .result-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
     .result-row:last-child { border-bottom: none; }
-    .result-row__label { font-size: 0.78rem; color: var(--text-muted); flex-shrink: 0; padding-top: 0.15rem; }
-    .result-row__value { font-size: 0.85rem; color: var(--text); text-align: right; word-break: break-word; }
+    .result-row__label { font-size: 0.78rem; color: var(--text-muted); flex: 1 1 auto; min-width: 0; padding-top: 0.15rem; }
+    .result-row__note { display: block; margin-top: 0.15rem; font-size: 0.72rem; color: var(--text-faint); }
+    .result-row__value { font-size: 0.85rem; color: var(--text); text-align: right; word-break: break-word; flex: 0 1 auto; min-width: 0; max-width: 58%; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0.3rem; }
     .result-row__value--mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
 
-    .chip { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 600; padding: 0.18rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+    .chip { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 600; padding: 0.18rem 0.55rem; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
     .chip--good { background: var(--good-bg); color: var(--good); }
     .chip--warn { background: var(--warn-bg); color: var(--warn); }
     .chip--bad { background: var(--md-error-container); color: var(--md-on-error-container); }
@@ -207,7 +208,8 @@
 
     /* ── Latency ── */
     .latency-group + .latency-group { margin-top: 1.1rem; }
-    .latency-group h3 { margin: 0 0 0.5rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-faint); }
+    .latency-group h3 { margin: 0 0 0.15rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-faint); }
+    .latency-group__sub { margin: 0 0 0.5rem; font-size: 0.75rem; color: var(--text-faint); }
     .latency-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
     .latency-row:last-child { border-bottom: none; }
     .latency-row__name { font-size: 0.86rem; color: var(--text); display: flex; flex-direction: column; }
@@ -241,7 +243,7 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">public</span></div>
       <h1 class="hero__title">IP Detector</h1>
-      <p class="hero__sub">Your public IP and approximate location, connection latency to major and China-blocked sites, and best-effort VPN/proxy signals.</p>
+      <p class="hero__sub">Your public IP and approximate location, connection latency to major world and Chinese sites, and best-effort VPN/proxy signals.</p>
     </div>
 
     <!-- IP + location ── -->
@@ -289,8 +291,9 @@
         <div id="majorList"></div>
       </div>
       <div class="latency-group">
-        <h3>Sites blocked in mainland China</h3>
-        <div id="gfwList"></div>
+        <h3>Chinese sites</h3>
+        <p class="latency-group__sub">Major mainland-Chinese sites, which are often slow to reach from outside China.</p>
+        <div id="chinaList"></div>
       </div>
       <div class="caveat">
         <span class="material-icons">info</span>
@@ -301,8 +304,8 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>Unlike the rest of this toolbox, this tool can't run fully offline: your IP and location come from a third-party lookup service, and the latency/VPN checks talk to the target sites and (for the VPN check) an IP-intelligence service directly from your browser. Nothing is sent through this site's own servers — it's all direct, client-side requests — but those third parties do see your IP, which is unavoidable for a tool like this.</p>
-        <p>Country/city, ISP, and VPN/proxy flags are estimates from IP-address databases, not ground truth — they can be wrong, especially for mobile carriers, corporate networks, and well-configured VPNs.</p>
+        <p>Unlike the rest of this toolbox, this tool can't run fully offline: your IP and location come from a third-party lookup service (ipapi.co or ipwho.is), the VPN check calls two more (iplogs.com and ipapi.is), and the latency checks talk directly to each target site — all straight from your browser, nothing routed through this site's own servers, but those third parties do see your IP, which is unavoidable for a tool like this.</p>
+        <p>Country/city, ISP, and VPN/proxy flags are estimates from IP-address databases, not ground truth. Even dedicated VPN-detection services miss well-configured VPNs and residential proxies, and can misflag ordinary mobile or corporate networks — treat every result here as a signal, not a verdict.</p>
       </div>
     </div>
   </main>
@@ -351,6 +354,21 @@
     const timer = setTimeout(() => controller.abort(), timeoutMs || 8000);
     try {
       const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function fetchJsonPost(url, body, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs || 8000);
+    try {
+      const res = await fetch(url, {
+        method: "POST", signal: controller.signal, cache: "no-store",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
       if (!res.ok) throw new Error("HTTP " + res.status);
       return await res.json();
     } finally {
@@ -461,15 +479,23 @@
 
   /* ═══════════════════════════════════════════════════════════════════
      VPN / proxy signals — several independent, imperfect checks, each
-     shown separately with its own hedge rather than a single score:
+     shown separately with its own hedge rather than a single score.
+     No free client-side-callable service gets this exactly right (see
+     the note card), so this leans on two purpose-built ones together
+     rather than one:
 
-       1. IP-intelligence lookup (ipapi.is) — a dedicated free service
-          that flags known VPN/proxy/Tor/datacenter IP ranges.
-       2. ISP/org name matched against known hosting & VPN providers, as
-          a fallback signal if (1) is unavailable.
-       3. Timezone reported by the IP lookup vs. this browser's own
+       1. iplogs.com — a free, keyless VPN-detection service that runs
+          active probes (not just a static IP-range lookup) and returns
+          a verdict + confidence score, and sometimes names the VPN
+          provider it detected.
+       2. ipapi.is — a free, keyless IP-intelligence service, used
+          alongside (1) for its separate proxy/Tor/datacenter flags,
+          and alone if (1) doesn't respond.
+       3. ISP/org name matched against known hosting & VPN providers, as
+          a fallback signal if both of the above are unavailable.
+       4. Timezone reported by the IP lookup vs. this browser's own
           timezone — a mismatch is worth noting, not conclusive.
-       4. WebRTC leak check — looks for a public IP exposed via ICE
+       5. WebRTC leak check — looks for a public IP exposed via ICE
           candidates that differs from the IP reported above.
      ═══════════════════════════════════════════════════════════════════ */
   const HOSTING_KEYWORDS = ["amazon", "aws", "google cloud", "microsoft azure", " azure", "digitalocean", "digital ocean", "ovh", "hetzner", "linode", "vultr", "choopa", "m247", "leaseweb", "contabo", "scaleway", "oracle cloud", "alibaba cloud", "tencent cloud", "g-core", "psychz", "dedipath", "voxility", "zenlayer", "upcloud", "hostinger"];
@@ -524,15 +550,41 @@
   }
 
   async function fetchVpnIntel(ip) {
-    const d = await fetchJson("https://api.ipapi.is/?ip=" + encodeURIComponent(ip), 8000);
-    if (!d) return null;
+    const out = {};
+
+    try {
+      const d = await fetchJsonPost("https://iplogs.com/v1/check", { ip }, 8000);
+      if (d) {
+        out.iplogs = {
+          isVpn: !!d.is_vpn, verdict: d.verdict || null,
+          confidence: typeof d.confidence === "number" ? d.confidence : null,
+          vpnProvider: (d.ip_info && d.ip_info.vpn_provider) || null,
+        };
+      }
+    } catch (e) { /* falls through to ipapi.is / heuristics below */ }
+
+    try {
+      const d = await fetchJson("https://api.ipapi.is/?q=" + encodeURIComponent(ip), 8000);
+      if (d) {
+        out.ipapiIs = { isVpn: !!d.is_vpn, isProxy: !!d.is_proxy, isTor: !!d.is_tor, isDatacenter: !!d.is_datacenter };
+      }
+    } catch (e) { /* falls through */ }
+
+    if (!out.iplogs && !out.ipapiIs) return null;
     return {
-      isVpn: !!d.is_vpn, isProxy: !!d.is_proxy, isTor: !!d.is_tor, isDatacenter: !!d.is_datacenter,
+      sources: [out.iplogs ? "iplogs.com" : null, out.ipapiIs ? "ipapi.is" : null].filter(Boolean),
+      isVpn: !!((out.iplogs && out.iplogs.isVpn) || (out.ipapiIs && out.ipapiIs.isVpn)),
+      isProxy: out.ipapiIs ? out.ipapiIs.isProxy : null,
+      isTor: out.ipapiIs ? out.ipapiIs.isTor : null,
+      isDatacenter: out.ipapiIs ? out.ipapiIs.isDatacenter : null,
+      verdict: out.iplogs ? out.iplogs.verdict : null,
+      confidence: out.iplogs ? out.iplogs.confidence : null,
+      vpnProvider: out.iplogs ? out.iplogs.vpnProvider : null,
     };
   }
 
   function signalRow(label, chipHtml, note) {
-    return '<div class="result-row"><span class="result-row__label">' + escapeHtml(label) + (note ? '<br><span style="color:var(--text-faint);font-size:0.72rem;">' + escapeHtml(note) + "</span>" : "") + '</span><span class="result-row__value">' + chipHtml + "</span></div>";
+    return '<div class="result-row"><span class="result-row__label">' + escapeHtml(label) + (note ? '<span class="result-row__note">' + escapeHtml(note) + "</span>" : "") + '</span><span class="result-row__value">' + chipHtml + "</span></div>";
   }
   function chip(kind, text) { return '<span class="chip chip--' + kind + '">' + escapeHtml(text) + "</span>"; }
 
@@ -559,13 +611,16 @@
     let html = "";
 
     if (intel) {
-      html += signalRow("IP-intelligence flags", [
-        chip(intel.isVpn ? "bad" : "good", intel.isVpn ? "VPN detected" : "No VPN flag"),
-        chip(intel.isProxy ? "bad" : "good", intel.isProxy ? "Proxy detected" : "No proxy flag"),
-        chip(intel.isDatacenter ? "warn" : "good", intel.isDatacenter ? "Datacenter IP" : "Not datacenter"),
-      ].join(" "), "From a third-party IP-intelligence lookup.");
+      const intelChips = [chip(intel.isVpn ? "bad" : "good", intel.isVpn ? "VPN detected" : "No VPN flag")];
+      if (intel.isProxy !== null) intelChips.push(chip(intel.isProxy ? "bad" : "good", intel.isProxy ? "Proxy detected" : "No proxy flag"));
+      if (intel.isDatacenter !== null) intelChips.push(chip(intel.isDatacenter ? "warn" : "good", intel.isDatacenter ? "Datacenter IP" : "Not datacenter"));
+      if (intel.isTor !== null) intelChips.push(chip(intel.isTor ? "bad" : "good", intel.isTor ? "Tor exit node" : "Not Tor"));
+      let intelNote = "Via " + intel.sources.join(" + ");
+      if (intel.confidence != null) intelNote += " · " + Math.round(intel.confidence * 100) + "% confidence";
+      if (intel.vpnProvider) intelNote += " · matches known provider \"" + intel.vpnProvider + "\"";
+      html += signalRow("VPN / proxy detection", intelChips.join(""), intelNote);
     } else {
-      html += signalRow("IP-intelligence flags", chip("muted", "Unavailable"), "The lookup service didn't respond — falling back to the signals below.");
+      html += signalRow("VPN / proxy detection", chip("muted", "Unavailable"), "No lookup service responded — falling back to the signal below.");
       html += signalRow("ISP/org name check", orgH.match ? chip("warn", "Matches " + orgH.kind) : chip("good", "No known match"), geoInfo.org || "No organization name returned.");
     }
 
@@ -586,7 +641,9 @@
     }
 
     const flags = [];
-    if (intel && (intel.isVpn || intel.isProxy)) flags.push("your IP is flagged as a known VPN/proxy exit");
+    if (intel && intel.isVpn) flags.push("your IP is flagged as a known VPN exit" + (intel.vpnProvider ? " (matches " + intel.vpnProvider + ")" : ""));
+    if (intel && intel.isProxy) flags.push("your IP is flagged as a proxy");
+    if (intel && intel.isTor) flags.push("your IP is a known Tor exit node");
     if (intel && intel.isDatacenter) flags.push("your IP belongs to a hosting/datacenter network rather than a typical residential or mobile ISP");
     if (!intel && orgH.match) flags.push("your ISP/organization name matches a known " + orgH.kind);
     if (tz.available && !tz.match) flags.push("your browser's timezone doesn't match the timezone reported for your IP");
@@ -609,9 +666,9 @@
      be inspected, but the promise still resolves/rejects on real
      network activity (DNS, TCP handshake, TLS, first bytes), so the
      elapsed time is a reasonable rough RTT even though we never read
-     the response body. A GFW-style connection reset or black-holed
-     connection shows up as a rejection or a timeout, both reported as
-     "Unreachable"/"Timeout" — which is exactly the useful signal here.
+     the response body. A dropped/reset connection (e.g. a route that
+     goes through congested or restricted network paths) shows up as a
+     rejection or a timeout, reported as "Unreachable"/"Timeout".
      ═══════════════════════════════════════════════════════════════════ */
   const MAJOR_SITES = [
     { name: "Google", domain: "google.com" },
@@ -622,15 +679,15 @@
     { name: "GitHub", domain: "github.com" },
     { name: "Reddit", domain: "reddit.com" },
   ];
-  const GFW_SITES = [
-    { name: "Google", domain: "google.com" },
-    { name: "YouTube", domain: "youtube.com" },
-    { name: "Facebook", domain: "facebook.com" },
-    { name: "Instagram", domain: "instagram.com" },
-    { name: "X (Twitter)", domain: "x.com" },
-    { name: "Wikipedia", domain: "wikipedia.org" },
-    { name: "Telegram", domain: "telegram.org" },
-    { name: "WhatsApp", domain: "whatsapp.com" },
+  const CHINA_SITES = [
+    { name: "Baidu", domain: "baidu.com" },
+    { name: "QQ", domain: "qq.com" },
+    { name: "Taobao", domain: "taobao.com" },
+    { name: "Weibo", domain: "weibo.com" },
+    { name: "Bilibili", domain: "bilibili.com" },
+    { name: "JD.com", domain: "jd.com" },
+    { name: "NetEase (163)", domain: "163.com" },
+    { name: "Zhihu", domain: "zhihu.com" },
   ];
 
   function probeLatency(url, timeoutMs) {
@@ -687,7 +744,7 @@
   }
 
   renderSiteList($("majorList"), MAJOR_SITES);
-  renderSiteList($("gfwList"), GFW_SITES);
+  renderSiteList($("chinaList"), CHINA_SITES);
 
   $("runLatencyBtn").addEventListener("click", async () => {
     const btn = $("runLatencyBtn");
@@ -695,7 +752,7 @@
     btn.innerHTML = '<span class="spinner"></span>Running checks…';
     await Promise.all([
       runLatencyGroup(MAJOR_SITES, "majorList"),
-      runLatencyGroup(GFW_SITES, "gfwList"),
+      runLatencyGroup(CHINA_SITES, "chinaList"),
     ]);
     btn.disabled = false;
     btn.innerHTML = '<span class="material-icons" style="font-size:18px;">speed</span>Run again';
