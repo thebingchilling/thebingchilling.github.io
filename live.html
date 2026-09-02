@@ -11,7 +11,7 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <!-- Kept in sync with the current surface color — see index.html for the
      full rationale. -->
-<meta name="theme-color" id="themeColorMeta" content="#ffffff" />
+<meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="Bingqilin" />
@@ -766,7 +766,9 @@ const THEME_ORDER  = ["system", "light", "dark"];
 const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
 const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
 
-const SURFACE_LIGHT = "#ffffff", SURFACE_DARK = "#17120d";
+// Matches --md-surface-container (the bottom nav bar's own tint) — see
+// index.html for the full rationale.
+const SURFACE_LIGHT = "#f7ebdd", SURFACE_DARK = "#241e18";
 const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 function syncThemeColorMeta() {
   // See index.html for the full rationale.

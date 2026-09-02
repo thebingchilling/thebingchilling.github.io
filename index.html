@@ -9,9 +9,10 @@
        (own icon, own window, no address bar) rather than a browser tab. ── -->
   <link rel="manifest" href="/manifest.webmanifest" />
   <!-- Kept in sync with the current surface color (light/dark, plus any manual
-       override) by initTheme()/applyTheme() below, so the OS status bar always
-       blends into the top app bar instead of showing a mismatched browser color. -->
-  <meta name="theme-color" id="themeColorMeta" content="#ffffff" />
+       override) by initTheme()/applyTheme() below, so the OS status bar and
+       gesture nav bar blend into the app's own top/bottom bars instead of
+       showing a mismatched browser color. -->
+  <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Bingqilin" />
@@ -908,7 +909,11 @@ const THEME_ORDER  = ["system", "light", "dark"];
 const THEME_ICONS  = { system: "brightness_auto", light: "light_mode", dark: "dark_mode" };
 const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
 
-const SURFACE_LIGHT = "#ffffff", SURFACE_DARK = "#17120d";
+// Matches --md-surface-container (the bottom nav bar's own tint), not
+// --md-surface/--bg, so the OS status bar / gesture nav bar reads as a
+// continuation of the app's own bottom nav bar instead of a different shade
+// sitting right above it.
+const SURFACE_LIGHT = "#f7ebdd", SURFACE_DARK = "#241e18";
 const systemDarkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 function syncThemeColorMeta() {
   // The <meta name=theme-color> tint the OS uses for the status bar / task

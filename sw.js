@@ -4,7 +4,7 @@
 // same-origin GET requests for the shell itself (HTML/manifest/icons).
 // TMDB requests, video-source iframes, fonts, and streaming payloads are
 // never intercepted — those must always hit the network live.
-const CACHE_VERSION = "bq-shell-v3";
+const CACHE_VERSION = "bq-shell-v4";
 const SHELL_URLS = ["/", "/index.html", "/live", "/live.html", "/tools/", "/tools/index.html", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
