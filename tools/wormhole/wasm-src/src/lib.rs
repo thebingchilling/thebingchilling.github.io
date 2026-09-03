@@ -116,6 +116,26 @@ async fn with_timeout<T>(fut: impl Future<Output = T>, cancel: CancelSignal, tim
     }
 }
 
+/// Same idea as `with_timeout` but for the actual byte-transfer phases,
+/// which can legitimately run for a long time on a slow link and so must
+/// never be killed by a fixed timer - only by the user.
+///
+/// This is deliberately used *instead of* passing `cancel` straight into
+/// `transfer::send`/`ReceiveOffer::accept` as their own internal `cancel`
+/// parameter (they get `futures::future::pending()` there instead): a
+/// `select()` at this outer layer drops the whole in-progress future the
+/// instant `cancel` resolves, via plain Rust future-drop semantics, which
+/// works no matter what the inner future happens to be doing or awaiting
+/// - so the Cancel button can't be left wired to nothing by some internal
+/// detail (e.g. a corner case in the relay handshake or read loop) not
+/// forwarding cancellation the way this expects.
+async fn with_cancel<T>(fut: impl Future<Output = T>, cancel: CancelSignal) -> Result<T, JsValue> {
+    match futures::future::select(Box::pin(fut), cancel).await {
+        Either::Left((value, _)) => Ok(value),
+        Either::Right(_) => Err(js_err("Cancelled")),
+    }
+}
+
 /// App config for the file-transfer protocol, pointed at a TLS-capable
 /// rendezvous (mailbox) server instead of the crate's built-in default
 /// (`ws://relay.magic-wormhole.io:4000/v1`).
@@ -218,18 +238,24 @@ pub async fn wormhole_send(
     );
 
     let status_for_transit = on_status.clone();
-    let result = transfer::send(
-        wormhole,
-        relay,
-        transit::Abilities::FORCE_RELAY,
-        offer,
-        move |_info| call1(&status_for_transit, JsValue::from_str("Transferring…")),
-        move |sent, total| call2(&on_progress, JsValue::from_f64(sent as f64), JsValue::from_f64(total as f64)),
+    let result = with_cancel(
+        transfer::send(
+            wormhole,
+            relay,
+            transit::Abilities::FORCE_RELAY,
+            offer,
+            move |_info| call1(&status_for_transit, JsValue::from_str("Transferring…")),
+            move |sent, total| call2(&on_progress, JsValue::from_f64(sent as f64), JsValue::from_f64(total as f64)),
+            futures::future::pending(),
+        ),
         cancel,
     )
     .await;
     clear_cancel_slot();
-    result.map_err(js_err)
+    match result {
+        Ok(inner) => inner.map_err(js_err),
+        Err(e) => Err(e),
+    }
 }
 
 /// Connect to an existing wormhole code and wait for the sender's file offer.
@@ -313,18 +339,23 @@ impl ReceiveOffer {
         let status_for_transit = on_status.clone();
         call1(&on_status, JsValue::from_str("Receiving…"));
         let cancel = cancel_signal();
-        let result = req
-            .accept(
+        let result = with_cancel(
+            req.accept(
                 move |_info| call1(&status_for_transit, JsValue::from_str("Receiving…")),
                 move |received, total| {
                     call2(&on_progress, JsValue::from_f64(received as f64), JsValue::from_f64(total as f64))
                 },
                 &mut buf,
-                cancel,
-            )
-            .await;
+                futures::future::pending(),
+            ),
+            cancel,
+        )
+        .await;
         clear_cancel_slot();
-        result.map_err(js_err)?;
+        match result {
+            Ok(inner) => inner.map_err(js_err)?,
+            Err(e) => return Err(e),
+        };
 
         Ok(Uint8Array::from(buf.into_inner().as_slice()))
     }
