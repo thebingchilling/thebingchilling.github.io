@@ -12,14 +12,20 @@ so `/tools/wormhole` works offline-tolerant like the rest of this site.
 - Underlying protocol crate: [`magic-wormhole`](https://github.com/magic-wormhole/magic-wormhole.rs) v0.8.1, licensed EUPL-1.2
 - Wrapper crate license: same terms as this repository
 
-Two public relays are used (see `relay_hints()` in `wasm-src/src/lib.rs`):
-the official rendezvous server (`ws://relay.magic-wormhole.io:4000/v1`,
-already WebSocket-native and used by every standard client) for the code
-exchange, and Least Authority's public dual-protocol relay
-(`relay.mw.leastauthority.com`, reachable over both raw TCP and WebSocket)
-for the actual file bytes — a browser tab cannot open raw TCP sockets, so a
-relay that also speaks WebSocket is required, and advertising it makes an
-unmodified `wormhole send`/`wormhole receive` CLI peer try it too.
+Two of Least Authority's public servers are used, both TLS-capable (see
+`app_config()` and `relay_hints()` in `wasm-src/src/lib.rs`):
+`wss://mailbox.mw.leastauthority.com/v1` for the code exchange, and
+`relay.mw.leastauthority.com` (reachable over both raw TCP and WebSocket)
+for the actual file bytes. **Not** the official servers
+(`ws://relay.magic-wormhole.io:4000/v1` and
+`tcp://transit.magic-wormhole.io:4001`) — those only speak plaintext, and
+a page served over HTTPS cannot open a plaintext `ws://` connection at all
+(mixed-content blocking), so a browser tab has no choice but to use
+servers that support TLS/WSS. This does mean a plain `wormhole
+send`/`wormhole receive` CLI invocation needs
+`--rendezvous-server wss://mailbox.mw.leastauthority.com/v1
+--relay-server tcp://relay.mw.leastauthority.com:4001` to interoperate
+with this page — see the in-page copy.
 
 To rebuild after changing `wasm-src/`:
 
@@ -34,3 +40,10 @@ wasm-bindgen --target web --out-dir ../vendor/pkg --out-name wormhole \
 npx --yes wasm-opt@latest -Oz --enable-bulk-memory \
   -o ../vendor/pkg/wormhole_bg.wasm ../vendor/pkg/wormhole_bg.wasm
 ```
+
+Then **bump the `?v=N` query strings** in `../index.html` (the `import`
+line and the `module_or_path` passed to `init()`) — the .js and .wasm are
+tightly coupled, and reusing the same URL across a content change risks a
+stale cached file of one pairing with a fresh one of the other, which
+breaks module loading outright (see the comment above `import` in
+`../index.html`).

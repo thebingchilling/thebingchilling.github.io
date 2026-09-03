@@ -313,7 +313,7 @@
             <span class="material-icons" id="sendCodeCopyIcon">content_copy</span>
           </button>
         </div>
-        <p class="code-box__hint">On the other device, open this same page's Receive tab (or run <code>wormhole receive</code>) and enter this code. Codes only work once and expire once used.</p>
+        <p class="code-box__hint">On the other device, open this same page's Receive tab and enter this code. (A <code>wormhole receive</code> CLI works too, with <code>--rendezvous-server wss://mailbox.mw.leastauthority.com/v1 --relay-server tcp://relay.mw.leastauthority.com:4001</code> — a browser tab can't use the default servers, which don't speak TLS.) Codes only work once and expire once used.</p>
       </div>
 
       <p class="status-line hidden" id="sendStatusLine" role="status" aria-live="polite"></p>
@@ -404,7 +404,7 @@
 
     <div class="card note-card">
       <span class="material-icons">shield</span>
-      <p>Files travel directly between the two browsers/devices, encrypted with a key derived from the one-time code — via the public <a href="https://magic-wormhole.readthedocs.io/" target="_blank" rel="noopener">Magic Wormhole</a> rendezvous and relay servers, which only ever see encrypted bytes. This site has no server of its own and never sees your file or your code. Both sides need to be online at the same time, and codes are single-use.</p>
+      <p>Files travel directly between the two browsers/devices, encrypted with a key derived from the one-time code — via public <a href="https://magic-wormhole.readthedocs.io/" target="_blank" rel="noopener">Magic Wormhole</a> rendezvous and relay servers (run by <a href="https://leastauthority.com/" target="_blank" rel="noopener">Least Authority</a>, chosen because they support TLS, which a browser tab requires), which only ever see encrypted bytes. This site has no server of its own and never sees your file or your code. Both sides need to be online at the same time, and codes are single-use.</p>
     </div>
   </main>
 
@@ -430,7 +430,13 @@
 
 <script src="/shared/chrome.js"></script>
 <script type="module">
-  import init, { wormhole_send, wormhole_receive_connect, wormhole_cancel, wormhole_code_completions } from "/tools/wormhole/vendor/pkg/wormhole.js";
+  // "?v=3" busts stale caches (browser + GitHub Pages' CDN) whenever the
+  // vendored wasm/js pair changes — the .js and .wasm are tightly coupled
+  // (the glue calls specific export ordinals in the binary), so a cached
+  // .js paired with a fresher .wasm or vice versa breaks module loading
+  // entirely. Bump this (and the matching wasm URL below) on every
+  // vendor/pkg rebuild — see vendor/README.md.
+  import init, { wormhole_send, wormhole_receive_connect, wormhole_cancel, wormhole_code_completions } from "/tools/wormhole/vendor/pkg/wormhole.js?v=3";
 
   const $ = (id) => document.getElementById(id);
   window.BQChrome && BQChrome.initRipple(".icon-btn, .btn, .dropzone, .file-chip__remove, .bottom-nav__item, .tab, .code-box__copy");
@@ -439,13 +445,16 @@
   /* ── wasm engine ──────────────────────────────────────────────────────
      Vendored locally (see vendor/README.md) rather than pulled from a CDN.
      This is a `wasm-bindgen` build of a small Rust wrapper around the real
-     `magic-wormhole` protocol crate — the same code exchange + relay
-     handshake that `wormhole send`/`wormhole receive` use, just running in
-     this tab instead of on a terminal. ── */
+     `magic-wormhole` protocol crate, running the same code exchange +
+     relay handshake the official clients use, just in this tab instead
+     of on a terminal (against Least Authority's TLS-capable servers
+     rather than the official ones — see app_config() in wasm-src). ── */
   let wasmReady = null;
   let wasmLoaded = false;
   function loadWasm() {
-    if (!wasmReady) wasmReady = init().then(() => { wasmLoaded = true; });
+    if (!wasmReady) {
+      wasmReady = init({ module_or_path: "/tools/wormhole/vendor/pkg/wormhole_bg.wasm?v=3" }).then(() => { wasmLoaded = true; });
+    }
     return wasmReady;
   }
   loadWasm().catch((err) => {

@@ -1,9 +1,11 @@
 //! Thin wasm-bindgen wrapper around the `magic-wormhole` Rust crate, exposing
 //! just enough of the real Magic Wormhole protocol (PAKE code exchange over
-//! the official rendezvous server, then an encrypted file transfer over a
-//! relay) for the `/tools/wormhole` page to drive from JS. No file bytes or
-//! codes ever pass through any server we control — only through the public
-//! magic-wormhole rendezvous/relay infrastructure, end-to-end encrypted.
+//! a public TLS-capable rendezvous server, then an encrypted file transfer
+//! over a relay) for the `/tools/wormhole` page to drive from JS. No file
+//! bytes or codes ever pass through any server we control — only through
+//! public magic-wormhole rendezvous/relay infrastructure, end-to-end
+//! encrypted. See `app_config()` for why this isn't the *official*
+//! rendezvous server.
 
 use std::cell::RefCell;
 use std::future::Future;
@@ -92,6 +94,24 @@ fn clear_cancel_slot() {
 /// receive` peer on the other end - which tries every relay hint either
 /// side offers - will also attempt this relay and land in the same
 /// session as this browser tab, without the peer needing any extra flags.
+/// App config for the file-transfer protocol, pointed at a TLS-capable
+/// rendezvous (mailbox) server instead of the crate's built-in default
+/// (`ws://relay.magic-wormhole.io:4000/v1`).
+///
+/// That default is a *plaintext* WebSocket, and this page is served over
+/// HTTPS - browsers refuse to open an insecure `ws://` connection from a
+/// secure page at all (mixed-content blocking), so keeping it would make
+/// every connection fail immediately. `wss://mailbox.mw.leastauthority.com/v1`
+/// is Least Authority's public mailbox server (paired with their transit
+/// relay used below, and the same one their cross-platform "Destiny"
+/// client uses), which does speak TLS. The tradeoff: a plain
+/// `wormhole send`/`wormhole receive` CLI invocation defaults to the
+/// official mailbox instead, so it needs `--rendezvous-server` pointed
+/// here too to talk to this page - see the in-page copy.
+fn app_config() -> magic_wormhole::AppConfig<transfer::AppVersion> {
+    transfer::APP_CONFIG.rendezvous_url("wss://mailbox.mw.leastauthority.com/v1".into())
+}
+
 fn relay_hints() -> Result<Vec<transit::RelayHint>, JsValue> {
     let tcp: url::Url = "tcp://relay.mw.leastauthority.com:4001"
         .parse()
@@ -132,7 +152,7 @@ pub async fn wormhole_send(
     let relay = relay_hints()?;
 
     call1(&on_status, JsValue::from_str("Allocating a wormhole code…"));
-    let mailbox = MailboxConnection::create(transfer::APP_CONFIG, 2)
+    let mailbox = MailboxConnection::create(app_config(), 2)
         .await
         .map_err(js_err)?;
     call1(&on_code, JsValue::from_str(mailbox.code().to_string().as_str()));
@@ -185,7 +205,7 @@ pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Resu
     let relay = relay_hints()?;
 
     call1(&on_status, JsValue::from_str("Connecting…"));
-    let mailbox = MailboxConnection::connect(transfer::APP_CONFIG, code, false)
+    let mailbox = MailboxConnection::connect(app_config(), code, false)
         .await
         .map_err(js_err)?;
 
