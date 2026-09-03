@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Reverse Image Search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Find the source of an image with SauceNAO — paste an image, give an image URL, or point it at a Reddit post to pick from its images." />
+  <meta name="description" content="Find the source of an image with SauceNAO — paste an image or give an image URL." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -132,8 +132,8 @@
     *, *::before, *::after { box-sizing: border-box; }
     body { -webkit-tap-highlight-color: transparent; }
     button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    button, .btn, .tab, .dropzone, .gallery-item { -webkit-touch-callout: none; user-select: none; }
-    .btn, .tab, .dropzone, .gallery-item { position: relative; overflow: hidden; }
+    button, .btn, .tab, .dropzone { -webkit-touch-callout: none; user-select: none; }
+    .btn, .tab, .dropzone { position: relative; overflow: hidden; }
 
     .hidden { display: none !important; }
     .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
@@ -185,16 +185,6 @@
     .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
     .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
     .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-
-    /* ── Reddit gallery ── */
-    .reddit-post-title { font-size: 0.85rem; font-weight: 500; color: var(--text); margin: 0.7rem 0 0; line-height: 1.4; }
-    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
-    .gallery-item { aspect-ratio: 1; border-radius: 12px; padding: 0; border: 2px solid transparent; background: var(--surface2); cursor: pointer; }
-    .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 9px; }
-    .gallery-item--selected { border-color: var(--primary); }
-    .gallery-item__check { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: none; align-items: center; justify-content: center; }
-    .gallery-item--selected .gallery-item__check { display: flex; }
-    .gallery-item__check .material-icons { font-size: 13px; }
 
     /* ── Preview strip (what's currently being searched) ── */
     .preview-strip { display: flex; align-items: center; gap: 0.65rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.6rem 0.85rem; margin-bottom: 0.85rem; box-shadow: var(--el1); }
@@ -265,7 +255,7 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">image_search</span></div>
       <h1 class="hero__title">Reverse Image Search</h1>
-      <p class="hero__sub">Find where an image came from using <a href="https://saucenao.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;">SauceNAO</a>. Paste an image, drop one, give an image URL, or hand it a Reddit post to pick an image from. A pasted or dropped image is briefly hosted to get it a link, then that link and the search itself go to SauceNAO — nothing is kept by this page.</p>
+      <p class="hero__sub">Find where an image came from using <a href="https://saucenao.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;">SauceNAO</a>. Paste an image, drop one, or give an image URL. A pasted or dropped image is briefly hosted to get it a link, then that link and the search itself go to SauceNAO — nothing is kept by this page.</p>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Search by">
@@ -274,9 +264,6 @@
       </button>
       <button class="tab" type="button" role="tab" aria-selected="false" data-mode="url">
         <span class="material-icons">link</span>Image URL
-      </button>
-      <button class="tab" type="button" role="tab" aria-selected="false" data-mode="reddit">
-        <span class="material-icons">forum</span>Reddit post
       </button>
     </div>
 
@@ -304,23 +291,6 @@
           </button>
         </div>
         <p class="search-card__hint">Direct link to an image file, or the Paste button — pasting a link searches it right away.</p>
-      </form>
-    </div>
-
-    <div class="panel hidden" id="panelReddit">
-      <form class="search-card" id="redditForm">
-        <div class="search-row">
-          <input type="text" id="redditInput" placeholder="https://www.reddit.com/r/.../comments/..." autocomplete="off" spellcheck="false" inputmode="url" aria-label="Reddit post URL" />
-          <button class="btn btn--ghost btn--icon" id="pasteRedditBtn" type="button" aria-label="Paste from clipboard">
-            <span class="material-icons">content_paste</span>
-          </button>
-          <button class="btn btn--primary" type="submit">
-            <span class="material-icons" style="font-size:18px;">travel_explore</span>Load
-          </button>
-        </div>
-        <p class="search-card__hint">Loads every image in the post (including galleries) so you can pick which one to search. Video posts aren't supported.</p>
-        <p class="reddit-post-title hidden" id="redditPostTitle"></p>
-        <div class="gallery-grid hidden" id="redditGallery"></div>
       </form>
     </div>
 
@@ -379,7 +349,7 @@
 
     <div class="settings__section">
       <div class="settings__section-label">CORS proxy</div>
-      <p class="settings__hint">SauceNAO and Reddit both block direct requests from a browser on another site, so every request from this tool is routed through this proxy — already set to this project's own Cloudflare Worker. Only change it if you want to use a different one (see <code>workers/cors-proxy/README.md</code> in the repo to deploy your own); shared with the torrent search tool. Leave blank to only ever try direct requests instead.</p>
+      <p class="settings__hint">SauceNAO blocks direct requests from a browser on another site, so every request from this tool is routed through this proxy — already set to this project's own Cloudflare Worker. Only change it if you want to use a different one (see <code>workers/cors-proxy/README.md</code> in the repo to deploy your own); shared with the torrent search tool. Leave blank to only ever try direct requests instead.</p>
       <input type="text" id="corsProxyInput" placeholder="https://your-worker.example.workers.dev" autocomplete="off" spellcheck="false" />
       <div class="settings__actions">
         <button id="corsProxyReset" class="btn btn--ghost btn--sm" type="button">Restore default</button>
@@ -398,7 +368,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
 
-  BQChrome.initRipple(".icon-btn, .btn, .tab, .dropzone, .gallery-item, .bottom-nav__item");
+  BQChrome.initRipple(".icon-btn, .btn, .tab, .dropzone, .bottom-nav__item");
   BQChrome.initTheme();
 
   if ("serviceWorker" in navigator) {
@@ -442,12 +412,12 @@
   let NUM_RES = loadNumRes();
 
   /* ═══════════════ Networking: routed through the configured CORS proxy worker ═══════════════
-     SauceNAO and Reddit both omit Access-Control-Allow-Origin on these
-     endpoints, so a browser fetch from any other origin is blocked
-     outright. Once a proxy worker is configured (see workers/cors-proxy/),
-     every request is sent through it — no guessing with a direct attempt
-     first. With none configured, requests go direct, which only works for
-     endpoints that happen to allow it. */
+     SauceNAO omits Access-Control-Allow-Origin on this endpoint, so a
+     browser fetch from any other origin is blocked outright. Once a proxy
+     worker is configured (see workers/cors-proxy/), every request is sent
+     through it — no guessing with a direct attempt first. With none
+     configured, requests go direct, which only works for endpoints that
+     happen to allow it. */
   function viaProxy(url) {
     if (!CORS_PROXY) return url;
     const base = CORS_PROXY.trim().replace(/\/$/, "");
@@ -549,86 +519,6 @@
     throw new Error((json && json.error) || "Image host returned an unexpected response.");
   }
 
-  /* ═══════════════ Reddit post → image list ═══════════════ */
-  function toRedditJsonUrl(raw) {
-    let u;
-    try { u = new URL(raw.trim()); } catch (e) { throw new Error("Enter a full reddit.com (or redd.it) link."); }
-    const host = u.hostname.toLowerCase();
-    if (host === "redd.it" || host === "www.redd.it") {
-      const id = u.pathname.split("/").filter(Boolean)[0];
-      if (!id) throw new Error("Couldn't find a post ID in that link.");
-      return `https://www.reddit.com/comments/${id}.json`;
-    }
-    if (!/(^|\.)reddit\.com$/.test(host)) throw new Error("That's not a reddit.com link.");
-    const path = u.pathname.replace(/\/+$/, "");
-    if (!path) throw new Error("That reddit link doesn't point to a post.");
-    return `https://www.reddit.com${path}.json`;
-  }
-
-  function decodeEntities(s) {
-    if (!s) return s;
-    return s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'");
-  }
-
-  function isDirectImage(post) {
-    if (post.post_hint === "image") return true;
-    const url = post.url_overridden_by_dest || post.url || "";
-    return /\.(jpe?g|png|gif|webp|bmp)(\?|$)/i.test(url);
-  }
-
-  function extractRedditImages(post) {
-    const out = [];
-    if (post.is_gallery && post.gallery_data && Array.isArray(post.gallery_data.items) && post.media_metadata) {
-      for (const item of post.gallery_data.items) {
-        const meta = post.media_metadata[item.media_id];
-        if (!meta) continue;
-        const src = meta.s || {};
-        const full = decodeEntities(src.u || src.gif || src.mp4 || "");
-        const thumb = decodeEntities((meta.p && meta.p[0] && meta.p[0].u) || full);
-        if (full) out.push({ url: full, thumb: thumb || full });
-      }
-      if (out.length) return out;
-    }
-    if (isDirectImage(post)) {
-      const full = post.url_overridden_by_dest || post.url;
-      let thumb = post.thumbnail;
-      if (!thumb || !/^https?:\/\//.test(thumb)) {
-        const preview = post.preview && post.preview.images && post.preview.images[0];
-        thumb = preview ? decodeEntities((preview.resolutions && preview.resolutions[0] && preview.resolutions[0].url) || (preview.source && preview.source.url)) : full;
-      } else {
-        thumb = decodeEntities(thumb);
-      }
-      out.push({ url: full, thumb: thumb || full });
-      return out;
-    }
-    if (post.preview && Array.isArray(post.preview.images) && post.preview.images.length) {
-      for (const img of post.preview.images) {
-        if (!img.source || !img.source.url) continue;
-        const full = decodeEntities(img.source.url);
-        const resIdx = img.resolutions && img.resolutions.length ? Math.min(2, img.resolutions.length - 1) : -1;
-        const thumb = resIdx >= 0 ? decodeEntities(img.resolutions[resIdx].url) : full;
-        out.push({ url: full, thumb });
-      }
-    }
-    return out;
-  }
-
-  async function fetchRedditImages(postUrl) {
-    const jsonUrl = toRedditJsonUrl(postUrl);
-    const res = await fetchProxied(jsonUrl, { method: "GET" });
-    const data = await res.json();
-    const listing = Array.isArray(data) ? data[0] : null;
-    const child = listing && listing.data && listing.data.children && listing.data.children[0];
-    let post = child && child.data;
-    if (!post) throw new Error("Couldn't read that reddit post (it may be private, quarantined, or deleted).");
-    if (!post.is_gallery && !isDirectImage(post) && Array.isArray(post.crosspost_parent_list) && post.crosspost_parent_list[0]) {
-      post = post.crosspost_parent_list[0];
-    }
-    const images = extractRedditImages(post);
-    if (!images.length) throw new Error("No images found in that post — it may be a text, link, or video post.");
-    return { title: post.title || "", images };
-  }
-
   /* ═══════════════ Rendering helpers ═══════════════ */
   function escapeHtml(str) {
     return String(str == null ? "" : str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -697,7 +587,7 @@
   }
 
   function showEmptyState() {
-    $("resultsArea").innerHTML = `<div class="state-panel"><span class="material-icons">image_search</span><p>Paste an image, drop one, or search by URL or Reddit post above.</p></div>`;
+    $("resultsArea").innerHTML = `<div class="state-panel"><span class="material-icons">image_search</span><p>Paste an image, drop one, or search by URL above.</p></div>`;
   }
 
   /* ═══════════════ Search orchestration ═══════════════ */
@@ -744,7 +634,7 @@
 
   /* ═══════════════ Mode tabs ═══════════════ */
   const tabs = Array.from(document.querySelectorAll(".tab"));
-  const panels = { image: $("panelImage"), url: $("panelUrl"), reddit: $("panelReddit") };
+  const panels = { image: $("panelImage"), url: $("panelUrl") };
   function selectTab(mode) {
     tabs.forEach((t) => {
       const active = t.dataset.mode === mode;
@@ -786,7 +676,7 @@
     }
   });
 
-  /* ═══════════════ Clipboard paste (image or link, from any of the three buttons) ═══════════════ */
+  /* ═══════════════ Clipboard paste (image or link, from either button) ═══════════════ */
   async function pasteFromClipboard() {
     clearError();
     if (navigator.clipboard && navigator.clipboard.read) {
@@ -812,19 +702,12 @@
       showError("Couldn't read an image or link from the clipboard — copy one first, and allow clipboard access if your browser asks.");
       return;
     }
-    if (/reddit\.com|redd\.it/i.test(text)) {
-      selectTab("reddit");
-      $("redditInput").value = text;
-      loadRedditGallery(text);
-    } else {
-      selectTab("url");
-      $("urlInput").value = text;
-      runUrlSearch(text);
-    }
+    selectTab("url");
+    $("urlInput").value = text;
+    runUrlSearch(text);
   }
   $("pasteImageBtn").addEventListener("click", pasteFromClipboard);
   $("pasteUrlBtn").addEventListener("click", pasteFromClipboard);
-  $("pasteRedditBtn").addEventListener("click", pasteFromClipboard);
 
   /* ═══════════════ Image URL panel ═══════════════ */
   $("urlForm").addEventListener("submit", (e) => {
@@ -838,63 +721,6 @@
     setTimeout(() => {
       const val = $("urlInput").value.trim();
       if (val) runUrlSearch(val);
-    }, 0);
-  });
-
-  /* ═══════════════ Reddit panel ═══════════════ */
-  let currentRedditImages = [];
-  function renderGallery(images) {
-    currentRedditImages = images;
-    const grid = $("redditGallery");
-    grid.innerHTML = images.map((img, i) => `
-      <button class="gallery-item" type="button" data-idx="${i}" aria-label="Select image ${i + 1} of ${images.length}">
-        <img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />
-        <span class="gallery-item__check"><span class="material-icons">check</span></span>
-      </button>`).join("");
-    grid.classList.toggle("hidden", images.length === 0);
-    grid.querySelectorAll(".gallery-item").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        grid.querySelectorAll(".gallery-item").forEach((b) => b.classList.remove("gallery-item--selected"));
-        btn.classList.add("gallery-item--selected");
-        const img = currentRedditImages[parseInt(btn.dataset.idx, 10)];
-        if (img) runUrlSearch(img.url);
-      });
-    });
-    if (images.length === 1) grid.querySelector(".gallery-item").click();
-  }
-
-  async function loadRedditGallery(postUrl) {
-    if (busy) return;
-    resetOutputs();
-    $("redditGallery").innerHTML = "";
-    $("redditGallery").classList.add("hidden");
-    $("redditPostTitle").classList.add("hidden");
-    $("redditPostTitle").textContent = "";
-    setPreview(null);
-    setBusy(true, "Loading reddit post…");
-    try {
-      const { title, images } = await fetchRedditImages(postUrl);
-      setBusy(false);
-      if (title) { $("redditPostTitle").textContent = title; $("redditPostTitle").classList.remove("hidden"); }
-      renderGallery(images);
-      if (images.length > 1) {
-        $("statusArea").innerHTML = `<div class="state-panel"><span class="material-icons">touch_app</span><p>${images.length} images found — tap one to search it.</p></div>`;
-      }
-    } catch (err) {
-      setBusy(false);
-      showError((err && err.message) || String(err));
-    }
-  }
-  $("redditForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const val = $("redditInput").value.trim();
-    if (!val) return;
-    loadRedditGallery(val);
-  });
-  $("redditInput").addEventListener("paste", () => {
-    setTimeout(() => {
-      const val = $("redditInput").value.trim();
-      if (val) loadRedditGallery(val);
     }, 0);
   });
 
