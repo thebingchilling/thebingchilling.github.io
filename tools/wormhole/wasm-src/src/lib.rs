@@ -9,9 +9,10 @@
 
 use std::cell::RefCell;
 use std::future::Future;
+use std::time::Duration;
 
 use futures::channel::oneshot;
-use futures::future::{Either, Shared};
+use futures::future::{Either, LocalBoxFuture, Shared};
 use futures::io::Cursor;
 use futures::FutureExt;
 use js_sys::{Function, Uint8Array};
@@ -68,15 +69,23 @@ pub fn wormhole_cancel() {
     });
 }
 
-/// A level-triggered "please cancel" signal: register once per operation,
-/// then `.clone()` it into every step that should be interruptible. All
-/// clones resolve together the moment `wormhole_cancel()` fires.
-fn cancel_signal() -> Shared<impl Future<Output = ()>> {
+/// A level-triggered "please cancel" signal: register once per operation
+/// (this is what wires up the Cancel button, so call it *before* the
+/// first `.await` of anything that should be interruptible - registering
+/// it partway through leaves an earlier hang with no way out), then
+/// `.clone()` it into every step that should be interruptible. All clones
+/// resolve together the moment `wormhole_cancel()` fires. Boxed to a
+/// single concrete type so it can be threaded through helpers without
+/// every call site becoming generic over the closure's opaque future type.
+type CancelSignal = Shared<LocalBoxFuture<'static, ()>>;
+
+fn cancel_signal() -> CancelSignal {
     let (tx, rx) = oneshot::channel();
     CANCEL.with(|cell| *cell.borrow_mut() = Some(tx));
     async move {
         let _ = rx.await;
     }
+    .boxed_local()
     .shared()
 }
 
@@ -84,16 +93,29 @@ fn clear_cancel_slot() {
     CANCEL.with(|cell| *cell.borrow_mut() = None);
 }
 
-/// The relay hint used for the bulk-data (transit) leg of the transfer.
+/// Runs `fut` to completion, unless the user hits Cancel or `timeout_secs`
+/// passes first - either way `fut` is dropped and this returns an `Err`
+/// with a message fit to show directly in the UI.
 ///
-/// `relay.mw.leastauthority.com` is a public relay operated by Least
-/// Authority that bridges both the classic TCP transit protocol (used by
-/// the official CLI clients) and WebSocket (the only option available to a
-/// browser tab, which cannot open raw TCP sockets). Advertising both
-/// endpoints under one hint means a plain `wormhole send`/`wormhole
-/// receive` peer on the other end - which tries every relay hint either
-/// side offers - will also attempt this relay and land in the same
-/// session as this browser tab, without the peer needing any extra flags.
+/// Without this, any hiccup talking to the rendezvous/relay servers (an
+/// unreachable host, a protocol hiccup, anything that isn't a clean
+/// error) looks exactly like an infinite hang: the promise never
+/// settles, and - because the Cancel button only works once a cancel
+/// signal has actually been registered - clicking it does nothing either
+/// if that hasn't happened yet for the step in question.
+async fn with_timeout<T>(fut: impl Future<Output = T>, cancel: CancelSignal, timeout_secs: u32) -> Result<T, JsValue> {
+    let abort = async move {
+        match futures::future::select(cancel, Box::pin(wasmtimer::tokio::sleep(Duration::from_secs(timeout_secs.into())))).await {
+            Either::Left(_) => "Cancelled",
+            Either::Right(_) => "Timed out waiting for a response. Check your connection and try again.",
+        }
+    };
+    match futures::future::select(Box::pin(fut), Box::pin(abort)).await {
+        Either::Left((value, _)) => Ok(value),
+        Either::Right((message, _)) => Err(js_err(message)),
+    }
+}
+
 /// App config for the file-transfer protocol, pointed at a TLS-capable
 /// rendezvous (mailbox) server instead of the crate's built-in default
 /// (`ws://relay.magic-wormhole.io:4000/v1`).
@@ -112,6 +134,16 @@ fn app_config() -> magic_wormhole::AppConfig<transfer::AppVersion> {
     transfer::APP_CONFIG.rendezvous_url("wss://mailbox.mw.leastauthority.com/v1".into())
 }
 
+/// The relay hint used for the bulk-data (transit) leg of the transfer.
+///
+/// `relay.mw.leastauthority.com` is the transit-relay counterpart to
+/// `app_config()`'s mailbox, bridging both the classic TCP transit
+/// protocol (used by the official CLI clients) and WebSocket (the only
+/// option available to a browser tab, which cannot open raw TCP
+/// sockets). Advertising both endpoints under one hint means a peer that
+/// also points its rendezvous server here - which tries every relay hint
+/// either side offers - will attempt this relay too and land in the same
+/// session as this browser tab.
 fn relay_hints() -> Result<Vec<transit::RelayHint>, JsValue> {
     let tcp: url::Url = "tcp://relay.mw.leastauthority.com:4001"
         .parse()
@@ -120,16 +152,6 @@ fn relay_hints() -> Result<Vec<transit::RelayHint>, JsValue> {
     let hint = transit::RelayHint::from_urls(Some("leastauthority.com".to_string()), [tcp, ws])
         .map_err(js_err)?;
     Ok(vec![hint])
-}
-
-async fn connect_wormhole(
-    mailbox: MailboxConnection<transfer::AppVersion>,
-    cancel: Shared<impl Future<Output = ()>>,
-) -> Result<Wormhole, JsValue> {
-    match futures::future::select(Box::pin(Wormhole::connect(mailbox)), cancel).await {
-        Either::Left((result, _)) => result.map_err(js_err),
-        Either::Right(_) => Err(js_err("Cancelled")),
-    }
 }
 
 /// Send `bytes` (named `file_name`) through a freshly allocated wormhole code.
@@ -150,19 +172,33 @@ pub async fn wormhole_send(
     let data = bytes.to_vec();
     let size = data.len() as u64;
     let relay = relay_hints()?;
+    let cancel = cancel_signal();
 
     call1(&on_status, JsValue::from_str("Allocating a wormhole code…"));
-    let mailbox = MailboxConnection::create(app_config(), 2)
-        .await
-        .map_err(js_err)?;
+    let mailbox = match with_timeout(MailboxConnection::create(app_config(), 2), cancel.clone(), 20).await {
+        Ok(result) => result.map_err(js_err),
+        Err(e) => Err(e),
+    };
+    let mailbox = match mailbox {
+        Ok(m) => m,
+        Err(e) => {
+            clear_cancel_slot();
+            return Err(e);
+        }
+    };
     call1(&on_code, JsValue::from_str(mailbox.code().to_string().as_str()));
     call1(
         &on_status,
         JsValue::from_str("Waiting for the other side to connect…"),
     );
 
-    let cancel = cancel_signal();
-    let wormhole = connect_wormhole(mailbox, cancel.clone()).await;
+    // Waiting for a human on the other end to type the code in is normal
+    // and can take a while, so this gets a much longer leash than the
+    // "is the server even reachable" checks above and below.
+    let wormhole = match with_timeout(Wormhole::connect(mailbox), cancel.clone(), 600).await {
+        Ok(result) => result.map_err(js_err),
+        Err(e) => Err(e),
+    };
     let wormhole = match wormhole {
         Ok(w) => w,
         Err(e) => {
@@ -203,14 +239,25 @@ pub async fn wormhole_send(
 pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Result<ReceiveOffer, JsValue> {
     let code: Code = code.trim().parse().map_err(js_err)?;
     let relay = relay_hints()?;
+    let cancel = cancel_signal();
 
     call1(&on_status, JsValue::from_str("Connecting…"));
-    let mailbox = MailboxConnection::connect(app_config(), code, false)
-        .await
-        .map_err(js_err)?;
+    let mailbox = match with_timeout(MailboxConnection::connect(app_config(), code, false), cancel.clone(), 20).await {
+        Ok(result) => result.map_err(js_err),
+        Err(e) => Err(e),
+    };
+    let mailbox = match mailbox {
+        Ok(m) => m,
+        Err(e) => {
+            clear_cancel_slot();
+            return Err(e);
+        }
+    };
 
-    let cancel = cancel_signal();
-    let wormhole = connect_wormhole(mailbox, cancel.clone()).await;
+    let wormhole = match with_timeout(Wormhole::connect(mailbox), cancel.clone(), 60).await {
+        Ok(result) => result.map_err(js_err),
+        Err(e) => Err(e),
+    };
     let wormhole = match wormhole {
         Ok(w) => w,
         Err(e) => {
@@ -220,9 +267,16 @@ pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Resu
     };
     call1(&on_status, JsValue::from_str("Connected. Waiting for the file offer…"));
 
-    let request = transfer::request_file(wormhole, relay, transit::Abilities::FORCE_RELAY, cancel)
-        .await
-        .map_err(js_err);
+    let request = match with_timeout(
+        transfer::request_file(wormhole, relay, transit::Abilities::FORCE_RELAY, futures::future::pending()),
+        cancel,
+        30,
+    )
+    .await
+    {
+        Ok(result) => result.map_err(js_err),
+        Err(e) => Err(e),
+    };
     clear_cancel_slot();
 
     match request? {

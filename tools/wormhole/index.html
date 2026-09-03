@@ -430,13 +430,13 @@
 
 <script src="/shared/chrome.js"></script>
 <script type="module">
-  // "?v=3" busts stale caches (browser + GitHub Pages' CDN) whenever the
+  // "?v=4" busts stale caches (browser + GitHub Pages' CDN) whenever the
   // vendored wasm/js pair changes — the .js and .wasm are tightly coupled
   // (the glue calls specific export ordinals in the binary), so a cached
   // .js paired with a fresher .wasm or vice versa breaks module loading
   // entirely. Bump this (and the matching wasm URL below) on every
   // vendor/pkg rebuild — see vendor/README.md.
-  import init, { wormhole_send, wormhole_receive_connect, wormhole_cancel, wormhole_code_completions } from "/tools/wormhole/vendor/pkg/wormhole.js?v=3";
+  import init, { wormhole_send, wormhole_receive_connect, wormhole_cancel, wormhole_code_completions } from "/tools/wormhole/vendor/pkg/wormhole.js?v=4";
 
   const $ = (id) => document.getElementById(id);
   window.BQChrome && BQChrome.initRipple(".icon-btn, .btn, .dropzone, .file-chip__remove, .bottom-nav__item, .tab, .code-box__copy");
@@ -453,7 +453,7 @@
   let wasmLoaded = false;
   function loadWasm() {
     if (!wasmReady) {
-      wasmReady = init({ module_or_path: "/tools/wormhole/vendor/pkg/wormhole_bg.wasm?v=3" }).then(() => { wasmLoaded = true; });
+      wasmReady = init({ module_or_path: "/tools/wormhole/vendor/pkg/wormhole_bg.wasm?v=4" }).then(() => { wasmLoaded = true; });
     }
     return wasmReady;
   }

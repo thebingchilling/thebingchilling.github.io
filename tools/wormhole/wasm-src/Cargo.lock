@@ -2238,6 +2238,7 @@ dependencies = [
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasmtimer",
 ]
 
 [[package]]
