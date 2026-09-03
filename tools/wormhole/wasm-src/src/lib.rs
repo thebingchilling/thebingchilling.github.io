@@ -42,6 +42,25 @@ fn js_err(err: impl std::fmt::Display) -> JsValue {
     JsValue::from_str(&err.to_string())
 }
 
+/// Like `js_err`, but for real error types: walks the `source()` chain so
+/// the message actually says what went wrong instead of just which step
+/// it happened in. Every error type in this crate wraps its cause behind
+/// a generic outer message (e.g. `TransferError::TransitConnect`'s
+/// `Display` is just "Error while establishing transit connection" -
+/// the useful part, like "All (relay) handshakes failed or timed out",
+/// only shows up via `.source()`), so without this every failure looked
+/// the same regardless of actual cause.
+fn js_error_err(err: impl std::error::Error + 'static) -> JsValue {
+    let mut message = err.to_string();
+    let mut cause: Option<&dyn std::error::Error> = err.source();
+    while let Some(err) = cause {
+        message.push_str(": ");
+        message.push_str(&err.to_string());
+        cause = err.source();
+    }
+    JsValue::from_str(&message)
+}
+
 fn call1(f: &Function, a: JsValue) {
     let _ = f.call1(&JsValue::NULL, &a);
 }
@@ -167,10 +186,10 @@ fn app_config() -> magic_wormhole::AppConfig<transfer::AppVersion> {
 fn relay_hints() -> Result<Vec<transit::RelayHint>, JsValue> {
     let tcp: url::Url = "tcp://relay.mw.leastauthority.com:4001"
         .parse()
-        .map_err(js_err)?;
-    let ws: url::Url = "wss://relay.mw.leastauthority.com".parse().map_err(js_err)?;
+        .map_err(js_error_err)?;
+    let ws: url::Url = "wss://relay.mw.leastauthority.com".parse().map_err(js_error_err)?;
     let hint = transit::RelayHint::from_urls(Some("leastauthority.com".to_string()), [tcp, ws])
-        .map_err(js_err)?;
+        .map_err(js_error_err)?;
     Ok(vec![hint])
 }
 
@@ -196,7 +215,7 @@ pub async fn wormhole_send(
 
     call1(&on_status, JsValue::from_str("Allocating a wormhole code…"));
     let mailbox = match with_timeout(MailboxConnection::create(app_config(), 2), cancel.clone(), 20).await {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     let mailbox = match mailbox {
@@ -216,7 +235,7 @@ pub async fn wormhole_send(
     // and can take a while, so this gets a much longer leash than the
     // "is the server even reachable" checks above and below.
     let wormhole = match with_timeout(Wormhole::connect(mailbox), cancel.clone(), 600).await {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     let wormhole = match wormhole {
@@ -253,7 +272,7 @@ pub async fn wormhole_send(
     .await;
     clear_cancel_slot();
     match result {
-        Ok(inner) => inner.map_err(js_err),
+        Ok(inner) => inner.map_err(js_error_err),
         Err(e) => Err(e),
     }
 }
@@ -263,13 +282,13 @@ pub async fn wormhole_send(
 /// or `reject()` on it to finish.
 #[wasm_bindgen]
 pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Result<ReceiveOffer, JsValue> {
-    let code: Code = code.trim().parse().map_err(js_err)?;
+    let code: Code = code.trim().parse().map_err(js_error_err)?;
     let relay = relay_hints()?;
     let cancel = cancel_signal();
 
     call1(&on_status, JsValue::from_str("Connecting…"));
     let mailbox = match with_timeout(MailboxConnection::connect(app_config(), code, false), cancel.clone(), 20).await {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     let mailbox = match mailbox {
@@ -281,7 +300,7 @@ pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Resu
     };
 
     let wormhole = match with_timeout(Wormhole::connect(mailbox), cancel.clone(), 60).await {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     let wormhole = match wormhole {
@@ -300,7 +319,7 @@ pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Resu
     )
     .await
     {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     clear_cancel_slot();
@@ -353,7 +372,7 @@ impl ReceiveOffer {
         .await;
         clear_cancel_slot();
         match result {
-            Ok(inner) => inner.map_err(js_err)?,
+            Ok(inner) => inner.map_err(js_error_err)?,
             Err(e) => return Err(e),
         };
 
@@ -363,6 +382,6 @@ impl ReceiveOffer {
     /// Reject the offer and let the sender know.
     pub async fn reject(&mut self) -> Result<(), JsValue> {
         let req = self.inner.take().ok_or_else(|| js_err("This offer was already used"))?;
-        req.reject().await.map_err(js_err)
+        req.reject().await.map_err(js_error_err)
     }
 }
