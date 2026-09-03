@@ -143,7 +143,12 @@
     body { scrollbar-width: none; }
     body::-webkit-scrollbar { display: none; }
 
-    main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem 1rem calc(4.6rem + env(safe-area-inset-bottom)); max-width: 640px; width: 100%; margin: 0 auto; }
+    /* Horizontal padding (not max-width + margin: 0 auto) does the
+       content-column centering: .app-main is the scrolling element, so a
+       max-width on it would leave its scrollbar stranded at the edge of
+       the narrow column instead of the actual window edge on a wide
+       desktop viewport. */
+    main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem max(1rem, calc((100% - 640px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.25rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
@@ -231,8 +236,6 @@
     .settings input[type=text], .settings select { width: 100%; border: 1px solid var(--md-outline); border-radius: 10px; padding: 0.55rem 0.7rem; font-size: 0.86rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
     .settings input[type=text]:focus, .settings select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
     .settings__actions { display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap; }
-
-    main.app-main { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
   </style>
 </head>
 <body>
