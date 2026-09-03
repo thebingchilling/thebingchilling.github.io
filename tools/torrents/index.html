@@ -317,8 +317,8 @@
 
     <div class="settings__section">
       <div class="settings__section-label">CORS proxy fallback</div>
-      <p class="settings__hint">Used automatically when a source's direct request fails (typically a CORS block). It fetches the URL server-side and hands the response back with CORS allowed. Use <code>{url}</code> for where the target URL goes — it's URL-encoded automatically; with no <code>{url}</code> the URL is appended to the end. Leave blank to disable and see the raw error instead.</p>
-      <input type="text" id="corsProxyInput" placeholder="https://api.allorigins.win/raw?url={url}" autocomplete="off" spellcheck="false" />
+      <p class="settings__hint">Used automatically when a source's direct request fails (typically a CORS block). Each one fetches the URL server-side and hands the response back with CORS allowed — free public proxies like these are flaky, so list a few, <strong>comma-separated</strong>; they're tried in order until one works. Use <code>{url}</code> for where the target URL goes — it's URL-encoded automatically; with no <code>{url}</code> the URL is appended to the end. Leave blank to disable and see the raw error instead.</p>
+      <input type="text" id="corsProxyInput" placeholder="https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}" autocomplete="off" spellcheck="false" />
     </div>
 
     <div class="settings__section">
@@ -408,13 +408,16 @@
 
   let SOURCES = loadSources();
 
-  const DEFAULT_CORS_PROXY = "https://api.allorigins.win/raw?url={url}";
+  const DEFAULT_CORS_PROXY = "https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}";
   function loadCorsProxy() {
     const raw = Store.get("bq_torrent_cors_proxy");
     return raw === null ? DEFAULT_CORS_PROXY : raw;
   }
   function saveCorsProxy(value) { Store.set("bq_torrent_cors_proxy", value); }
   let CORS_PROXY = loadCorsProxy();
+  function corsProxyList() {
+    return CORS_PROXY.split(",").map(s => s.trim()).filter(Boolean);
+  }
 
   /* ═══════════════ Generic result normalization ═══════════════
      Every source is just "a JSON URL" — none of this code knows or cares
@@ -521,16 +524,26 @@
     try {
       data = await fetchJson(url);
     } catch (directErr) {
-      if (!CORS_PROXY) {
+      const proxies = corsProxyList();
+      if (!proxies.length) {
         throw new Error(`Direct request ${directErr.message}. Set a CORS proxy in Sources settings to retry through one automatically.`);
       }
-      const proxyUrl = CORS_PROXY.includes("{url}")
-        ? CORS_PROXY.replace("{url}", encodeURIComponent(url))
-        : CORS_PROXY + encodeURIComponent(url);
-      try {
-        data = await fetchJson(proxyUrl);
-      } catch (proxyErr) {
-        throw new Error(`Direct request ${directErr.message}, and the CORS proxy also failed (${proxyErr.message}).`);
+      const proxyErrors = [];
+      let ok = false;
+      for (const proxy of proxies) {
+        const proxyUrl = proxy.includes("{url}") ? proxy.replace("{url}", encodeURIComponent(url)) : proxy + encodeURIComponent(url);
+        try {
+          data = await fetchJson(proxyUrl);
+          ok = true;
+          break;
+        } catch (proxyErr) {
+          let host = proxy;
+          try { host = new URL(proxy.replace("{url}", "")).hostname; } catch (e) {}
+          proxyErrors.push(`${host}: ${proxyErr.message}`);
+        }
+      }
+      if (!ok) {
+        throw new Error(`Direct request ${directErr.message}. All CORS proxies also failed — ${proxyErrors.join("; ")}.`);
       }
     }
     const arr = source.resultsPath ? getByPath(data, source.resultsPath) : findResultsArray(data);
