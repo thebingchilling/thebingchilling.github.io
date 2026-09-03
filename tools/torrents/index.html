@@ -317,8 +317,11 @@
 
     <div class="settings__section">
       <div class="settings__section-label">CORS proxy</div>
-      <p class="settings__hint">Most indexer APIs don't send CORS headers, so a direct browser request is blocked outright. Once set, every source request is routed through this — see <code>workers/cors-proxy/README.md</code> in the repo for a free, two-minute Cloudflare Worker you can deploy for this. Shared with the reverse-image-search tool. Leave blank to only ever try direct requests (works for some sources, not most).</p>
+      <p class="settings__hint">Most indexer APIs don't send CORS headers, so a direct browser request is blocked outright — every source request is routed through this proxy, already set to this project's own Cloudflare Worker. Only change it if you want to use a different one (see <code>workers/cors-proxy/README.md</code> in the repo to deploy your own); shared with the reverse-image-search tool. Leave blank to only ever try direct requests instead.</p>
       <input type="text" id="corsProxyInput" placeholder="https://your-worker.example.workers.dev" autocomplete="off" spellcheck="false" />
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.2rem;">
+        <button id="corsProxyReset" class="btn btn--ghost btn--sm" type="button">Restore default</button>
+      </div>
     </div>
 
     <div class="settings__section">
@@ -410,7 +413,12 @@
 
   // Shared with the reverse-image-search tool (same origin, same
   // localStorage) — set it once in either tool's Settings and both use it.
-  function loadCorsProxy() { return Store.get("bq_cors_proxy_worker") || ""; }
+  // Defaults to this project's own deployed Worker (see workers/cors-proxy/).
+  const DEFAULT_CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev";
+  function loadCorsProxy() {
+    const raw = Store.get("bq_cors_proxy_worker");
+    return raw === null ? DEFAULT_CORS_PROXY : raw;
+  }
   function saveCorsProxy(value) { Store.set("bq_cors_proxy_worker", value); }
   let CORS_PROXY = loadCorsProxy();
   function viaProxy(url) {
@@ -707,6 +715,11 @@
 
   corsProxyInput.addEventListener("change", () => {
     CORS_PROXY = corsProxyInput.value.trim();
+    saveCorsProxy(CORS_PROXY);
+  });
+  $("corsProxyReset").addEventListener("click", () => {
+    corsProxyInput.value = DEFAULT_CORS_PROXY;
+    CORS_PROXY = DEFAULT_CORS_PROXY;
     saveCorsProxy(CORS_PROXY);
   });
 

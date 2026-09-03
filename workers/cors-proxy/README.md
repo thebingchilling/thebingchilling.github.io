@@ -10,7 +10,12 @@ It's deliberately generic: no per-site logic beyond sending a proper
 `User-Agent` (some APIs, Reddit especially, reject or rate-limit requests
 without one).
 
-## Deploy it (one-time, ~2 minutes, no command line needed)
+**Already deployed and wired in for this site** — both tools default to
+`https://bingqilin-cors-proxy.bingqilin.workers.dev`, so nothing below
+needs doing unless you've forked this site and want your own Worker, or
+want to point the tools at a different one.
+
+## Deploy your own (one-time, ~2 minutes, no command line needed)
 
 Requires a free Cloudflare account.
 
