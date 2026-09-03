@@ -139,8 +139,13 @@
     body { scrollbar-width: none; }
     body::-webkit-scrollbar { display: none; }
 
-    /* ── Page content ── */
-    main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem 1rem calc(2rem + env(safe-area-inset-bottom)); max-width: 640px; width: 100%; margin: 0 auto; }
+    /* ── Page content ──
+       Horizontal padding (not max-width + margin: 0 auto) does the
+       content-column centering: .app-main is the scrolling element, so
+       a max-width on it would leave its scrollbar stranded at the edge
+       of the narrow column instead of the actual window edge on a wide
+       desktop viewport. */
+    main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem max(1rem, calc((100% - 640px) / 2)) calc(2rem + env(safe-area-inset-bottom)); }
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
