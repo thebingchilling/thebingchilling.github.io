@@ -155,8 +155,13 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
 
-    /* ── Page content ── */
-    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem 1rem calc(4.6rem + env(safe-area-inset-bottom)); max-width: 560px; width: 100%; margin: 0 auto; }
+    /* ── Page content ──
+       Horizontal padding (not max-width + margin: 0 auto) does the
+       content-column centering: .app-main is the scrolling element, so
+       a max-width on it would leave its scrollbar stranded at the edge
+       of the narrow column instead of the actual window edge on a wide
+       desktop viewport. */
+    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem max(1rem, calc((100% - 560px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
@@ -679,6 +684,12 @@
     { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
     { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
     { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+    // TURN *over TLS* (note "turns:", not "turn:") on 443 - a strict
+    // firewall/VPN doing deep packet inspection can tell plain TURN-over-TCP
+    // on port 443 apart from real HTTPS and drop it anyway; wrapping the
+    // TURN handshake in an actual TLS handshake is what still gets through
+    // in that case, since it's indistinguishable from ordinary browsing.
+    { urls: "turns:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
   ];
   const PEER_OPTS = { debug: 0, config: { iceServers: ICE_SERVERS } };
 
@@ -1103,11 +1114,28 @@
         if (e.key === "ArrowDown") { e.preventDefault(); setActiveSuggestion((activeSuggestIndex + 1) % items.length); return; }
         if (e.key === "ArrowUp") { e.preventDefault(); setActiveSuggestion((activeSuggestIndex - 1 + items.length) % items.length); return; }
         if (e.key === "Escape") { hideSuggestions(); return; }
-        if (e.key === "Enter") {
+        // Space accepts the highlighted (or first) suggestion just like
+        // Enter — typing a word and hitting space to move on is the more
+        // natural reflex here than reaching for Enter mid-code.
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           selectSuggestion(items[activeSuggestIndex >= 0 ? activeSuggestIndex : 0].dataset.value);
           return;
         }
+      }
+      // No dropdown showing (e.g. the typed text doesn't match any word) —
+      // space still moves to the next segment, it just appends "-" to
+      // whatever was actually typed instead of an autocompleted word.
+      if (e.key === " ") {
+        e.preventDefault();
+        const value = codeInput.value;
+        const dashCount = (value.match(/-/g) || []).length;
+        if (value && !value.endsWith("-") && dashCount < 2) {
+          codeInput.value = value + "-";
+          updateReceiveButton();
+          updateSuggestions();
+        }
+        return;
       }
       if (e.key === "Enter" && !receiveBtn.disabled) runConnect();
     });
