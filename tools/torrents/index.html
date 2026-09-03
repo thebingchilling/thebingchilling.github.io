@@ -303,7 +303,7 @@
     </div>
 
     <div class="settings__section">
-      <p class="settings__hint">Every source here is a search API URL you (or this tool) supplied — this page fetches it directly from your browser, so it only works for APIs that allow cross-origin requests (CORS). Nothing is fetched unless its toggle is on.</p>
+      <p class="settings__hint">Every source here is a search API URL you (or this tool) supplied — this page fetches it directly from your browser. Many such APIs block cross-origin requests (CORS); when a direct request fails, the CORS proxy below is tried automatically. Nothing is fetched unless a source's toggle is on.</p>
       <div id="sourceList" class="source-list"></div>
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.2rem;">
         <button id="addSourceBtn" class="btn btn--ghost btn--sm" type="button">
@@ -313,7 +313,15 @@
           <span class="material-icons" style="font-size:16px;">restore</span>Restore default
         </button>
       </div>
+    </div>
 
+    <div class="settings__section">
+      <div class="settings__section-label">CORS proxy fallback</div>
+      <p class="settings__hint">Used automatically when a source's direct request fails (typically a CORS block). Each one fetches the URL server-side and hands the response back with CORS allowed — free public proxies are flaky and some indexers actively block known proxy IPs, so list a few, <strong>comma-separated</strong>; they're tried in order until one works, and a failed search shows exactly which proxies were tried and why each one failed. Use <code>{url}</code> for where the target URL goes — it's URL-encoded automatically; with no <code>{url}</code> the URL is appended to the end. Leave blank to disable.</p>
+      <input type="text" id="corsProxyInput" placeholder="https://corsproxy.io/?url={url}, https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div class="settings__section">
       <div id="sourceForm" class="source-form hidden">
         <p class="source-form__title" id="sourceFormTitle">Add source</p>
         <div>
@@ -399,6 +407,17 @@
   function saveSources(list) { Store.set("bq_torrent_sources", JSON.stringify(list)); }
 
   let SOURCES = loadSources();
+
+  const DEFAULT_CORS_PROXY = "https://corsproxy.io/?url={url}, https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}";
+  function loadCorsProxy() {
+    const raw = Store.get("bq_torrent_cors_proxy");
+    return raw === null ? DEFAULT_CORS_PROXY : raw;
+  }
+  function saveCorsProxy(value) { Store.set("bq_torrent_cors_proxy", value); }
+  let CORS_PROXY = loadCorsProxy();
+  function corsProxyList() {
+    return CORS_PROXY.split(",").map(s => s.trim()).filter(Boolean);
+  }
 
   /* ═══════════════ Generic result normalization ═══════════════
      Every source is just "a JSON URL" — none of this code knows or cares
@@ -509,18 +528,46 @@
     return `${val.toFixed(val < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
   }
 
-  async function runSource(source, query) {
-    const url = source.urlTemplate.replace(/\{query\}/g, encodeURIComponent(query));
+  async function fetchJson(url) {
     let res;
     try {
       res = await fetch(url, { mode: "cors" });
     } catch (e) {
-      throw new Error("Couldn't reach it — likely blocked by CORS, or the URL/network is unreachable.");
+      throw new Error("couldn't reach it (network/CORS error)");
     }
-    if (!res.ok) throw new Error(`Responded with HTTP ${res.status}.`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    try { return await res.json(); }
+    catch (e) { throw new Error("response wasn't valid JSON"); }
+  }
+
+  async function runSource(source, query) {
+    const url = source.urlTemplate.replace(/\{query\}/g, encodeURIComponent(query));
     let data;
-    try { data = await res.json(); }
-    catch (e) { throw new Error("Response wasn't valid JSON."); }
+    try {
+      data = await fetchJson(url);
+    } catch (directErr) {
+      const proxies = corsProxyList();
+      if (!proxies.length) {
+        throw new Error(`Direct request failed: ${directErr.message}. Set a CORS proxy in Sources settings to retry through one automatically.`);
+      }
+      const proxyErrors = [];
+      let ok = false;
+      for (const proxy of proxies) {
+        const proxyUrl = proxy.includes("{url}") ? proxy.replace("{url}", encodeURIComponent(url)) : proxy + encodeURIComponent(url);
+        let host = proxy;
+        try { host = new URL(proxy.replace("{url}", "")).hostname; } catch (e) {}
+        try {
+          data = await fetchJson(proxyUrl);
+          ok = true;
+          break;
+        } catch (proxyErr) {
+          proxyErrors.push(`${host} → ${proxyErr.message}`);
+        }
+      }
+      if (!ok) {
+        throw new Error(`Direct request failed: ${directErr.message}. Every CORS proxy also failed: ${proxyErrors.join("; ")}. (A "HTTP 403"/"HTTP 429" from a proxy usually means the source itself is blocking that proxy's IP, not that the proxy is down.)`);
+      }
+    }
     const arr = source.resultsPath ? getByPath(data, source.resultsPath) : findResultsArray(data);
     if (!Array.isArray(arr)) throw new Error("Couldn't find a results array in the response — set \"Results array path\" in Advanced.");
     return arr.map(item => normalizeItem(item, source));
@@ -540,6 +587,7 @@
   const sourceList = $("sourceList");
   const addSourceBtn = $("addSourceBtn");
   const restoreDefaultsBtn = $("restoreDefaultsBtn");
+  const corsProxyInput = $("corsProxyInput");
   const sourceForm = $("sourceForm");
   const sourceFormTitle = $("sourceFormTitle");
   const sfName = $("sfName"), sfUrl = $("sfUrl"), sfResultsPath = $("sfResultsPath");
@@ -673,8 +721,14 @@
     renderSourceList(); renderScope();
   });
 
+  corsProxyInput.addEventListener("change", () => {
+    CORS_PROXY = corsProxyInput.value.trim();
+    saveCorsProxy(CORS_PROXY);
+  });
+
   function openSettings() {
     renderSourceList();
+    corsProxyInput.value = CORS_PROXY;
     settingsSheet.classList.remove("hidden");
     settingsSheet.setAttribute("aria-hidden", "false");
   }
