@@ -22,10 +22,11 @@
 const ALLOWED_METHODS = new Set(["GET", "HEAD", "POST"]);
 
 // Reddit (and some other APIs) reject or heavily rate-limit requests that
-// carry a blank or generic User-Agent — this replaces whatever the runtime
-// would otherwise send, for every proxied request, since it's harmless for
-// targets that don't care and fixes the ones that do.
-const PROXY_USER_AGENT = "Mozilla/5.0 (compatible; BingqilinToolboxProxy/1.0; +https://thebingchilling.github.io)";
+// carry a blank User-Agent, and some WAFs (possibly including whatever
+// fronts saucenao.com) specifically block anything self-identifying as a
+// bot/proxy/library — so this looks like an ordinary desktop browser
+// rather than announcing itself, for every proxied request.
+const PROXY_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 function corsHeaders(origin) {
   return {
@@ -84,8 +85,8 @@ export default {
     const fwdHeaders = new Headers();
     const contentType = request.headers.get("Content-Type");
     if (contentType) fwdHeaders.set("Content-Type", contentType);
-    const accept = request.headers.get("Accept");
-    if (accept) fwdHeaders.set("Accept", accept);
+    fwdHeaders.set("Accept", request.headers.get("Accept") || "*/*");
+    fwdHeaders.set("Accept-Language", "en-US,en;q=0.9");
     fwdHeaders.set("User-Agent", PROXY_USER_AGENT);
 
     const hasBody = request.method !== "GET" && request.method !== "HEAD";
