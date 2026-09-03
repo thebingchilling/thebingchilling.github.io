@@ -30,6 +30,17 @@ export function start(): void;
 export function wormhole_cancel(): void;
 
 /**
+ * Autocomplete suggestions for a partially-typed wormhole code, e.g.
+ * `"7-guit"` -> `["7-guitarist"]`. Mirrors the word completion the
+ * official CLI offers on tab-press: the code's word list alternates
+ * between two wordlists by position, so this only ever completes the
+ * last (possibly partial) word, keeping everything before it as-is.
+ * Returns nothing until at least one `-` has been typed - the nameplate
+ * number itself isn't a completable word.
+ */
+export function wormhole_code_completions(prefix: string): string[];
+
+/**
  * Connect to an existing wormhole code and wait for the sender's file offer.
  * Returns a [`ReceiveOffer`] describing the pending offer; call `accept()`
  * or `reject()` on it to finish.
@@ -58,6 +69,7 @@ export interface InitOutput {
     readonly receiveoffer_reject: (a: number) => any;
     readonly start: () => void;
     readonly wormhole_cancel: () => void;
+    readonly wormhole_code_completions: (a: number, b: number) => [number, number];
     readonly wormhole_receive_connect: (a: number, b: number, c: any) => any;
     readonly wormhole_send: (a: any, b: number, c: number, d: any, e: any, f: any) => any;
     readonly wasm_bindgen__convert__closures_____invoke__h907a48b4c371d421: (a: number, b: number, c: any) => [number, number];
@@ -72,6 +84,7 @@ export interface InitOutput {
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_free: (a: number, b: number, c: number) => void;
     readonly __wbindgen_destroy_closure: (a: number, b: number) => void;
+    readonly __externref_drop_slice: (a: number, b: number) => void;
     readonly __externref_table_dealloc: (a: number) => void;
     readonly __wbindgen_start: () => void;
 }

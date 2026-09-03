@@ -13,12 +13,26 @@ use futures::future::{Either, Shared};
 use futures::io::Cursor;
 use futures::FutureExt;
 use js_sys::{Function, Uint8Array};
-use magic_wormhole::{transfer, transit, Code, MailboxConnection, Wormhole};
+use magic_wormhole::{transfer, transit, Code, MailboxConnection, Wordlist, Wormhole};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
 pub fn start() {
     console_error_panic_hook::set_once();
+}
+
+/// Autocomplete suggestions for a partially-typed wormhole code, e.g.
+/// `"7-guit"` -> `["7-guitarist"]`. Mirrors the word completion the
+/// official CLI offers on tab-press: the code's word list alternates
+/// between two wordlists by position, so this only ever completes the
+/// last (possibly partial) word, keeping everything before it as-is.
+/// Returns nothing until at least one `-` has been typed - the nameplate
+/// number itself isn't a completable word.
+#[wasm_bindgen]
+pub fn wormhole_code_completions(prefix: String) -> Vec<String> {
+    // The word count only affects `choose_words()` (random code
+    // generation), not completion, so any value works here.
+    Wordlist::default_wordlist(2).get_completions(&prefix)
 }
 
 fn js_err(err: impl std::fmt::Display) -> JsValue {

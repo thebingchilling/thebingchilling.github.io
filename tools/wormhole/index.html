@@ -192,8 +192,15 @@
 
     .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 0 0 0.4rem; }
     .field-hint { font-size: 0.72rem; color: var(--text-faint); margin: 0.3rem 0 0; }
+    .code-field { position: relative; }
     .code-input { width: 100%; border: none; outline: none; background: var(--bg2); border-radius: 12px; font-family: ui-monospace, 'DM Sans', monospace; font-size: 1.05rem; letter-spacing: 0.02em; color: var(--text); padding: 0.75rem 0.9rem; }
     .code-input::placeholder { color: var(--text-faint); font-family: 'DM Sans', sans-serif; letter-spacing: normal; }
+
+    .code-suggest-list { list-style: none; margin: 0; padding: 0.35rem; position: absolute; left: 0; right: 0; top: calc(100% + 0.35rem); z-index: 5; background: var(--md-surface-container-high); border-radius: 14px; box-shadow: var(--el2); max-height: 220px; overflow-y: auto; }
+    .code-suggest-list.hidden { display: none; }
+    .code-suggest-list__item { font-family: ui-monospace, monospace; font-size: 0.94rem; letter-spacing: 0.02em; color: var(--text); padding: 0.55rem 0.7rem; border-radius: 9px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .code-suggest-list__item:hover, .code-suggest-list__item--active { background: color-mix(in srgb, var(--primary) 12%, transparent); }
+    .code-suggest-list__item b { font-weight: 600; color: var(--primary); }
 
     .action-row { margin-top: 1.1rem; }
     .status-line { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 0.9rem; min-height: 1.2em; }
@@ -337,8 +344,11 @@
     <!-- ── Receive panel ────────────────────────────────────────────── -->
     <div class="card hidden" id="receivePanel">
       <label class="field-label" for="codeInput">Wormhole code</label>
-      <input class="code-input" id="codeInput" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. 7-guitarist-revenge" />
-      <p class="field-hint">Ask the sender for the code shown on their screen.</p>
+      <div class="code-field">
+        <input class="code-input" id="codeInput" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. 7-guitarist-revenge" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="codeSuggestList" />
+        <ul class="code-suggest-list hidden" id="codeSuggestList" role="listbox"></ul>
+      </div>
+      <p class="field-hint">Ask the sender for the code shown on their screen. Start typing a word and pick a match, like the CLI's tab-completion.</p>
 
       <div class="action-row">
         <button class="btn btn--primary btn--block" id="receiveBtn" type="button" disabled>
@@ -420,7 +430,7 @@
 
 <script src="/shared/chrome.js"></script>
 <script type="module">
-  import init, { wormhole_send, wormhole_receive_connect, wormhole_cancel } from "/tools/wormhole/vendor/pkg/wormhole.js";
+  import init, { wormhole_send, wormhole_receive_connect, wormhole_cancel, wormhole_code_completions } from "/tools/wormhole/vendor/pkg/wormhole.js";
 
   const $ = (id) => document.getElementById(id);
   window.BQChrome && BQChrome.initRipple(".icon-btn, .btn, .dropzone, .file-chip__remove, .bottom-nav__item, .tab, .code-box__copy");
@@ -433,8 +443,9 @@
      handshake that `wormhole send`/`wormhole receive` use, just running in
      this tab instead of on a terminal. ── */
   let wasmReady = null;
+  let wasmLoaded = false;
   function loadWasm() {
-    if (!wasmReady) wasmReady = init();
+    if (!wasmReady) wasmReady = init().then(() => { wasmLoaded = true; });
     return wasmReady;
   }
   loadWasm().catch((err) => {
@@ -591,7 +602,7 @@
 
   /* ── Receive flow ─────────────────────────────────────────────────── */
   (function () {
-    const codeInput = $("codeInput");
+    const codeInput = $("codeInput"), codeSuggestList = $("codeSuggestList");
     const receiveBtn = $("receiveBtn"), receiveBtnIcon = $("receiveBtnIcon"), receiveBtnLabel = $("receiveBtnLabel");
     const statusLine = $("receiveStatusLine");
     const offerCard = $("offerCard"), offerName = $("offerName"), offerSize = $("offerSize");
@@ -632,6 +643,7 @@
       setStatus("");
       hideError();
       hideResult();
+      hideSuggestions();
     }
 
     function updateReceiveButton() {
@@ -641,8 +653,83 @@
       else if (!hasCode) { receiveBtnIcon.textContent = "login"; receiveBtnLabel.textContent = "Enter a code first"; }
       else { receiveBtnIcon.textContent = "login"; receiveBtnLabel.textContent = "Connect"; }
     }
-    codeInput.addEventListener("input", updateReceiveButton);
-    codeInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !receiveBtn.disabled) runConnect(); });
+
+    /* ── Code word autocomplete ───────────────────────────────────────
+       Mirrors the CLI's tab-completion: as soon as a "-" has been typed,
+       the wasm module (which carries the same wordlist the protocol
+       itself uses) suggests full-word completions for the segment being
+       typed. Nothing here is guessing at the code's secret — the
+       wordlist is public, this just saves retyping/misspelling a word. */
+    let activeSuggestIndex = -1;
+    function suggestItems() {
+      return codeSuggestList.classList.contains("hidden") ? [] : Array.from(codeSuggestList.children);
+    }
+    function hideSuggestions() {
+      codeSuggestList.classList.add("hidden");
+      codeSuggestList.innerHTML = "";
+      activeSuggestIndex = -1;
+      codeInput.setAttribute("aria-expanded", "false");
+    }
+    function setActiveSuggestion(index) {
+      const items = suggestItems();
+      items.forEach((el, i) => el.classList.toggle("code-suggest-list__item--active", i === index));
+      activeSuggestIndex = index;
+      if (items[index]) items[index].scrollIntoView({ block: "nearest" });
+    }
+    function selectSuggestion(value) {
+      codeInput.value = value;
+      hideSuggestions();
+      updateReceiveButton();
+      codeInput.focus();
+      codeInput.setSelectionRange(value.length, value.length);
+    }
+    function renderSuggestions(matches) {
+      codeSuggestList.innerHTML = "";
+      activeSuggestIndex = -1;
+      if (!matches.length) { hideSuggestions(); return; }
+      const typed = codeInput.value;
+      const partialLen = typed.length - (typed.lastIndexOf("-") + 1);
+      matches.slice(0, 8).forEach((full) => {
+        const lastDash = full.lastIndexOf("-");
+        const li = document.createElement("li");
+        li.className = "code-suggest-list__item";
+        li.setAttribute("role", "option");
+        li.dataset.value = full;
+        li.appendChild(document.createTextNode(full.slice(0, lastDash + 1 + partialLen)));
+        const rest = document.createElement("b");
+        rest.textContent = full.slice(lastDash + 1 + partialLen);
+        li.appendChild(rest);
+        // mousedown (not click) + preventDefault so the input never blurs,
+        // which would otherwise close the list before the click lands.
+        li.addEventListener("mousedown", (e) => { e.preventDefault(); selectSuggestion(full); });
+        codeSuggestList.appendChild(li);
+      });
+      codeSuggestList.classList.remove("hidden");
+      codeInput.setAttribute("aria-expanded", "true");
+    }
+    function updateSuggestions() {
+      if (!wasmLoaded || !codeInput.value.includes("-")) { hideSuggestions(); return; }
+      let matches;
+      try { matches = wormhole_code_completions(codeInput.value); } catch (e) { matches = []; }
+      renderSuggestions(matches);
+    }
+
+    codeInput.addEventListener("input", () => { updateReceiveButton(); updateSuggestions(); });
+    codeInput.addEventListener("blur", () => { setTimeout(hideSuggestions, 120); });
+    codeInput.addEventListener("keydown", (e) => {
+      const items = suggestItems();
+      if (items.length) {
+        if (e.key === "ArrowDown") { e.preventDefault(); setActiveSuggestion((activeSuggestIndex + 1) % items.length); return; }
+        if (e.key === "ArrowUp") { e.preventDefault(); setActiveSuggestion((activeSuggestIndex - 1 + items.length) % items.length); return; }
+        if (e.key === "Escape") { hideSuggestions(); return; }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          selectSuggestion(items[activeSuggestIndex >= 0 ? activeSuggestIndex : 0].dataset.value);
+          return;
+        }
+      }
+      if (e.key === "Enter" && !receiveBtn.disabled) runConnect();
+    });
 
     cancelBtn.addEventListener("click", () => { wormhole_cancel(); });
 

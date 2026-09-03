@@ -77,6 +77,26 @@ export function wormhole_cancel() {
 }
 
 /**
+ * Autocomplete suggestions for a partially-typed wormhole code, e.g.
+ * `"7-guit"` -> `["7-guitarist"]`. Mirrors the word completion the
+ * official CLI offers on tab-press: the code's word list alternates
+ * between two wordlists by position, so this only ever completes the
+ * last (possibly partial) word, keeping everything before it as-is.
+ * Returns nothing until at least one `-` has been typed - the nameplate
+ * number itself isn't a completable word.
+ * @param {string} prefix
+ * @returns {string[]}
+ */
+export function wormhole_code_completions(prefix) {
+    const ptr0 = passStringToWasm0(prefix, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.wormhole_code_completions(ptr0, len0);
+    var v2 = getArrayJsValueFromWasm0(ret[0], ret[1]);
+    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+    return v2;
+}
+
+/**
  * Connect to an existing wormhole code and wait for the sender's file offer.
  * Returns a [`ReceiveOffer`] describing the pending offer; call `accept()`
  * or `reject()` on it to finish.
@@ -564,6 +584,17 @@ function debugString(val) {
     }
     // TODO we could test for more things here, like `Set`s and `Map`s.
     return className;
+}
+
+function getArrayJsValueFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    const mem = getDataViewMemory0();
+    const result = [];
+    for (let i = ptr; i < ptr + 4 * len; i += 4) {
+        result.push(wasm.__wbindgen_externrefs.get(mem.getUint32(i, true)));
+    }
+    wasm.__externref_drop_slice(ptr, len);
+    return result;
 }
 
 function getArrayU8FromWasm0(ptr, len) {
