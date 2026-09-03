@@ -456,6 +456,27 @@
     }
     return null;
   }
+  /* Many indexer APIs (esp. PirateBay-style ones) hand back only an
+     info_hash — no magnet and no trackers — since the site itself relies on
+     DHT/PEX once a client has *some* peer. A magnet with no trackers at all
+     still works but is much slower to pick up peers, so when we have to
+     build one from a bare hash we attach this well-known public tracker
+     list (the same set most such sites append client-side). */
+  const FALLBACK_TRACKERS = [
+    "udp://tracker.opentrackr.org:1337/announce",
+    "udp://open.stealth.si:80/announce",
+    "udp://tracker.torrent.eu.org:451/announce",
+    "udp://tracker.bittor.pw:1337/announce",
+    "udp://public.popcorn-tracker.org:6969/announce",
+    "udp://tracker.dler.org:6969/announce",
+    "udp://exodus.desync.com:6969/announce",
+    "udp://open.demonii.com:1337/announce",
+    "udp://glotorrents.pw:6969/announce",
+    "udp://tracker.coppersurfer.tk:6969/announce",
+    "udp://torrent.gresille.org:80/announce",
+    "udp://p4p.arenabg.com:1337/announce",
+    "udp://tracker.internetwarriors.net:1337/announce"
+  ];
   function normalizeItem(item, source) {
     const map = source.map || {};
     const get = (key) => (map[key] ? resolveField(item, map[key]) : undefined) ?? autoField(item, key);
@@ -463,7 +484,8 @@
     const infoHash = get("infoHash");
     const title = get("title") || "(untitled)";
     if (!magnet && infoHash) {
-      magnet = `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(title)}`;
+      const trackers = FALLBACK_TRACKERS.map(t => `&tr=${encodeURIComponent(t)}`).join("");
+      magnet = `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(title)}${trackers}`;
     }
     return {
       title,
