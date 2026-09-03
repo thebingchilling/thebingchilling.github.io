@@ -1,0 +1,13 @@
+{
+  "name": "bingqilin-cors-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plain Node.js port of the Bingqilin CORS proxy (see ../worker.js).",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

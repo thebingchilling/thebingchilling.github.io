@@ -4,19 +4,24 @@ A small proxy that fetches a URL server-side and hands the response back
 with CORS headers, for the APIs this toolbox needs (SauceNAO, and
 whatever indexer URLs the torrent search tool is pointed at) that don't
 send CORS headers of their own — GitHub Pages can't run a server to do
-this itself. Two equivalent implementations live here:
+this itself. Three equivalent implementations live here — same logic,
+different hosting:
 
 - **`worker.js`** — Cloudflare Workers (the one currently deployed and
   wired in for this site).
-- **`deno-deploy.js`** — the same thing on Deno Deploy, worth trying if a
-  target blocks the Cloudflare-hosted one specifically. Cloudflare
-  Workers requests come from Cloudflare's own edge IPs, which is an easy
-  "this can't be a real visitor" tell for any site that's itself behind
-  Cloudflare — a request from Deno Deploy's network doesn't carry that
-  particular signal. (Sites that block based on broader IP/hosting-range
-  reputation rather than "this is specifically Cloudflare" — Reddit,
-  notably — will likely still block either one; that's a different, much
-  harder problem this proxy alone can't solve.)
+- **`deno-deploy.js`** — the same thing on Deno Deploy.
+- **`node-server/`** — a plain Node.js server, for hosting anywhere that
+  runs Node (Render, Railway, a VPS, ...) instead of a serverless/edge
+  platform.
+
+Worth trying an alternative if a target blocks the Cloudflare-hosted
+version specifically: Cloudflare Workers requests come from Cloudflare's
+own edge IPs, which is an easy "this can't be a real visitor" tell for
+any site that's itself behind Cloudflare — a request from a different
+network doesn't carry that particular signal. (Sites that block based on
+broader IP/hosting-range reputation rather than "this is specifically
+Cloudflare" — Reddit, notably — will likely still block any of these;
+that's a different, much harder problem this proxy alone can't solve.)
 
 It's deliberately generic: no per-site logic beyond sending a proper
 `User-Agent`, since some APIs reject or rate-limit requests without one.
@@ -82,14 +87,41 @@ To test it against a specific target before committing to it, visit
 `https://your-project-name.deno.dev/?url=<encoded target URL>` directly
 in your browser, the same way you'd test the Cloudflare Worker.
 
+## Deploy the Node.js version on Render instead
+
+Different approach: this runs the plain Node server in [`node-server/`](./node-server/)
+directly from this GitHub repo — no pasting code anywhere, Render builds
+it straight from the files already here. Requires a free Render account
+(sign in with the same GitHub account this repo is under, at
+[dashboard.render.com](https://dashboard.render.com/)).
+
+1. Go to [dashboard.render.com](https://dashboard.render.com/) and sign in with GitHub.
+2. Click **New** → **Web Service**.
+3. Connect this repository (`thebingchilling.github.io`) — Render will ask to install/authorize its GitHub app on it the first time.
+4. In the setup form:
+   - **Root Directory**: `workers/cors-proxy/node-server`
+   - **Runtime**: Node
+   - **Build Command**: leave as `npm install` (or blank — there's nothing to install)
+   - **Start Command**: `npm start`
+   - **Instance Type**: **Free**
+5. Click **Create Web Service**. Render builds and deploys it, and shows the URL at the top of the page once it's live — it looks like:
+
+   ```
+   https://bingqilin-cors-proxy.onrender.com
+   ```
+
+   Copy it — same as the others, this goes into the **CORS proxy** field in the next step.
+
+**Trade-off**: Render's free tier spins the service down after ~15 minutes with no traffic. The *next* request after that wakes it back up, but takes 30–60 seconds to respond while it does — after that it's fast again until it goes idle once more. Fine for occasional personal use, just expect that first-request delay.
+
 ## Wire it into the tools
 
 Open **Settings** in the Reverse Image Search tool (`/tools/saucenao/`)
 *or* the Torrent Search tool (`/tools/torrents/`) — both read the same
-setting — and paste your proxy's URL (Cloudflare or Deno Deploy, whichever
-worked) into the **CORS proxy** field, then Save. Every SauceNAO and
-torrent-source request from either tool is routed through it from then on
-(stored in this browser only).
+setting — and paste your proxy's URL (whichever one worked) into the
+**CORS proxy** field, then Save. Every SauceNAO and torrent-source
+request from either tool is routed through it from then on (stored in
+this browser only).
 
 ## Notes
 
