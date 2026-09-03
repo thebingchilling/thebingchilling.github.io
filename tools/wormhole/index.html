@@ -684,6 +684,12 @@
     { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
     { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
     { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+    // TURN *over TLS* (note "turns:", not "turn:") on 443 - a strict
+    // firewall/VPN doing deep packet inspection can tell plain TURN-over-TCP
+    // on port 443 apart from real HTTPS and drop it anyway; wrapping the
+    // TURN handshake in an actual TLS handshake is what still gets through
+    // in that case, since it's indistinguishable from ordinary browsing.
+    { urls: "turns:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
   ];
   const PEER_OPTS = { debug: 0, config: { iceServers: ICE_SERVERS } };
 
