@@ -1,5 +1,0 @@
-name = "bingqilin-cors-proxy"
-main = "worker.js"
-compatibility_date = "2024-11-01"
-
-# Free tier is plenty for this — 100,000 requests/day, no billing required.
