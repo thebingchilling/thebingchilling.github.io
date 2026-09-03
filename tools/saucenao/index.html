@@ -158,6 +158,9 @@
     .btn--primary:disabled { opacity: 0.55; cursor: not-allowed; }
     .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
     .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .btn--icon { padding: 0.65rem; }
+    .btn--icon .material-icons { font-size: 18px; }
+    .btn--block { width: 100%; margin-top: 0.6rem; }
 
     /* ── Mode tabs ── */
     .tabs { display: flex; gap: 0.25rem; background: var(--md-surface-container); border-radius: 999px; padding: 0.25rem; margin-bottom: 1rem; }
@@ -262,7 +265,7 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">image_search</span></div>
       <h1 class="hero__title">Reverse Image Search</h1>
-      <p class="hero__sub">Find where an image came from using <a href="https://saucenao.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;">SauceNAO</a>. Paste an image, drop one, give an image URL, or hand it a Reddit post to pick an image from. The image (or its URL) is sent to SauceNAO to run the search — nothing is stored by this page.</p>
+      <p class="hero__sub">Find where an image came from using <a href="https://saucenao.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;">SauceNAO</a>. Paste an image, drop one, give an image URL, or hand it a Reddit post to pick an image from. A pasted or dropped image is briefly hosted to get it a link, then that link and the search itself go to SauceNAO — nothing is kept by this page.</p>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Search by">
@@ -280,21 +283,27 @@
     <div class="panel" id="panelImage">
       <label class="dropzone" id="dropzone" for="fileInput">
         <span class="material-icons">add_photo_alternate</span>
-        <span class="dropzone__title">Paste (Ctrl/Cmd+V), drop, or tap to choose an image</span>
-        <span class="dropzone__sub">Sent to SauceNAO to search — nothing else is uploaded</span>
+        <span class="dropzone__title">Drop an image here, or tap to choose</span>
+        <span class="dropzone__sub">Sent out to search — nothing else is uploaded</span>
         <input id="fileInput" type="file" accept="image/*" aria-label="Choose an image" />
       </label>
+      <button class="btn btn--ghost btn--block" id="pasteImageBtn" type="button">
+        <span class="material-icons" style="font-size:18px;">content_paste</span>Paste from clipboard
+      </button>
     </div>
 
     <div class="panel hidden" id="panelUrl">
       <form class="search-card" id="urlForm">
         <div class="search-row">
           <input type="text" id="urlInput" placeholder="https://example.com/image.jpg" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Image URL" />
+          <button class="btn btn--ghost btn--icon" id="pasteUrlBtn" type="button" aria-label="Paste from clipboard">
+            <span class="material-icons">content_paste</span>
+          </button>
           <button class="btn btn--primary" type="submit">
             <span class="material-icons" style="font-size:18px;">search</span>Search
           </button>
         </div>
-        <p class="search-card__hint">Direct link to an image file — this is passed straight to SauceNAO's <code>url</code> lookup.</p>
+        <p class="search-card__hint">Direct link to an image file, or the Paste button — pasting a link searches it right away.</p>
       </form>
     </div>
 
@@ -302,6 +311,9 @@
       <form class="search-card" id="redditForm">
         <div class="search-row">
           <input type="text" id="redditInput" placeholder="https://www.reddit.com/r/.../comments/..." autocomplete="off" spellcheck="false" inputmode="url" aria-label="Reddit post URL" />
+          <button class="btn btn--ghost btn--icon" id="pasteRedditBtn" type="button" aria-label="Paste from clipboard">
+            <span class="material-icons">content_paste</span>
+          </button>
           <button class="btn btn--primary" type="submit">
             <span class="material-icons" style="font-size:18px;">travel_explore</span>Load
           </button>
@@ -367,7 +379,7 @@
 
     <div class="settings__section">
       <div class="settings__section-label">CORS proxy fallback</div>
-      <p class="settings__hint">SauceNAO's API (and Reddit's) don't allow direct browser requests from another site, so a request that fails direct is retried through one of these — each fetches it server-side and hands the response back with CORS allowed. Comma-separated, tried in order; use <code>{url}</code> for where the target goes. Leave blank to only ever try direct requests.</p>
+      <p class="settings__hint">Only used as a last resort, if a lookup fails to load directly (some browsers/networks block cross-site requests to SauceNAO or Reddit). Comma-separated, tried in order; use <code>{url}</code> for where the target goes. Leave blank to only ever try direct requests.</p>
       <input type="text" id="corsProxyInput" autocomplete="off" spellcheck="false" />
       <div class="settings__actions">
         <button id="corsProxyReset" class="btn btn--ghost btn--sm" type="button">Restore default</button>
@@ -511,9 +523,31 @@
   async function searchByFile(file) {
     const params = saucenaoParams();
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", file, "paste." + extForMime(file.type));
     const res = await fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "POST", body: fd });
     return parseSaucenaoResponse(await res.json());
+  }
+
+  /* ═══════════════ Hosting a pasted/dropped image to get it a link ═══════════════
+     SauceNAO's file-upload endpoint needs a raw multipart POST, and pushing
+     that through a generic CORS proxy is unreliable — most public proxies
+     only forward GET, silently dropping the file and image with it. So a
+     local image is instead handed to telegra.ph's anonymous upload endpoint
+     (widely used for exactly this — it answers CORS directly, no proxy
+     needed) to get a public link, then searched the same way an Image URL
+     search works. If that upload fails, this falls back to sending the file
+     to SauceNAO directly as a last resort. */
+  const EXT_FOR_MIME = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/bmp": "bmp" };
+  function extForMime(type) { return EXT_FOR_MIME[type] || "png"; }
+
+  async function uploadToTelegraph(file) {
+    const fd = new FormData();
+    fd.append("file", file, "paste." + extForMime(file.type));
+    const res = await fetch("https://telegra.ph/upload", { method: "POST", body: fd, mode: "cors" });
+    if (!res.ok) throw new Error("Image host returned HTTP " + res.status);
+    const json = await res.json();
+    if (Array.isArray(json) && json[0] && json[0].src) return "https://telegra.ph" + json[0].src;
+    throw new Error((json && json.error) || "Image host returned an unexpected response.");
   }
 
   /* ═══════════════ Reddit post → image list ═══════════════ */
@@ -606,7 +640,7 @@
     el.textContent = "";
     if (!srcUrl) return;
     const wrap = document.createElement("div"); wrap.className = "preview-strip";
-    const img = document.createElement("img"); img.src = srcUrl; img.alt = ""; img.referrerPolicy = "no-referrer";
+    const img = document.createElement("img"); img.src = srcUrl; img.alt = "";
     const label = document.createElement("span"); label.className = "preview-strip__label"; label.textContent = "Searching this image…";
     wrap.appendChild(img); wrap.appendChild(label);
     el.appendChild(wrap);
@@ -649,7 +683,7 @@
       }).join("");
       return `
         <div class="sauce-card">
-          <img class="sauce-card__thumb" src="${escapeHtml(r.thumbnail)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'" />
+          <img class="sauce-card__thumb" src="${escapeHtml(r.thumbnail)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />
           <div class="sauce-card__body">
             <div class="sauce-card__top">
               <span class="sauce-card__sim sauce-card__sim--${simClass(r.similarity)}">${r.similarity.toFixed(1)}%</span>
@@ -674,12 +708,12 @@
     $("quotaArea").textContent = "";
   }
 
-  async function runSearch(kind, arg) {
+  async function withSearch(run, startMsg) {
     if (busy) return;
     resetOutputs();
-    setBusy(true, kind === "file" ? "Uploading image to SauceNAO…" : "Searching SauceNAO…");
+    setBusy(true, startMsg);
     try {
-      const outcome = kind === "file" ? await searchByFile(arg) : await searchByUrl(arg);
+      const outcome = await run();
       setBusy(false);
       renderQuota(outcome.quota);
       renderResults(outcome.results);
@@ -693,11 +727,20 @@
   function runFileSearch(file) {
     if (!file.type || !file.type.startsWith("image/")) { showError("That file isn't an image."); return; }
     setPreview(URL.createObjectURL(file));
-    runSearch("file", file);
+    withSearch(async () => {
+      let hostedUrl = null;
+      try { hostedUrl = await uploadToTelegraph(file); } catch (e) { hostedUrl = null; }
+      if (hostedUrl) {
+        setBusy(true, "Searching SauceNAO…");
+        return await searchByUrl(hostedUrl);
+      }
+      setBusy(true, "Image host unavailable — sending the file to SauceNAO directly…");
+      return await searchByFile(file);
+    }, "Uploading image…");
   }
   function runUrlSearch(url) {
     setPreview(url);
-    runSearch("url", url);
+    withSearch(() => searchByUrl(url), "Searching SauceNAO…");
   }
 
   /* ═══════════════ Mode tabs ═══════════════ */
@@ -744,12 +787,59 @@
     }
   });
 
+  /* ═══════════════ Clipboard paste (image or link, from any of the three buttons) ═══════════════ */
+  async function pasteFromClipboard() {
+    clearError();
+    if (navigator.clipboard && navigator.clipboard.read) {
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imgType = item.types.find((t) => t.indexOf("image/") === 0);
+          if (imgType) {
+            const blob = await item.getType(imgType);
+            selectTab("image");
+            runFileSearch(blob);
+            return;
+          }
+        }
+      } catch (e) {
+        // No image on the clipboard, or the browser won't allow reading it this way — fall through to text.
+      }
+    }
+    let text = "";
+    try { text = (navigator.clipboard && navigator.clipboard.readText) ? await navigator.clipboard.readText() : ""; } catch (e) {}
+    text = text.trim();
+    if (!text) {
+      showError("Couldn't read an image or link from the clipboard — copy one first, and allow clipboard access if your browser asks.");
+      return;
+    }
+    if (/reddit\.com|redd\.it/i.test(text)) {
+      selectTab("reddit");
+      $("redditInput").value = text;
+      loadRedditGallery(text);
+    } else {
+      selectTab("url");
+      $("urlInput").value = text;
+      runUrlSearch(text);
+    }
+  }
+  $("pasteImageBtn").addEventListener("click", pasteFromClipboard);
+  $("pasteUrlBtn").addEventListener("click", pasteFromClipboard);
+  $("pasteRedditBtn").addEventListener("click", pasteFromClipboard);
+
   /* ═══════════════ Image URL panel ═══════════════ */
   $("urlForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const val = $("urlInput").value.trim();
     if (!val) return;
     runUrlSearch(val);
+  });
+  // Native Ctrl/Cmd+V into the field itself — search immediately, no need to hit Search.
+  $("urlInput").addEventListener("paste", () => {
+    setTimeout(() => {
+      const val = $("urlInput").value.trim();
+      if (val) runUrlSearch(val);
+    }, 0);
   });
 
   /* ═══════════════ Reddit panel ═══════════════ */
@@ -759,7 +849,7 @@
     const grid = $("redditGallery");
     grid.innerHTML = images.map((img, i) => `
       <button class="gallery-item" type="button" data-idx="${i}" aria-label="Select image ${i + 1} of ${images.length}">
-        <img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'" />
+        <img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />
         <span class="gallery-item__check"><span class="material-icons">check</span></span>
       </button>`).join("");
     grid.classList.toggle("hidden", images.length === 0);
@@ -801,6 +891,12 @@
     const val = $("redditInput").value.trim();
     if (!val) return;
     loadRedditGallery(val);
+  });
+  $("redditInput").addEventListener("paste", () => {
+    setTimeout(() => {
+      const val = $("redditInput").value.trim();
+      if (val) loadRedditGallery(val);
+    }, 0);
   });
 
   /* ═══════════════ Settings sheet ═══════════════ */
