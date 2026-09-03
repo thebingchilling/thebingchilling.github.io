@@ -378,11 +378,11 @@
     </div>
 
     <div class="settings__section">
-      <div class="settings__section-label">CORS proxy fallback</div>
-      <p class="settings__hint">Only used as a last resort, if a lookup fails to load directly (some browsers/networks block cross-site requests to SauceNAO or Reddit). Comma-separated, tried in order; use <code>{url}</code> for where the target goes. Leave blank to only ever try direct requests.</p>
-      <input type="text" id="corsProxyInput" autocomplete="off" spellcheck="false" />
+      <div class="settings__section-label">CORS proxy</div>
+      <p class="settings__hint">SauceNAO and Reddit both block direct requests from a browser on another site. Once set, every request from this tool is routed through it — see <code>workers/cors-proxy/README.md</code> in the repo for a free, two-minute Cloudflare Worker you can deploy for this. Shared with the torrent search tool. Leave blank to only ever try direct requests (works for some setups, not most).</p>
+      <input type="text" id="corsProxyInput" placeholder="https://your-worker.example.workers.dev" autocomplete="off" spellcheck="false" />
       <div class="settings__actions">
-        <button id="corsProxyReset" class="btn btn--ghost btn--sm" type="button">Restore default</button>
+        <button id="corsProxyReset" class="btn btn--ghost btn--sm" type="button">Clear</button>
       </div>
     </div>
 
@@ -416,15 +416,13 @@
     set(key, value) { if (hasLS) { try { localStorage.setItem(key, value); return; } catch (e) {} } mem[key] = value; }
   };
 
-  /* ═══════════════ Settings ═══════════════ */
-  const DEFAULT_CORS_PROXY = "https://corsproxy.io/?url={url}, https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}";
-  function loadCorsProxy() {
-    const raw = Store.get("bq_saucenao_cors_proxy");
-    return raw === null ? DEFAULT_CORS_PROXY : raw;
-  }
-  function saveCorsProxy(v) { Store.set("bq_saucenao_cors_proxy", v); }
+  /* ═══════════════ Settings ═══════════════
+     bq_cors_proxy_worker is shared with the torrent search tool (same
+     origin, same localStorage) — set it once in either tool's Settings
+     and both use it. */
+  function loadCorsProxy() { return Store.get("bq_cors_proxy_worker") || ""; }
+  function saveCorsProxy(v) { Store.set("bq_cors_proxy_worker", v); }
   let CORS_PROXY = loadCorsProxy();
-  function proxyList() { return CORS_PROXY.split(",").map(s => s.trim()).filter(Boolean); }
 
   function loadApiKey() { return Store.get("bq_saucenao_api_key") || ""; }
   function saveApiKey(v) { Store.set("bq_saucenao_api_key", v); }
@@ -437,38 +435,33 @@
   function saveNumRes(v) { Store.set("bq_saucenao_numres", String(v)); }
   let NUM_RES = loadNumRes();
 
-  /* ═══════════════ Networking: direct fetch, falling back through proxies ═══════════════
-     Mirrors the CORS-proxy fallback used elsewhere in this toolbox (see the
-     torrent search tool's history) — SauceNAO and Reddit both omit
-     Access-Control-Allow-Origin on these endpoints, so a browser fetch from
-     any other origin is blocked outright until it's routed through a proxy
-     that adds that header back. */
-  async function fetchDirectOrProxied(url, opts) {
+  /* ═══════════════ Networking: routed through the configured CORS proxy worker ═══════════════
+     SauceNAO and Reddit both omit Access-Control-Allow-Origin on these
+     endpoints, so a browser fetch from any other origin is blocked
+     outright. Once a proxy worker is configured (see workers/cors-proxy/),
+     every request is sent through it — no guessing with a direct attempt
+     first. With none configured, requests go direct, which only works for
+     endpoints that happen to allow it. */
+  function viaProxy(url) {
+    if (!CORS_PROXY) return url;
+    const base = CORS_PROXY.trim().replace(/\/$/, "");
+    return base.indexOf("{url}") !== -1
+      ? base.replace("{url}", encodeURIComponent(url))
+      : `${base}/?url=${encodeURIComponent(url)}`;
+  }
+
+  async function fetchProxied(url, opts) {
     opts = opts || {};
+    let res;
     try {
-      const res = await fetch(url, Object.assign({ mode: "cors" }, opts));
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return res;
-    } catch (directErr) {
-      const proxies = proxyList();
-      if (!proxies.length) {
-        throw new Error(`Couldn't reach it directly (${directErr.message}). Add a CORS proxy in Settings to retry through one automatically.`);
-      }
-      const proxyErrors = [];
-      for (const proxy of proxies) {
-        const proxyUrl = proxy.indexOf("{url}") !== -1 ? proxy.replace("{url}", encodeURIComponent(url)) : proxy + encodeURIComponent(url);
-        let host = proxy;
-        try { host = new URL(proxy.replace("{url}", "")).hostname; } catch (e) {}
-        try {
-          const res = await fetch(proxyUrl, opts);
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          return res;
-        } catch (proxyErr) {
-          proxyErrors.push(`${host} → ${proxyErr.message}`);
-        }
-      }
-      throw new Error(`Direct request failed (${directErr.message}). Every CORS proxy also failed: ${proxyErrors.join("; ")}.`);
+      res = await fetch(viaProxy(url), opts);
+    } catch (err) {
+      throw new Error(CORS_PROXY
+        ? `Couldn't reach the CORS proxy (${err.message}).`
+        : `Couldn't reach it directly (${err.message}). Set a CORS proxy in Settings — see workers/cors-proxy/README.md for a two-minute Cloudflare Worker you can deploy for this.`);
     }
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res;
   }
 
   /* ═══════════════ SauceNAO ═══════════════ */
@@ -516,7 +509,7 @@
 
   async function searchByUrl(imageUrl) {
     const params = saucenaoParams({ url: imageUrl });
-    const res = await fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "GET" });
+    const res = await fetchProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "GET" });
     return parseSaucenaoResponse(await res.json());
   }
 
@@ -524,7 +517,7 @@
     const params = saucenaoParams();
     const fd = new FormData();
     fd.append("file", file, "paste." + extForMime(file.type));
-    const res = await fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "POST", body: fd });
+    const res = await fetchProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "POST", body: fd });
     return parseSaucenaoResponse(await res.json());
   }
 
@@ -616,7 +609,7 @@
 
   async function fetchRedditImages(postUrl) {
     const jsonUrl = toRedditJsonUrl(postUrl);
-    const res = await fetchDirectOrProxied(jsonUrl, { method: "GET" });
+    const res = await fetchProxied(jsonUrl, { method: "GET" });
     const data = await res.json();
     const listing = Array.isArray(data) ? data[0] : null;
     const child = listing && listing.data && listing.data.children && listing.data.children[0];
@@ -915,7 +908,7 @@
   $("settingsBtn").addEventListener("click", openSettings);
   $("settingsClose").addEventListener("click", closeSettings);
   settingsBackdrop.addEventListener("click", closeSettings);
-  $("corsProxyReset").addEventListener("click", () => { $("corsProxyInput").value = DEFAULT_CORS_PROXY; });
+  $("corsProxyReset").addEventListener("click", () => { $("corsProxyInput").value = ""; });
   $("settingsSave").addEventListener("click", () => {
     API_KEY = $("apiKeyInput").value.trim(); saveApiKey(API_KEY);
     const n = parseInt($("numResSelect").value, 10);

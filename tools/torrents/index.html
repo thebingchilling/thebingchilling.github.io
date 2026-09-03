@@ -303,7 +303,7 @@
     </div>
 
     <div class="settings__section">
-      <p class="settings__hint">Every source here is a search API URL you (or this tool) supplied — this page fetches it directly from your browser. Many such APIs block cross-origin requests (CORS); when a direct request fails, the CORS proxy below is tried automatically. Nothing is fetched unless a source's toggle is on.</p>
+      <p class="settings__hint">Every source here is a search API URL you (or this tool) supplied — this page fetches it directly from your browser, through the CORS proxy below if one's set. Nothing is fetched unless a source's toggle is on.</p>
       <div id="sourceList" class="source-list"></div>
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.2rem;">
         <button id="addSourceBtn" class="btn btn--ghost btn--sm" type="button">
@@ -316,9 +316,9 @@
     </div>
 
     <div class="settings__section">
-      <div class="settings__section-label">CORS proxy fallback</div>
-      <p class="settings__hint">Used automatically when a source's direct request fails (typically a CORS block). Each one fetches the URL server-side and hands the response back with CORS allowed — free public proxies are flaky and some indexers actively block known proxy IPs, so list a few, <strong>comma-separated</strong>; they're tried in order until one works, and a failed search shows exactly which proxies were tried and why each one failed. Use <code>{url}</code> for where the target URL goes — it's URL-encoded automatically; with no <code>{url}</code> the URL is appended to the end. Leave blank to disable.</p>
-      <input type="text" id="corsProxyInput" placeholder="https://corsproxy.io/?url={url}, https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}" autocomplete="off" spellcheck="false" />
+      <div class="settings__section-label">CORS proxy</div>
+      <p class="settings__hint">Most indexer APIs don't send CORS headers, so a direct browser request is blocked outright. Once set, every source request is routed through this — see <code>workers/cors-proxy/README.md</code> in the repo for a free, two-minute Cloudflare Worker you can deploy for this. Shared with the reverse-image-search tool. Leave blank to only ever try direct requests (works for some sources, not most).</p>
+      <input type="text" id="corsProxyInput" placeholder="https://your-worker.example.workers.dev" autocomplete="off" spellcheck="false" />
     </div>
 
     <div class="settings__section">
@@ -408,15 +408,17 @@
 
   let SOURCES = loadSources();
 
-  const DEFAULT_CORS_PROXY = "https://corsproxy.io/?url={url}, https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}";
-  function loadCorsProxy() {
-    const raw = Store.get("bq_torrent_cors_proxy");
-    return raw === null ? DEFAULT_CORS_PROXY : raw;
-  }
-  function saveCorsProxy(value) { Store.set("bq_torrent_cors_proxy", value); }
+  // Shared with the reverse-image-search tool (same origin, same
+  // localStorage) — set it once in either tool's Settings and both use it.
+  function loadCorsProxy() { return Store.get("bq_cors_proxy_worker") || ""; }
+  function saveCorsProxy(value) { Store.set("bq_cors_proxy_worker", value); }
   let CORS_PROXY = loadCorsProxy();
-  function corsProxyList() {
-    return CORS_PROXY.split(",").map(s => s.trim()).filter(Boolean);
+  function viaProxy(url) {
+    if (!CORS_PROXY) return url;
+    const base = CORS_PROXY.trim().replace(/\/$/, "");
+    return base.indexOf("{url}") !== -1
+      ? base.replace("{url}", encodeURIComponent(url))
+      : `${base}/?url=${encodeURIComponent(url)}`;
   }
 
   /* ═══════════════ Generic result normalization ═══════════════
@@ -533,7 +535,7 @@
     try {
       res = await fetch(url, { mode: "cors" });
     } catch (e) {
-      throw new Error("couldn't reach it (network/CORS error)");
+      throw new Error(CORS_PROXY ? `couldn't reach the CORS proxy (${e.message})` : "couldn't reach it (network/CORS error)");
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     try { return await res.json(); }
@@ -544,29 +546,11 @@
     const url = source.urlTemplate.replace(/\{query\}/g, encodeURIComponent(query));
     let data;
     try {
-      data = await fetchJson(url);
-    } catch (directErr) {
-      const proxies = corsProxyList();
-      if (!proxies.length) {
-        throw new Error(`Direct request failed: ${directErr.message}. Set a CORS proxy in Sources settings to retry through one automatically.`);
-      }
-      const proxyErrors = [];
-      let ok = false;
-      for (const proxy of proxies) {
-        const proxyUrl = proxy.includes("{url}") ? proxy.replace("{url}", encodeURIComponent(url)) : proxy + encodeURIComponent(url);
-        let host = proxy;
-        try { host = new URL(proxy.replace("{url}", "")).hostname; } catch (e) {}
-        try {
-          data = await fetchJson(proxyUrl);
-          ok = true;
-          break;
-        } catch (proxyErr) {
-          proxyErrors.push(`${host} → ${proxyErr.message}`);
-        }
-      }
-      if (!ok) {
-        throw new Error(`Direct request failed: ${directErr.message}. Every CORS proxy also failed: ${proxyErrors.join("; ")}. (A "HTTP 403"/"HTTP 429" from a proxy usually means the source itself is blocking that proxy's IP, not that the proxy is down.)`);
-      }
+      data = await fetchJson(viaProxy(url));
+    } catch (err) {
+      throw new Error(CORS_PROXY
+        ? err.message
+        : `Direct request failed: ${err.message}. Set a CORS proxy in Sources settings — see workers/cors-proxy/README.md in the repo for a free Cloudflare Worker you can deploy for this.`);
     }
     const arr = source.resultsPath ? getByPath(data, source.resultsPath) : findResultsArray(data);
     if (!Array.isArray(arr)) throw new Error("Couldn't find a results array in the response — set \"Results array path\" in Advanced.");
