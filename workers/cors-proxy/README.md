@@ -1,21 +1,32 @@
 # Bingqilin CORS proxy
 
-A small Cloudflare Worker that fetches a URL server-side and hands the
-response back with CORS headers, for the APIs this toolbox needs
-(SauceNAO, Reddit's `.json` endpoints, and whatever indexer URLs the
-torrent search tool is pointed at) that don't send CORS headers of their
-own — GitHub Pages can't run a server to do this itself.
+A small proxy that fetches a URL server-side and hands the response back
+with CORS headers, for the APIs this toolbox needs (SauceNAO, and
+whatever indexer URLs the torrent search tool is pointed at) that don't
+send CORS headers of their own — GitHub Pages can't run a server to do
+this itself. Two equivalent implementations live here:
+
+- **`worker.js`** — Cloudflare Workers (the one currently deployed and
+  wired in for this site).
+- **`deno-deploy.js`** — the same thing on Deno Deploy, worth trying if a
+  target blocks the Cloudflare-hosted one specifically. Cloudflare
+  Workers requests come from Cloudflare's own edge IPs, which is an easy
+  "this can't be a real visitor" tell for any site that's itself behind
+  Cloudflare — a request from Deno Deploy's network doesn't carry that
+  particular signal. (Sites that block based on broader IP/hosting-range
+  reputation rather than "this is specifically Cloudflare" — Reddit,
+  notably — will likely still block either one; that's a different, much
+  harder problem this proxy alone can't solve.)
 
 It's deliberately generic: no per-site logic beyond sending a proper
-`User-Agent` (some APIs, Reddit especially, reject or rate-limit requests
-without one).
+`User-Agent`, since some APIs reject or rate-limit requests without one.
 
 **Already deployed and wired in for this site** — both tools default to
 `https://bingqilin-cors-proxy.bingqilin.workers.dev`, so nothing below
 needs doing unless you've forked this site and want your own Worker, or
 want to point the tools at a different one.
 
-## Deploy your own (one-time, ~2 minutes, no command line needed)
+## Deploy your own Cloudflare Worker (one-time, ~2 minutes, no command line needed)
 
 Requires a free Cloudflare account.
 
@@ -48,13 +59,37 @@ Wrangler prints the Worker's URL when it finishes. To redeploy after
 editing `worker.js` this way, just run `npx wrangler deploy` again —
 the URL stays the same.
 
+## Deploy your own on Deno Deploy instead (also no command line needed)
+
+Same idea, different network — try this if the Cloudflare Worker gets
+blocked by a target that's specifically wary of Cloudflare-to-Cloudflare
+traffic. Requires a free Deno Deploy account (sign in with GitHub or
+email at [dash.deno.com](https://dash.deno.com/)).
+
+1. Go to [dash.deno.com](https://dash.deno.com/) and sign in.
+2. Click **New Project**.
+3. Choose the **Playground** option (write code directly in the browser — no GitHub repo needed).
+4. Delete the placeholder code it starts with, and paste in the full contents of [`deno-deploy.js`](./deno-deploy.js) from this folder.
+5. It deploys automatically as you save (Playgrounds deploy live). The URL is shown at the top of the page — it looks like:
+
+   ```
+   https://your-project-name.deno.dev
+   ```
+
+   Copy it — same as the Cloudflare URL, this goes into the **CORS proxy** field in the next step.
+
+To test it against a specific target before committing to it, visit
+`https://your-project-name.deno.dev/?url=<encoded target URL>` directly
+in your browser, the same way you'd test the Cloudflare Worker.
+
 ## Wire it into the tools
 
 Open **Settings** in the Reverse Image Search tool (`/tools/saucenao/`)
 *or* the Torrent Search tool (`/tools/torrents/`) — both read the same
-setting — and paste that URL into the **CORS proxy** field, then Save.
-Every SauceNAO, Reddit, and torrent-source request from either tool is
-routed through it from then on (stored in this browser only).
+setting — and paste your proxy's URL (Cloudflare or Deno Deploy, whichever
+worked) into the **CORS proxy** field, then Save. Every SauceNAO and
+torrent-source request from either tool is routed through it from then on
+(stored in this browser only).
 
 ## Notes
 
