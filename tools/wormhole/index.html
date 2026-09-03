@@ -660,9 +660,28 @@
   }
 
   /* PeerJS's default config (no host/port given) already points at its
-     free public broker and bundles Google's STUN server plus PeerJS's
-     own TURN servers for when a direct path isn't possible — no
-     configuration needed here. */
+     free public broker for signaling. For the actual WebRTC connection,
+     passing a custom `config` here *replaces* its default iceServers
+     entirely rather than adding to them, so this list starts with
+     PeerJS's own (Google's public STUN, plus PeerJS's TURN relay) and
+     adds a second free TURN service (OpenRelay/Metered, also used by
+     Least Authority's own Winden and countless WebRTC demos) that offers
+     TURN over TCP and TLS on port 443, not just UDP on 3478. A network
+     that blocks or drops UDP outright — common on corporate networks,
+     some mobile carriers, some VPNs — has no path at all through
+     UDP-only STUN/TURN, which surfaces as a connection/negotiation
+     failure with no clearer explanation; TCP/443 TURN is what still gets
+     through in that case. */
+  const ICE_SERVERS = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"], username: "peerjs", credential: "peerjsp" },
+    { urls: "stun:openrelay.metered.ca:80" },
+    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+  ];
+  const PEER_OPTS = { debug: 0, config: { iceServers: ICE_SERVERS } };
+
   function mapPeerError(err) {
     const messages = {
       "peer-unavailable": "Couldn't find that code. Check it's correct and that the sender is still waiting.",
@@ -872,7 +891,7 @@
         const code = generateCode();
         const { peerId, verifyToken } = await deriveIds(code);
 
-        peer = new Peer(peerId, { debug: 0 });
+        peer = new Peer(peerId, PEER_OPTS);
         await new Promise((resolve, reject) => {
           peer.on("open", resolve);
           peer.on("error", (err) => reject(mapPeerError(err)));
@@ -1034,11 +1053,19 @@
       if (items[index]) items[index].scrollIntoView({ block: "nearest" });
     }
     function selectSuggestion(value) {
-      codeInput.value = value;
+      // Codes are exactly 3 words: after picking word 1 or 2, append the
+      // "-" so the next word can be typed (or autocompleted) right away
+      // instead of the user having to type the separator themselves.
+      // After word 3 (2 dashes already present) the code is complete, so
+      // no trailing dash — that would make it hash differently from the
+      // sender's actual code and silently fail to connect.
+      const dashCount = (value.match(/-/g) || []).length;
+      const finalValue = dashCount < 2 ? value + "-" : value;
+      codeInput.value = finalValue;
       hideSuggestions();
       updateReceiveButton();
       codeInput.focus();
-      codeInput.setSelectionRange(value.length, value.length);
+      codeInput.setSelectionRange(finalValue.length, finalValue.length);
     }
     function renderSuggestions(matches) {
       codeSuggestList.innerHTML = "";
@@ -1099,7 +1126,7 @@
 
       try {
         const { peerId, verifyToken } = await deriveIds(code);
-        peer = new Peer(undefined, { debug: 0 });
+        peer = new Peer(undefined, PEER_OPTS);
 
         await new Promise((resolve, reject) => {
           peer.on("open", resolve);
