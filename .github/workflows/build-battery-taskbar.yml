@@ -1,0 +1,32 @@
+name: Build Battery Taskbar EXE
+
+on:
+  push:
+    paths:
+      - 'battery-taskbar/**'
+      - '.github/workflows/build-battery-taskbar.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: battery-taskbar
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pyinstaller
+
+      - name: Build exe
+        run: pyinstaller --onefile --noconsole --name BatteryTaskbar battery_tray.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BatteryTaskbar-windows-exe
+          path: battery-taskbar/dist/BatteryTaskbar.exe
