@@ -42,6 +42,25 @@ fn js_err(err: impl std::fmt::Display) -> JsValue {
     JsValue::from_str(&err.to_string())
 }
 
+/// Like `js_err`, but for real error types: walks the `source()` chain so
+/// the message actually says what went wrong instead of just which step
+/// it happened in. Every error type in this crate wraps its cause behind
+/// a generic outer message (e.g. `TransferError::TransitConnect`'s
+/// `Display` is just "Error while establishing transit connection" -
+/// the useful part, like "All (relay) handshakes failed or timed out",
+/// only shows up via `.source()`), so without this every failure looked
+/// the same regardless of actual cause.
+fn js_error_err(err: impl std::error::Error + 'static) -> JsValue {
+    let mut message = err.to_string();
+    let mut cause: Option<&dyn std::error::Error> = err.source();
+    while let Some(err) = cause {
+        message.push_str(": ");
+        message.push_str(&err.to_string());
+        cause = err.source();
+    }
+    JsValue::from_str(&message)
+}
+
 fn call1(f: &Function, a: JsValue) {
     let _ = f.call1(&JsValue::NULL, &a);
 }
@@ -116,6 +135,26 @@ async fn with_timeout<T>(fut: impl Future<Output = T>, cancel: CancelSignal, tim
     }
 }
 
+/// Same idea as `with_timeout` but for the actual byte-transfer phases,
+/// which can legitimately run for a long time on a slow link and so must
+/// never be killed by a fixed timer - only by the user.
+///
+/// This is deliberately used *instead of* passing `cancel` straight into
+/// `transfer::send`/`ReceiveOffer::accept` as their own internal `cancel`
+/// parameter (they get `futures::future::pending()` there instead): a
+/// `select()` at this outer layer drops the whole in-progress future the
+/// instant `cancel` resolves, via plain Rust future-drop semantics, which
+/// works no matter what the inner future happens to be doing or awaiting
+/// - so the Cancel button can't be left wired to nothing by some internal
+/// detail (e.g. a corner case in the relay handshake or read loop) not
+/// forwarding cancellation the way this expects.
+async fn with_cancel<T>(fut: impl Future<Output = T>, cancel: CancelSignal) -> Result<T, JsValue> {
+    match futures::future::select(Box::pin(fut), cancel).await {
+        Either::Left((value, _)) => Ok(value),
+        Either::Right(_) => Err(js_err("Cancelled")),
+    }
+}
+
 /// App config for the file-transfer protocol, pointed at a TLS-capable
 /// rendezvous (mailbox) server instead of the crate's built-in default
 /// (`ws://relay.magic-wormhole.io:4000/v1`).
@@ -147,10 +186,10 @@ fn app_config() -> magic_wormhole::AppConfig<transfer::AppVersion> {
 fn relay_hints() -> Result<Vec<transit::RelayHint>, JsValue> {
     let tcp: url::Url = "tcp://relay.mw.leastauthority.com:4001"
         .parse()
-        .map_err(js_err)?;
-    let ws: url::Url = "wss://relay.mw.leastauthority.com".parse().map_err(js_err)?;
+        .map_err(js_error_err)?;
+    let ws: url::Url = "wss://relay.mw.leastauthority.com".parse().map_err(js_error_err)?;
     let hint = transit::RelayHint::from_urls(Some("leastauthority.com".to_string()), [tcp, ws])
-        .map_err(js_err)?;
+        .map_err(js_error_err)?;
     Ok(vec![hint])
 }
 
@@ -176,7 +215,7 @@ pub async fn wormhole_send(
 
     call1(&on_status, JsValue::from_str("Allocating a wormhole code…"));
     let mailbox = match with_timeout(MailboxConnection::create(app_config(), 2), cancel.clone(), 20).await {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     let mailbox = match mailbox {
@@ -196,7 +235,7 @@ pub async fn wormhole_send(
     // and can take a while, so this gets a much longer leash than the
     // "is the server even reachable" checks above and below.
     let wormhole = match with_timeout(Wormhole::connect(mailbox), cancel.clone(), 600).await {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     let wormhole = match wormhole {
@@ -218,18 +257,24 @@ pub async fn wormhole_send(
     );
 
     let status_for_transit = on_status.clone();
-    let result = transfer::send(
-        wormhole,
-        relay,
-        transit::Abilities::FORCE_RELAY,
-        offer,
-        move |_info| call1(&status_for_transit, JsValue::from_str("Transferring…")),
-        move |sent, total| call2(&on_progress, JsValue::from_f64(sent as f64), JsValue::from_f64(total as f64)),
+    let result = with_cancel(
+        transfer::send(
+            wormhole,
+            relay,
+            transit::Abilities::FORCE_RELAY,
+            offer,
+            move |_info| call1(&status_for_transit, JsValue::from_str("Transferring…")),
+            move |sent, total| call2(&on_progress, JsValue::from_f64(sent as f64), JsValue::from_f64(total as f64)),
+            futures::future::pending(),
+        ),
         cancel,
     )
     .await;
     clear_cancel_slot();
-    result.map_err(js_err)
+    match result {
+        Ok(inner) => inner.map_err(js_error_err),
+        Err(e) => Err(e),
+    }
 }
 
 /// Connect to an existing wormhole code and wait for the sender's file offer.
@@ -237,13 +282,13 @@ pub async fn wormhole_send(
 /// or `reject()` on it to finish.
 #[wasm_bindgen]
 pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Result<ReceiveOffer, JsValue> {
-    let code: Code = code.trim().parse().map_err(js_err)?;
+    let code: Code = code.trim().parse().map_err(js_error_err)?;
     let relay = relay_hints()?;
     let cancel = cancel_signal();
 
     call1(&on_status, JsValue::from_str("Connecting…"));
     let mailbox = match with_timeout(MailboxConnection::connect(app_config(), code, false), cancel.clone(), 20).await {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     let mailbox = match mailbox {
@@ -255,7 +300,7 @@ pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Resu
     };
 
     let wormhole = match with_timeout(Wormhole::connect(mailbox), cancel.clone(), 60).await {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     let wormhole = match wormhole {
@@ -274,7 +319,7 @@ pub async fn wormhole_receive_connect(code: String, on_status: Function) -> Resu
     )
     .await
     {
-        Ok(result) => result.map_err(js_err),
+        Ok(result) => result.map_err(js_error_err),
         Err(e) => Err(e),
     };
     clear_cancel_slot();
@@ -313,18 +358,23 @@ impl ReceiveOffer {
         let status_for_transit = on_status.clone();
         call1(&on_status, JsValue::from_str("Receiving…"));
         let cancel = cancel_signal();
-        let result = req
-            .accept(
+        let result = with_cancel(
+            req.accept(
                 move |_info| call1(&status_for_transit, JsValue::from_str("Receiving…")),
                 move |received, total| {
                     call2(&on_progress, JsValue::from_f64(received as f64), JsValue::from_f64(total as f64))
                 },
                 &mut buf,
-                cancel,
-            )
-            .await;
+                futures::future::pending(),
+            ),
+            cancel,
+        )
+        .await;
         clear_cancel_slot();
-        result.map_err(js_err)?;
+        match result {
+            Ok(inner) => inner.map_err(js_error_err)?,
+            Err(e) => return Err(e),
+        };
 
         Ok(Uint8Array::from(buf.into_inner().as_slice()))
     }
@@ -332,6 +382,6 @@ impl ReceiveOffer {
     /// Reject the offer and let the sender know.
     pub async fn reject(&mut self) -> Result<(), JsValue> {
         let req = self.inner.take().ok_or_else(|| js_err("This offer was already used"))?;
-        req.reject().await.map_err(js_err)
+        req.reject().await.map_err(js_error_err)
     }
 }

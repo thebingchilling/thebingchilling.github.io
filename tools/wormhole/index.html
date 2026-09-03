@@ -430,13 +430,13 @@
 
 <script src="/shared/chrome.js"></script>
 <script type="module">
-  // "?v=4" busts stale caches (browser + GitHub Pages' CDN) whenever the
+  // "?v=6" busts stale caches (browser + GitHub Pages' CDN) whenever the
   // vendored wasm/js pair changes — the .js and .wasm are tightly coupled
   // (the glue calls specific export ordinals in the binary), so a cached
   // .js paired with a fresher .wasm or vice versa breaks module loading
   // entirely. Bump this (and the matching wasm URL below) on every
   // vendor/pkg rebuild — see vendor/README.md.
-  import init, { wormhole_send, wormhole_receive_connect, wormhole_cancel, wormhole_code_completions } from "/tools/wormhole/vendor/pkg/wormhole.js?v=4";
+  import init, { wormhole_send, wormhole_receive_connect, wormhole_cancel, wormhole_code_completions } from "/tools/wormhole/vendor/pkg/wormhole.js?v=6";
 
   const $ = (id) => document.getElementById(id);
   window.BQChrome && BQChrome.initRipple(".icon-btn, .btn, .dropzone, .file-chip__remove, .bottom-nav__item, .tab, .code-box__copy");
@@ -453,7 +453,7 @@
   let wasmLoaded = false;
   function loadWasm() {
     if (!wasmReady) {
-      wasmReady = init({ module_or_path: "/tools/wormhole/vendor/pkg/wormhole_bg.wasm?v=4" }).then(() => { wasmLoaded = true; });
+      wasmReady = init({ module_or_path: "/tools/wormhole/vendor/pkg/wormhole_bg.wasm?v=6" }).then(() => { wasmLoaded = true; });
     }
     return wasmReady;
   }
@@ -503,10 +503,25 @@
     let currentFile = null;
     let busy = false;
 
+    // If nothing changes for 20s straight (no status transition, no
+    // progress tick), the underlying relay/transit connection is probably
+    // wedged rather than just slow — nudge toward Cancel instead of
+    // leaving what looks like an indefinite, silent spinner.
+    let stallTimer = null;
+    function clearStallWatch() { if (stallTimer) { clearTimeout(stallTimer); stallTimer = null; } }
+    function armStallWatch() {
+      clearStallWatch();
+      const baseText = statusLine.textContent;
+      stallTimer = setTimeout(() => {
+        statusLine.textContent = baseText + " — still going; if this doesn't move, try Cancel and ask them to resend.";
+      }, 20000);
+    }
+
     function setStatus(text) {
-      if (!text) { statusLine.classList.add("hidden"); statusLine.textContent = ""; return; }
+      if (!text) { statusLine.classList.add("hidden"); statusLine.textContent = ""; clearStallWatch(); return; }
       statusLine.textContent = text;
       statusLine.classList.remove("hidden");
+      armStallWatch();
     }
     function setProgress(sent, total) {
       progressWrap.classList.remove("hidden");
@@ -514,6 +529,7 @@
       progressFill.style.width = pct + "%";
       progressText.textContent = formatBytes(sent) + " / " + formatBytes(total);
       progressPct.textContent = pct + "%";
+      armStallWatch();
     }
     function hideError() { errorBanner.classList.add("hidden"); }
     function showError(message) { errorBody.textContent = message; errorBanner.classList.remove("hidden"); }
@@ -523,6 +539,7 @@
       progressWrap.classList.add("hidden");
       progressFill.style.width = "0%";
       cancelRow.style.display = "none";
+      clearStallWatch();
       setStatus("");
       hideError();
       hideResult();
@@ -625,10 +642,24 @@
     let currentOffer = null;
     let currentObjectUrl = null;
 
+    // See the matching comment in the Send flow above: nudges toward
+    // Cancel if nothing has changed for 20s, instead of leaving what
+    // looks like an indefinite, silent spinner.
+    let stallTimer = null;
+    function clearStallWatch() { if (stallTimer) { clearTimeout(stallTimer); stallTimer = null; } }
+    function armStallWatch() {
+      clearStallWatch();
+      const baseText = statusLine.textContent;
+      stallTimer = setTimeout(() => {
+        statusLine.textContent = baseText + " — still going; if this doesn't move, try Cancel and ask them to resend.";
+      }, 20000);
+    }
+
     function setStatus(text) {
-      if (!text) { statusLine.classList.add("hidden"); statusLine.textContent = ""; return; }
+      if (!text) { statusLine.classList.add("hidden"); statusLine.textContent = ""; clearStallWatch(); return; }
       statusLine.textContent = text;
       statusLine.classList.remove("hidden");
+      armStallWatch();
     }
     function setProgress(received, total) {
       progressWrap.classList.remove("hidden");
@@ -636,6 +667,7 @@
       progressFill.style.width = pct + "%";
       progressText.textContent = formatBytes(received) + " / " + formatBytes(total);
       progressPct.textContent = pct + "%";
+      armStallWatch();
     }
     function hideError() { errorBanner.classList.add("hidden"); }
     function showError(message) { errorBody.textContent = message; errorBanner.classList.remove("hidden"); }
@@ -649,6 +681,7 @@
       progressFill.style.width = "0%";
       cancelRow.style.display = "none";
       currentOffer = null;
+      clearStallWatch();
       setStatus("");
       hideError();
       hideResult();

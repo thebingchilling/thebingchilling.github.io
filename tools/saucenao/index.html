@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reverse Image Search</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Find the source of an image with SauceNAO — paste an image, give an image URL, or point it at a Reddit post to pick from its images." />
+  <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Sauce" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <script src="/shared/theme-init.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/chrome.css" />
+  <style>
+    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
+       token set to the rest of the toolbox. ── */
+    :root {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+
+      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
+      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
+      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+
+      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
+      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
+      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
+      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
+      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
+      --radius: 12px;
+      --t: 0.2s cubic-bezier(0.2,0,0,1);
+      --good: #146c2e; --good-bg: #d7f5df;
+      --warn: #7a5900; --warn-bg: #fff3cd;
+    }
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-primary: #ffb77c; --md-on-primary: #4a2800;
+        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+        --md-error: #ffb4ab; --md-on-error: #690005;
+        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+        --md-surface: #17120d;
+        --md-surface-container-lowest: #100c08;
+        --md-surface-container-low: #201a14;
+        --md-surface-container: #241e18;
+        --md-surface-container-high: #2f2822;
+        --md-surface-container-highest: #3a332c;
+        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+        --primary-dark: #ffcda0;
+        --text-faint: #a89686;
+        --good: #6fdb8f; --good-bg: #163a24;
+        --warn: #ffd668; --warn-bg: #4d3b00;
+      }
+    }
+    :root[data-theme="dark"] {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+      --good: #6fdb8f; --good-bg: #163a24;
+      --warn: #ffd668; --warn-bg: #4d3b00;
+    }
+    :root[data-theme="light"] {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+      --primary-dark: #632f00;
+      --text-faint: #8a7a6d;
+      --good: #146c2e; --good-bg: #d7f5df;
+      --warn: #7a5900; --warn-bg: #fff3cd;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { -webkit-tap-highlight-color: transparent; }
+    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button, .btn, .tab, .dropzone, .gallery-item { -webkit-touch-callout: none; user-select: none; }
+    .btn, .tab, .dropzone, .gallery-item { position: relative; overflow: hidden; }
+
+    .hidden { display: none !important; }
+    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    body { scrollbar-width: none; }
+    body::-webkit-scrollbar { display: none; }
+
+    main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem 1rem calc(4.6rem + env(safe-area-inset-bottom)); max-width: 640px; width: 100%; margin: 0 auto; }
+    .hero { text-align: center; padding: 0.5rem 0.5rem 1.25rem; }
+    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
+    .hero__icon .material-icons { font-size: 30px; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: box-shadow var(--t), filter var(--t), background var(--t); }
+    .btn--sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
+    .btn--primary { background: var(--primary); color: var(--on-primary); }
+    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
+    .btn--primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
+    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+
+    /* ── Mode tabs ── */
+    .tabs { display: flex; gap: 0.25rem; background: var(--md-surface-container); border-radius: 999px; padding: 0.25rem; margin-bottom: 1rem; }
+    .tab { flex: 1; border: none; background: transparent; border-radius: 999px; padding: 0.55rem 0.5rem; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; transition: background var(--t), color var(--t), box-shadow var(--t); }
+    .tab .material-icons { font-size: 16px; }
+    .tab--active { background: var(--md-surface-container-low); color: var(--primary); box-shadow: var(--el1); font-weight: 600; }
+
+    /* ── Search card / inputs (shared shape across panels) ── */
+    .search-card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .search-row { display: flex; gap: 0.5rem; }
+    .search-row input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.65rem 1rem; font-size: 0.92rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
+    .search-row input[type=text]:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+    .search-row .btn { flex-shrink: 0; }
+    .search-card__hint { margin: 0.6rem 0 0; font-size: 0.76rem; color: var(--text-faint); line-height: 1.4; }
+
+    /* ── Dropzone (image mode) ── */
+    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 20px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); margin-bottom: 1rem; }
+    .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+    .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
+    .dropzone .material-icons { font-size: 34px; color: var(--primary); }
+    .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
+    .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+    /* ── Reddit gallery ── */
+    .reddit-post-title { font-size: 0.85rem; font-weight: 500; color: var(--text); margin: 0.7rem 0 0; line-height: 1.4; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+    .gallery-item { aspect-ratio: 1; border-radius: 12px; padding: 0; border: 2px solid transparent; background: var(--surface2); cursor: pointer; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 9px; }
+    .gallery-item--selected { border-color: var(--primary); }
+    .gallery-item__check { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: none; align-items: center; justify-content: center; }
+    .gallery-item--selected .gallery-item__check { display: flex; }
+    .gallery-item__check .material-icons { font-size: 13px; }
+
+    /* ── Preview strip (what's currently being searched) ── */
+    .preview-strip { display: flex; align-items: center; gap: 0.65rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.6rem 0.85rem; margin-bottom: 0.85rem; box-shadow: var(--el1); }
+    .preview-strip img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
+    .preview-strip__label { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* ── State / error / quota ── */
+    .state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
+    .state-panel .material-icons { font-size: 34px; margin-bottom: 0.5rem; display: block; margin-left: auto; margin-right: auto; }
+    .state-panel p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
+    .source-error { background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.8rem; line-height: 1.45; margin-bottom: 0.85rem; }
+    .source-error strong { font-weight: 600; }
+    .quota-note { font-size: 0.72rem; color: var(--text-faint); text-align: center; margin: -0.3rem 0 0.75rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 0.5rem; }
+
+    /* ── Results ── */
+    .result-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .sauce-card { display: flex; gap: 0.75rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem; box-shadow: var(--el1); }
+    .sauce-card__thumb { width: 88px; height: 88px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
+    .sauce-card__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
+    .sauce-card__top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .sauce-card__sim { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
+    .sauce-card__sim--high { background: var(--good-bg); color: var(--good); }
+    .sauce-card__sim--mid { background: var(--warn-bg); color: var(--warn); }
+    .sauce-card__sim--low { background: var(--md-surface-container-high); color: var(--text-faint); }
+    .sauce-card__index { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--md-on-primary-container); background: var(--md-primary-container); padding: 0.15rem 0.5rem; border-radius: 999px; }
+    .sauce-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0; line-height: 1.35; word-break: break-word; }
+    .sauce-card__creator { font-size: 0.78rem; color: var(--text-muted); }
+    .sauce-card__links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.15rem; }
+
+    /* ── Settings sheet (M3 modal bottom sheet) ── */
+    .settings { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
+    .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); }
+    .settings__panel { position: relative; width: 100%; max-width: 560px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem calc(1rem + env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left)); animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; overscroll-behavior-y: contain; }
+    .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
+    @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+    .settings__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 500; color: var(--text); }
+    .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
+    .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
+    .settings__hint a { color: var(--primary); }
+    .settings input[type=text], .settings select { width: 100%; border: 1px solid var(--md-outline); border-radius: 10px; padding: 0.55rem 0.7rem; font-size: 0.86rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
+    .settings input[type=text]:focus, .settings select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+    .settings__actions { display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap; }
+
+    main.app-main { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <div class="top-bar__brand">
+      <span class="top-bar__name">🍦 Bingqilin</span>
+    </div>
+    <div class="top-bar__actions">
+      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Search settings">
+        <span class="material-icons">tune</span>
+      </button>
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="hero">
+      <div class="hero__icon"><span class="material-icons">image_search</span></div>
+      <h1 class="hero__title">Reverse Image Search</h1>
+      <p class="hero__sub">Find where an image came from using <a href="https://saucenao.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;">SauceNAO</a>. Paste an image, drop one, give an image URL, or hand it a Reddit post to pick an image from. The image (or its URL) is sent to SauceNAO to run the search — nothing is stored by this page.</p>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Search by">
+      <button class="tab tab--active" type="button" role="tab" aria-selected="true" data-mode="image">
+        <span class="material-icons">add_photo_alternate</span>Image
+      </button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-mode="url">
+        <span class="material-icons">link</span>Image URL
+      </button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-mode="reddit">
+        <span class="material-icons">forum</span>Reddit post
+      </button>
+    </div>
+
+    <div class="panel" id="panelImage">
+      <label class="dropzone" id="dropzone" for="fileInput">
+        <span class="material-icons">add_photo_alternate</span>
+        <span class="dropzone__title">Paste (Ctrl/Cmd+V), drop, or tap to choose an image</span>
+        <span class="dropzone__sub">Sent to SauceNAO to search — nothing else is uploaded</span>
+        <input id="fileInput" type="file" accept="image/*" aria-label="Choose an image" />
+      </label>
+    </div>
+
+    <div class="panel hidden" id="panelUrl">
+      <form class="search-card" id="urlForm">
+        <div class="search-row">
+          <input type="text" id="urlInput" placeholder="https://example.com/image.jpg" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Image URL" />
+          <button class="btn btn--primary" type="submit">
+            <span class="material-icons" style="font-size:18px;">search</span>Search
+          </button>
+        </div>
+        <p class="search-card__hint">Direct link to an image file — this is passed straight to SauceNAO's <code>url</code> lookup.</p>
+      </form>
+    </div>
+
+    <div class="panel hidden" id="panelReddit">
+      <form class="search-card" id="redditForm">
+        <div class="search-row">
+          <input type="text" id="redditInput" placeholder="https://www.reddit.com/r/.../comments/..." autocomplete="off" spellcheck="false" inputmode="url" aria-label="Reddit post URL" />
+          <button class="btn btn--primary" type="submit">
+            <span class="material-icons" style="font-size:18px;">travel_explore</span>Load
+          </button>
+        </div>
+        <p class="search-card__hint">Loads every image in the post (including galleries) so you can pick which one to search. Video posts aren't supported.</p>
+        <p class="reddit-post-title hidden" id="redditPostTitle"></p>
+        <div class="gallery-grid hidden" id="redditGallery"></div>
+      </form>
+    </div>
+
+    <div id="previewArea"></div>
+    <div id="statusArea"></div>
+    <div id="errorArea"></div>
+    <div class="quota-note" id="quotaArea"></div>
+    <div class="result-list" id="resultsArea"></div>
+  </main>
+
+  <div class="bottom-dock">
+    <nav class="bottom-nav" aria-label="Primary">
+      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+        <span class="bottom-nav__label">Media</span>
+      </a>
+      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Live</span>
+      </a>
+      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+        <span class="bottom-nav__label">Tools</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div id="settingsSheet" class="settings hidden" role="dialog" aria-modal="true" aria-label="Search settings" aria-hidden="true">
+  <div class="settings__backdrop" id="settingsBackdrop"></div>
+  <div class="settings__panel">
+    <div class="settings__header">
+      <h2 class="settings__title">Search settings</h2>
+      <button id="settingsClose" class="icon-btn" type="button" aria-label="Close">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="settings__section">
+      <div class="settings__section-label">SauceNAO API key</div>
+      <input type="text" id="apiKeyInput" placeholder="Optional — leave blank to search anonymously" autocomplete="off" spellcheck="false" />
+      <p class="settings__hint">Stored only in this browser, sent only to SauceNAO. A free account raises the search quota well above the anonymous limit — get a key from your <a href="https://saucenao.com/user.php" target="_blank" rel="noopener noreferrer">SauceNAO account page</a> (Account → api).</p>
+    </div>
+
+    <div class="settings__section">
+      <div class="settings__section-label">Results per search</div>
+      <select id="numResSelect">
+        <option value="3">3</option>
+        <option value="6">6</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="40">40</option>
+      </select>
+    </div>
+
+    <div class="settings__section">
+      <div class="settings__section-label">CORS proxy fallback</div>
+      <p class="settings__hint">SauceNAO's API (and Reddit's) don't allow direct browser requests from another site, so a request that fails direct is retried through one of these — each fetches it server-side and hands the response back with CORS allowed. Comma-separated, tried in order; use <code>{url}</code> for where the target goes. Leave blank to only ever try direct requests.</p>
+      <input type="text" id="corsProxyInput" autocomplete="off" spellcheck="false" />
+      <div class="settings__actions">
+        <button id="corsProxyReset" class="btn btn--ghost btn--sm" type="button">Restore default</button>
+      </div>
+    </div>
+
+    <div class="settings__actions">
+      <button id="settingsSave" class="btn btn--primary btn--sm" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/chrome.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  BQChrome.initRipple(".icon-btn, .btn, .tab, .dropzone, .gallery-item, .bottom-nav__item");
+  BQChrome.initTheme();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+  }
+
+  /* ═══════════════ Storage (localStorage, in-memory fallback) ═══════════════ */
+  const hasLS = (() => {
+    try { const k = "__bq_test__"; localStorage.setItem(k, "1"); localStorage.removeItem(k); return true; }
+    catch (e) { return false; }
+  })();
+  const mem = {};
+  const Store = {
+    get(key) { if (hasLS) { try { return localStorage.getItem(key); } catch (e) { return mem[key] ?? null; } } return mem[key] ?? null; },
+    set(key, value) { if (hasLS) { try { localStorage.setItem(key, value); return; } catch (e) {} } mem[key] = value; }
+  };
+
+  /* ═══════════════ Settings ═══════════════ */
+  const DEFAULT_CORS_PROXY = "https://corsproxy.io/?url={url}, https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}";
+  function loadCorsProxy() {
+    const raw = Store.get("bq_saucenao_cors_proxy");
+    return raw === null ? DEFAULT_CORS_PROXY : raw;
+  }
+  function saveCorsProxy(v) { Store.set("bq_saucenao_cors_proxy", v); }
+  let CORS_PROXY = loadCorsProxy();
+  function proxyList() { return CORS_PROXY.split(",").map(s => s.trim()).filter(Boolean); }
+
+  function loadApiKey() { return Store.get("bq_saucenao_api_key") || ""; }
+  function saveApiKey(v) { Store.set("bq_saucenao_api_key", v); }
+  let API_KEY = loadApiKey();
+
+  function loadNumRes() {
+    const n = parseInt(Store.get("bq_saucenao_numres"), 10);
+    return (n >= 1 && n <= 40) ? n : 6;
+  }
+  function saveNumRes(v) { Store.set("bq_saucenao_numres", String(v)); }
+  let NUM_RES = loadNumRes();
+
+  /* ═══════════════ Networking: direct fetch, falling back through proxies ═══════════════
+     Mirrors the CORS-proxy fallback used elsewhere in this toolbox (see the
+     torrent search tool's history) — SauceNAO and Reddit both omit
+     Access-Control-Allow-Origin on these endpoints, so a browser fetch from
+     any other origin is blocked outright until it's routed through a proxy
+     that adds that header back. */
+  async function fetchDirectOrProxied(url, opts) {
+    opts = opts || {};
+    try {
+      const res = await fetch(url, Object.assign({ mode: "cors" }, opts));
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res;
+    } catch (directErr) {
+      const proxies = proxyList();
+      if (!proxies.length) {
+        throw new Error(`Couldn't reach it directly (${directErr.message}). Add a CORS proxy in Settings to retry through one automatically.`);
+      }
+      const proxyErrors = [];
+      for (const proxy of proxies) {
+        const proxyUrl = proxy.indexOf("{url}") !== -1 ? proxy.replace("{url}", encodeURIComponent(url)) : proxy + encodeURIComponent(url);
+        let host = proxy;
+        try { host = new URL(proxy.replace("{url}", "")).hostname; } catch (e) {}
+        try {
+          const res = await fetch(proxyUrl, opts);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res;
+        } catch (proxyErr) {
+          proxyErrors.push(`${host} → ${proxyErr.message}`);
+        }
+      }
+      throw new Error(`Direct request failed (${directErr.message}). Every CORS proxy also failed: ${proxyErrors.join("; ")}.`);
+    }
+  }
+
+  /* ═══════════════ SauceNAO ═══════════════ */
+  const SAUCENAO_ENDPOINT = "https://saucenao.com/search.php";
+
+  function saucenaoParams(extra) {
+    const p = new URLSearchParams();
+    p.set("db", "999");
+    p.set("output_type", "2");
+    p.set("numres", String(NUM_RES));
+    if (API_KEY) p.set("api_key", API_KEY);
+    Object.keys(extra || {}).forEach((k) => p.set(k, extra[k]));
+    return p;
+  }
+
+  function parseSaucenaoResponse(json) {
+    const header = json && json.header;
+    if (!header) throw new Error("SauceNAO returned an unexpected response.");
+    if (typeof header.status === "number" && header.status < 0) {
+      throw new Error(header.message || `SauceNAO error (status ${header.status}).`);
+    }
+    const results = Array.isArray(json.results) ? json.results : [];
+    return {
+      quota: { short: header.short_remaining, long: header.long_remaining },
+      results: results.map(normalizeResult).filter(Boolean)
+    };
+  }
+
+  function normalizeResult(r) {
+    const h = r && r.header, d = r && r.data;
+    if (!h) return null;
+    const links = Array.isArray(d && d.ext_urls) ? d.ext_urls : [];
+    let creator = d && (d.member_name || d.author_name || d.creator || d.artist || d.company);
+    if (Array.isArray(creator)) creator = creator.filter(Boolean).join(", ");
+    const title = (d && (d.title || d.material || d.source || d.eng_name || d.jp_name)) || null;
+    return {
+      similarity: parseFloat(h.similarity) || 0,
+      thumbnail: h.thumbnail || "",
+      indexName: (h.index_name || "").replace(/^Index #\d+:\s*/, ""),
+      title,
+      creator: creator || null,
+      links
+    };
+  }
+
+  async function searchByUrl(imageUrl) {
+    const params = saucenaoParams({ url: imageUrl });
+    const res = await fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "GET" });
+    return parseSaucenaoResponse(await res.json());
+  }
+
+  async function searchByFile(file) {
+    const params = saucenaoParams();
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "POST", body: fd });
+    return parseSaucenaoResponse(await res.json());
+  }
+
+  /* ═══════════════ Reddit post → image list ═══════════════ */
+  function toRedditJsonUrl(raw) {
+    let u;
+    try { u = new URL(raw.trim()); } catch (e) { throw new Error("Enter a full reddit.com (or redd.it) link."); }
+    const host = u.hostname.toLowerCase();
+    if (host === "redd.it" || host === "www.redd.it") {
+      const id = u.pathname.split("/").filter(Boolean)[0];
+      if (!id) throw new Error("Couldn't find a post ID in that link.");
+      return `https://www.reddit.com/comments/${id}.json`;
+    }
+    if (!/(^|\.)reddit\.com$/.test(host)) throw new Error("That's not a reddit.com link.");
+    const path = u.pathname.replace(/\/+$/, "");
+    if (!path) throw new Error("That reddit link doesn't point to a post.");
+    return `https://www.reddit.com${path}.json`;
+  }
+
+  function decodeEntities(s) {
+    if (!s) return s;
+    return s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'");
+  }
+
+  function isDirectImage(post) {
+    if (post.post_hint === "image") return true;
+    const url = post.url_overridden_by_dest || post.url || "";
+    return /\.(jpe?g|png|gif|webp|bmp)(\?|$)/i.test(url);
+  }
+
+  function extractRedditImages(post) {
+    const out = [];
+    if (post.is_gallery && post.gallery_data && Array.isArray(post.gallery_data.items) && post.media_metadata) {
+      for (const item of post.gallery_data.items) {
+        const meta = post.media_metadata[item.media_id];
+        if (!meta) continue;
+        const src = meta.s || {};
+        const full = decodeEntities(src.u || src.gif || src.mp4 || "");
+        const thumb = decodeEntities((meta.p && meta.p[0] && meta.p[0].u) || full);
+        if (full) out.push({ url: full, thumb: thumb || full });
+      }
+      if (out.length) return out;
+    }
+    if (isDirectImage(post)) {
+      const full = post.url_overridden_by_dest || post.url;
+      let thumb = post.thumbnail;
+      if (!thumb || !/^https?:\/\//.test(thumb)) {
+        const preview = post.preview && post.preview.images && post.preview.images[0];
+        thumb = preview ? decodeEntities((preview.resolutions && preview.resolutions[0] && preview.resolutions[0].url) || (preview.source && preview.source.url)) : full;
+      } else {
+        thumb = decodeEntities(thumb);
+      }
+      out.push({ url: full, thumb: thumb || full });
+      return out;
+    }
+    if (post.preview && Array.isArray(post.preview.images) && post.preview.images.length) {
+      for (const img of post.preview.images) {
+        if (!img.source || !img.source.url) continue;
+        const full = decodeEntities(img.source.url);
+        const resIdx = img.resolutions && img.resolutions.length ? Math.min(2, img.resolutions.length - 1) : -1;
+        const thumb = resIdx >= 0 ? decodeEntities(img.resolutions[resIdx].url) : full;
+        out.push({ url: full, thumb });
+      }
+    }
+    return out;
+  }
+
+  async function fetchRedditImages(postUrl) {
+    const jsonUrl = toRedditJsonUrl(postUrl);
+    const res = await fetchDirectOrProxied(jsonUrl, { method: "GET" });
+    const data = await res.json();
+    const listing = Array.isArray(data) ? data[0] : null;
+    const child = listing && listing.data && listing.data.children && listing.data.children[0];
+    let post = child && child.data;
+    if (!post) throw new Error("Couldn't read that reddit post (it may be private, quarantined, or deleted).");
+    if (!post.is_gallery && !isDirectImage(post) && Array.isArray(post.crosspost_parent_list) && post.crosspost_parent_list[0]) {
+      post = post.crosspost_parent_list[0];
+    }
+    const images = extractRedditImages(post);
+    if (!images.length) throw new Error("No images found in that post — it may be a text, link, or video post.");
+    return { title: post.title || "", images };
+  }
+
+  /* ═══════════════ Rendering helpers ═══════════════ */
+  function escapeHtml(str) {
+    return String(str == null ? "" : str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function setPreview(srcUrl) {
+    const el = $("previewArea");
+    el.textContent = "";
+    if (!srcUrl) return;
+    const wrap = document.createElement("div"); wrap.className = "preview-strip";
+    const img = document.createElement("img"); img.src = srcUrl; img.alt = ""; img.referrerPolicy = "no-referrer";
+    const label = document.createElement("span"); label.className = "preview-strip__label"; label.textContent = "Searching this image…";
+    wrap.appendChild(img); wrap.appendChild(label);
+    el.appendChild(wrap);
+  }
+
+  let busy = false;
+  function setBusy(isBusy, msg) {
+    busy = isBusy;
+    $("statusArea").innerHTML = isBusy
+      ? `<div class="state-panel"><span class="spinner"></span><p>${escapeHtml(msg || "Working…")}</p></div>`
+      : "";
+  }
+  function showError(msg) {
+    $("errorArea").innerHTML = `<div class="source-error"><strong>Couldn't finish that search.</strong> ${escapeHtml(msg)}</div>`;
+  }
+  function clearError() { $("errorArea").innerHTML = ""; }
+
+  function renderQuota(q) {
+    if (!q || (q.short == null && q.long == null)) { $("quotaArea").textContent = ""; return; }
+    const parts = [];
+    if (q.short != null) parts.push(`${q.short} left this 30s`);
+    if (q.long != null) parts.push(`${q.long} left today`);
+    $("quotaArea").textContent = parts.length ? `SauceNAO quota: ${parts.join(" · ")}` : "";
+  }
+
+  function simClass(sim) { return sim >= 80 ? "high" : sim >= 60 ? "mid" : "low"; }
+
+  function renderResults(results) {
+    const area = $("resultsArea");
+    if (!results.length) {
+      area.innerHTML = `<div class="state-panel"><span class="material-icons">search_off</span><p>No matches found above SauceNAO's confidence threshold.</p></div>`;
+      return;
+    }
+    area.innerHTML = results.map((r) => {
+      const title = escapeHtml(r.title || r.indexName || "Untitled");
+      const links = r.links.slice(0, 4).map((l) => {
+        let host = l;
+        try { host = new URL(l).hostname.replace(/^www\./, ""); } catch (e) {}
+        return `<a class="btn btn--ghost btn--sm" href="${escapeHtml(l)}" target="_blank" rel="noopener noreferrer"><span class="material-icons" style="font-size:14px;">open_in_new</span>${escapeHtml(host)}</a>`;
+      }).join("");
+      return `
+        <div class="sauce-card">
+          <img class="sauce-card__thumb" src="${escapeHtml(r.thumbnail)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'" />
+          <div class="sauce-card__body">
+            <div class="sauce-card__top">
+              <span class="sauce-card__sim sauce-card__sim--${simClass(r.similarity)}">${r.similarity.toFixed(1)}%</span>
+              <span class="sauce-card__index">${escapeHtml(r.indexName)}</span>
+            </div>
+            <p class="sauce-card__title">${title}</p>
+            ${r.creator ? `<span class="sauce-card__creator">by ${escapeHtml(r.creator)}</span>` : ""}
+            ${links ? `<div class="sauce-card__links">${links}</div>` : ""}
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  function showEmptyState() {
+    $("resultsArea").innerHTML = `<div class="state-panel"><span class="material-icons">image_search</span><p>Paste an image, drop one, or search by URL or Reddit post above.</p></div>`;
+  }
+
+  /* ═══════════════ Search orchestration ═══════════════ */
+  function resetOutputs() {
+    clearError();
+    $("resultsArea").innerHTML = "";
+    $("quotaArea").textContent = "";
+  }
+
+  async function runSearch(kind, arg) {
+    if (busy) return;
+    resetOutputs();
+    setBusy(true, kind === "file" ? "Uploading image to SauceNAO…" : "Searching SauceNAO…");
+    try {
+      const outcome = kind === "file" ? await searchByFile(arg) : await searchByUrl(arg);
+      setBusy(false);
+      renderQuota(outcome.quota);
+      renderResults(outcome.results);
+    } catch (err) {
+      setBusy(false);
+      showEmptyState();
+      showError((err && err.message) || String(err));
+    }
+  }
+
+  function runFileSearch(file) {
+    if (!file.type || !file.type.startsWith("image/")) { showError("That file isn't an image."); return; }
+    setPreview(URL.createObjectURL(file));
+    runSearch("file", file);
+  }
+  function runUrlSearch(url) {
+    setPreview(url);
+    runSearch("url", url);
+  }
+
+  /* ═══════════════ Mode tabs ═══════════════ */
+  const tabs = Array.from(document.querySelectorAll(".tab"));
+  const panels = { image: $("panelImage"), url: $("panelUrl"), reddit: $("panelReddit") };
+  function selectTab(mode) {
+    tabs.forEach((t) => {
+      const active = t.dataset.mode === mode;
+      t.classList.toggle("tab--active", active);
+      t.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    Object.keys(panels).forEach((k) => panels[k].classList.toggle("hidden", k !== mode));
+  }
+  tabs.forEach((tab) => tab.addEventListener("click", () => selectTab(tab.dataset.mode)));
+
+  /* ═══════════════ Image panel: dropzone, file picker, clipboard paste ═══════════════ */
+  const dropzone = $("dropzone"), fileInput = $("fileInput");
+  ["dragenter", "dragover"].forEach((evt) => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add("dropzone--drag"); }));
+  ["dragleave", "dragend"].forEach((evt) => dropzone.addEventListener(evt, () => dropzone.classList.remove("dropzone--drag")));
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dropzone--drag");
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) runFileSearch(file);
+  });
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (file) runFileSearch(file);
+    fileInput.value = "";
+  });
+  document.addEventListener("paste", (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.kind === "file" && item.type && item.type.indexOf("image/") === 0) {
+        const file = item.getAsFile();
+        if (file) {
+          selectTab("image");
+          runFileSearch(file);
+        }
+        e.preventDefault();
+        return;
+      }
+    }
+  });
+
+  /* ═══════════════ Image URL panel ═══════════════ */
+  $("urlForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const val = $("urlInput").value.trim();
+    if (!val) return;
+    runUrlSearch(val);
+  });
+
+  /* ═══════════════ Reddit panel ═══════════════ */
+  let currentRedditImages = [];
+  function renderGallery(images) {
+    currentRedditImages = images;
+    const grid = $("redditGallery");
+    grid.innerHTML = images.map((img, i) => `
+      <button class="gallery-item" type="button" data-idx="${i}" aria-label="Select image ${i + 1} of ${images.length}">
+        <img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'" />
+        <span class="gallery-item__check"><span class="material-icons">check</span></span>
+      </button>`).join("");
+    grid.classList.toggle("hidden", images.length === 0);
+    grid.querySelectorAll(".gallery-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        grid.querySelectorAll(".gallery-item").forEach((b) => b.classList.remove("gallery-item--selected"));
+        btn.classList.add("gallery-item--selected");
+        const img = currentRedditImages[parseInt(btn.dataset.idx, 10)];
+        if (img) runUrlSearch(img.url);
+      });
+    });
+    if (images.length === 1) grid.querySelector(".gallery-item").click();
+  }
+
+  async function loadRedditGallery(postUrl) {
+    if (busy) return;
+    resetOutputs();
+    $("redditGallery").innerHTML = "";
+    $("redditGallery").classList.add("hidden");
+    $("redditPostTitle").classList.add("hidden");
+    $("redditPostTitle").textContent = "";
+    setPreview(null);
+    setBusy(true, "Loading reddit post…");
+    try {
+      const { title, images } = await fetchRedditImages(postUrl);
+      setBusy(false);
+      if (title) { $("redditPostTitle").textContent = title; $("redditPostTitle").classList.remove("hidden"); }
+      renderGallery(images);
+      if (images.length > 1) {
+        $("statusArea").innerHTML = `<div class="state-panel"><span class="material-icons">touch_app</span><p>${images.length} images found — tap one to search it.</p></div>`;
+      }
+    } catch (err) {
+      setBusy(false);
+      showError((err && err.message) || String(err));
+    }
+  }
+  $("redditForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const val = $("redditInput").value.trim();
+    if (!val) return;
+    loadRedditGallery(val);
+  });
+
+  /* ═══════════════ Settings sheet ═══════════════ */
+  const settingsSheet = $("settingsSheet"), settingsBackdrop = $("settingsBackdrop");
+  function openSettings() {
+    $("apiKeyInput").value = API_KEY;
+    $("numResSelect").value = String(NUM_RES);
+    $("corsProxyInput").value = CORS_PROXY;
+    settingsSheet.classList.remove("hidden");
+    settingsSheet.setAttribute("aria-hidden", "false");
+  }
+  function closeSettings() {
+    settingsSheet.classList.add("hidden");
+    settingsSheet.setAttribute("aria-hidden", "true");
+  }
+  $("settingsBtn").addEventListener("click", openSettings);
+  $("settingsClose").addEventListener("click", closeSettings);
+  settingsBackdrop.addEventListener("click", closeSettings);
+  $("corsProxyReset").addEventListener("click", () => { $("corsProxyInput").value = DEFAULT_CORS_PROXY; });
+  $("settingsSave").addEventListener("click", () => {
+    API_KEY = $("apiKeyInput").value.trim(); saveApiKey(API_KEY);
+    const n = parseInt($("numResSelect").value, 10);
+    NUM_RES = (n >= 1 && n <= 40) ? n : 6; saveNumRes(NUM_RES);
+    CORS_PROXY = $("corsProxyInput").value.trim(); saveCorsProxy(CORS_PROXY);
+    closeSettings();
+  });
+
+  showEmptyState();
+})();
+</script>
+</body>
+</html>
