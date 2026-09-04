@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Authenticator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Generate two-factor (TOTP) codes entirely in your browser. Secrets are stored only on this device." />
+  <meta name="description" content="Generate two-factor TOTP codes entirely on your device. Secrets are stored only on this browser." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -278,14 +278,14 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">verified_user</span></div>
       <h1 class="hero__title">Authenticator</h1>
-      <p class="hero__sub">Generate two-factor (TOTP) codes entirely on your device. Secrets are stored only in this browser and never leave it.</p>
+      <p class="hero__sub">Generate two-factor TOTP codes entirely on your device. Secrets are stored only on this browser.</p>
     </div>
 
     <div class="card">
       <div class="section-title"><h2>Your accounts</h2></div>
       <div class="accounts-empty" id="accountsEmpty">
         <div class="material-icons">shield</div>
-        <p>No accounts yet — tap "Add an account" below to get started.</p>
+        <p>Add an account below to get started.</p>
       </div>
       <div id="accountsList"></div>
     </div>
@@ -388,7 +388,7 @@
 
     <div class="card">
       <div class="section-title"><h2>Backup</h2></div>
-      <p class="field-hint" style="margin: 0 0 0.8rem;">Export your accounts to a file you keep somewhere safe, or restore from one. This is the only way to recover them if you clear browser data.</p>
+      <p class="field-hint" style="margin: 0 0 0.8rem;">Export your accounts to a file, or restore from one. This is the only way to recover them if you clear browser data.</p>
       <div class="data-actions">
         <button class="btn btn--ghost" id="exportBtn" type="button">
           <span class="material-icons" style="font-size:18px;">download</span>Export
@@ -402,7 +402,7 @@
 
     <div class="card note-card">
       <span class="material-icons">shield</span>
-      <p>Everything runs locally — QR decoding via <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a> and codes via your browser's built-in cryptography. Nothing is ever sent anywhere. Only add secrets for accounts you own.</p>
+      <p>Everything runs locally — QR decoding via <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a> and codes via your browser's built-in cryptography.</p>
     </div>
   </main>
 
