@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Unlock PDF</title>
+  <title>Unlock &amp; Unsign PDF</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Remove owner-password restrictions from a PDF entirely in your browser. Nothing is ever uploaded." />
+  <meta name="description" content="Remove owner-password restrictions, or strip digital signatures &amp; certification, from a PDF entirely in your browser. Nothing is ever uploaded." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -128,7 +128,7 @@
     button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     button, .btn, .dropzone { -webkit-touch-callout: none; user-select: none; }
 
-    .btn, .dropzone, .file-chip__remove { position: relative; overflow: hidden; }
+    .btn, .dropzone, .file-chip__remove, .mode-tab { position: relative; overflow: hidden; }
 
     .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
     html, body { margin: 0; padding: 0; height: 100%; }
@@ -166,6 +166,17 @@
     .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
 
     .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+
+    /* ── Mode switch (M3 SegmentedButton-ish) — picks which qpdf operation
+       the shared dropzone/file below acts on. ── */
+    .mode-tabs { display: flex; gap: 0.4rem; background: var(--bg2); border-radius: 999px; padding: 0.3rem; margin-bottom: 1rem; }
+    .mode-tab { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: none; background: transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; border-radius: 999px; padding: 0.55rem 0.6rem; cursor: pointer; transition: background var(--t), color var(--t); }
+    .mode-tab .material-icons { font-size: 19px; }
+    .mode-tab:hover { color: var(--text); }
+    .mode-tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .mode-tab[aria-pressed="true"] { background: var(--md-surface-container-low); color: var(--primary); box-shadow: var(--el1); }
+    :root[data-theme="dark"] .mode-tab[aria-pressed="true"] { background: var(--md-surface-container-high); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mode-tab[aria-pressed="true"] { background: var(--md-surface-container-high); } }
 
     .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 16px; padding: 2.2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
     .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
@@ -212,6 +223,11 @@
     .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
     .error-banner__details { margin-top: 0.5rem; font-size: 0.72rem; opacity: 0.85; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, monospace; }
 
+    .info-banner { display: flex; gap: 0.7rem; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
+    .info-banner.hidden { display: none; }
+    .info-banner .material-icons { flex-shrink: 0; }
+    .info-banner p { margin: 0; font-size: 0.82rem; line-height: 1.45; }
+
     .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
     .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
     .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
@@ -233,9 +249,18 @@
 
   <main class="app-main">
     <div class="hero">
-      <div class="hero__icon"><span class="material-icons">lock_open</span></div>
-      <h1 class="hero__title">Unlock a PDF</h1>
-      <p class="hero__sub">Strip the owner password &amp; restrictions (printing, copying, editing) from any PDF — entirely on your device. Nothing is uploaded anywhere.</p>
+      <div class="hero__icon"><span class="material-icons" id="heroIcon">lock_open</span></div>
+      <h1 class="hero__title" id="heroTitle">Unlock a PDF</h1>
+      <p class="hero__sub" id="heroSub">Strip the owner password &amp; restrictions (printing, copying, editing) from any PDF — entirely on your device. Nothing is uploaded anywhere.</p>
+    </div>
+
+    <div class="mode-tabs" role="tablist" aria-label="Choose what to remove">
+      <button class="mode-tab" id="modeUnlockBtn" type="button" role="tab" aria-pressed="true">
+        <span class="material-icons">lock_open</span><span>Restrictions</span>
+      </button>
+      <button class="mode-tab" id="modeUnsignBtn" type="button" role="tab" aria-pressed="false">
+        <span class="material-icons">remove_moderator</span><span>Signature</span>
+      </button>
     </div>
 
     <div class="card">
@@ -257,7 +282,7 @@
         </button>
       </div>
 
-      <label class="field-label" for="passwordInput">Password (only if the file asks for one to open)</label>
+      <label class="field-label" for="passwordInput" id="passwordLabel">Password (only if the file asks for one to open)</label>
       <div class="password-row">
         <input id="passwordInput" type="password" placeholder="Leave blank for most restricted PDFs" autocomplete="off" />
         <button class="icon-btn" id="togglePasswordBtn" type="button" aria-label="Show password">
@@ -266,9 +291,9 @@
       </div>
 
       <div class="action-row">
-        <button class="btn btn--primary btn--block" id="unlockBtn" type="button" disabled>
-          <span class="material-icons" id="unlockBtnIcon">lock_open</span>
-          <span id="unlockBtnLabel">Choose a PDF first</span>
+        <button class="btn btn--primary btn--block" id="actionBtn" type="button" disabled>
+          <span class="material-icons" id="actionBtnIcon">lock_open</span>
+          <span id="actionBtnLabel">Choose a PDF first</span>
         </button>
         <p class="status-line hidden" id="statusLine" role="status" aria-live="polite"></p>
       </div>
@@ -276,28 +301,33 @@
       <div class="error-banner hidden" id="errorBanner" role="alert">
         <span class="material-icons">error_outline</span>
         <div>
-          <p class="error-banner__title">Couldn't unlock this PDF</p>
+          <p class="error-banner__title" id="errorTitle">Couldn't unlock this PDF</p>
           <p class="error-banner__body" id="errorBody"></p>
           <p class="error-banner__details hidden" id="errorDetails"></p>
         </div>
+      </div>
+
+      <div class="info-banner hidden" id="infoBanner" role="status">
+        <span class="material-icons">info</span>
+        <p id="infoBody"></p>
       </div>
     </div>
 
     <div class="card result-card hidden" id="resultCard">
       <div class="result-card__icon"><span class="material-icons">task_alt</span></div>
-      <h2 class="result-card__title">Restrictions removed</h2>
+      <h2 class="result-card__title" id="resultTitle">Restrictions removed</h2>
       <p class="result-card__sub" id="resultSub"></p>
       <div class="result-card__actions">
         <a class="btn btn--primary btn--block" id="downloadBtn" href="#" download>
-          <span class="material-icons">download</span><span>Download unlocked PDF</span>
+          <span class="material-icons">download</span><span id="downloadBtnLabel">Download unlocked PDF</span>
         </a>
-        <button class="btn btn--ghost btn--block" id="resetBtn" type="button">Unlock another file</button>
+        <button class="btn btn--ghost btn--block" id="resetBtn" type="button">Process another file</button>
       </div>
     </div>
 
     <div class="card note-card">
       <span class="material-icons">shield</span>
-      <p>Your PDF never leaves this device — everything runs locally via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly. Only unlock files you have the right to modify.</p>
+      <p id="noteText">Your PDF never leaves this device — everything runs locally via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly. Only unlock files you have the right to modify.</p>
     </div>
   </main>
 
@@ -328,7 +358,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
 
-  BQChrome.initRipple(".icon-btn, .btn, .dropzone, .file-chip__remove, .bottom-nav__item");
+  BQChrome.initRipple(".icon-btn, .btn, .dropzone, .file-chip__remove, .bottom-nav__item, .mode-tab");
   BQChrome.initTheme();
 
   /* ── qpdf (WebAssembly) engine ──────────────────────────────────────────
@@ -391,15 +421,384 @@
     return { ok, exitCode, outBytes, log: qpdfLog.slice() };
   }
 
+  /* ── Removing a signature/certification ──────────────────────────────────
+     qpdf's CLI has no "strip signature" flag, so this drives the same
+     `--qdf` mode Acrobat/qpdf experts use by hand: expand the PDF into an
+     editable, one-object-per-line text form, surgically delete the
+     signature-related objects and references with a small PDF-syntax-aware
+     text editor below, then hand the result back to qpdf.
+
+     The tricky part: after those edits, the file's own xref table (the
+     byte-offset index qpdf wrote when producing the QDF) is stale, since
+     deleting text shifts everything after it. Real-world PDF tooling
+     usually leans on the parser reconstructing a broken xref from a full
+     file scan — but this qpdf build treats a stale offset as a hard parse
+     error rather than falling back to that scan. So instead this acts as
+     its own `fix-qdf`: rebuildXref() re-scans the edited text for every
+     "N 0 obj" marker's *real* position and writes a fresh, correct xref
+     table + trailer, so qpdf's normal (non-recovery) parse just works.
+
+     Byte-safety: the QDF text can contain raw binary inside stream bodies
+     (images, fonts). It's decoded/re-encoded via latin1, a lossless 1:1
+     mapping between bytes and JS string code units (0–255) — unlike UTF-8,
+     which would mangle any byte sequence that isn't valid UTF-8. ── */
+  function skipWs(s, i) {
+    for (;;) {
+      while (i < s.length && /\s/.test(s[i])) i++;
+      if (s[i] === "%") { while (i < s.length && s[i] !== "\n") i++; continue; }
+      break;
+    }
+    return i;
+  }
+  // Returns the index just past a single PDF value (dict/array/string/
+  // hex-string/name/number/ref/keyword) starting at i, skipping over
+  // nested structures and string contents so brackets inside them don't
+  // get mistaken for structural delimiters.
+  function skipValue(s, i) {
+    i = skipWs(s, i);
+    const c = s[i];
+    if (c === "<" && s[i + 1] === "<") {
+      i += 2;
+      for (;;) {
+        i = skipWs(s, i);
+        if (s[i] === ">" && s[i + 1] === ">") return i + 2;
+        if (s[i] !== "/") throw new Error("bad dict key near offset " + i);
+        i++;
+        while (i < s.length && !/[\s/<>\[\]()%]/.test(s[i])) i++;
+        i = skipValue(s, i);
+      }
+    }
+    if (c === "[") {
+      i++;
+      for (;;) {
+        i = skipWs(s, i);
+        if (s[i] === "]") return i + 1;
+        i = skipValue(s, i);
+      }
+    }
+    if (c === "(") {
+      i++;
+      let depth = 1;
+      while (i < s.length && depth > 0) {
+        if (s[i] === "\\") { i += 2; continue; }
+        if (s[i] === "(") depth++;
+        else if (s[i] === ")") depth--;
+        i++;
+      }
+      return i;
+    }
+    if (c === "<") {
+      i++;
+      while (i < s.length && s[i] !== ">") i++;
+      return i + 1;
+    }
+    if (c === "/") {
+      i++;
+      while (i < s.length && !/[\s/<>\[\]()%]/.test(s[i])) i++;
+      return i;
+    }
+    const m = /^[+-]?\d*\.?\d+/.exec(s.slice(i));
+    if (m) {
+      const afterNum = i + m[0].length;
+      const j = skipWs(s, afterNum);
+      const m2 = /^\d+/.exec(s.slice(j));
+      if (m2) {
+        const j2 = skipWs(s, j + m2[0].length);
+        if (s[j2] === "R" && !/[A-Za-z0-9]/.test(s[j2 + 1] || "")) return j2 + 1;
+      }
+      return afterNum;
+    }
+    const kw = /^(true|false|null)\b/.exec(s.slice(i));
+    if (kw) return i + kw[0].length;
+    throw new Error("cannot parse PDF value near offset " + i);
+  }
+  // Finds `key` (e.g. "/Perms") directly inside the dict starting at
+  // dictStart (which must point at its "<<"); returns null if absent.
+  function findKey(s, dictStart, key) {
+    let i = dictStart + 2;
+    for (;;) {
+      i = skipWs(s, i);
+      if (s[i] === ">" && s[i + 1] === ">") return null;
+      if (s[i] !== "/") throw new Error("bad dict key near offset " + i);
+      const keyStart = i;
+      i++;
+      while (i < s.length && !/[\s/<>\[\]()%]/.test(s[i])) i++;
+      const k = s.slice(keyStart, i);
+      const valStart = skipWs(s, i);
+      const valEnd = skipValue(s, valStart);
+      if (k === key) return { keyStart, valStart, valEnd };
+      i = valEnd;
+    }
+  }
+
+  function stripSignatures(text) {
+    const objRe = /(^|\n)(\d+) 0 obj\r?\n/g;
+    const objects = new Map();
+    let m;
+    while ((m = objRe.exec(text))) {
+      const num = parseInt(m[2], 10);
+      const headerEnd = objRe.lastIndex;
+      const bodyEnd = text.indexOf("\nendobj", headerEnd);
+      if (bodyEnd === -1) continue;
+      objects.set(num, { headerEnd, bodyEnd });
+    }
+    function objDictStart(num) {
+      const o = objects.get(num);
+      if (!o) return null;
+      const i = skipWs(text, o.headerEnd);
+      return (text[i] === "<" && text[i + 1] === "<") ? i : null;
+    }
+
+    // A signature "field" is the /FT /Sig widget the user interacts with;
+    // its /V points at the "value" dict (/Type /Sig) holding the actual
+    // crypto bytes (/Contents, /ByteRange). Certification adds a /Perms
+    // /DocMDP reference (direct or indirect) to that same value dict.
+    const sigFieldNums = new Set();
+    const sigValueNums = new Set();
+    for (const [num, o] of objects) {
+      const body = text.slice(o.headerEnd, o.bodyEnd);
+      if (/\/FT\s*\/Sig\b/.test(body)) {
+        sigFieldNums.add(num);
+        const vm = /\/V\s+(\d+)\s+0\s+R/.exec(body);
+        if (vm) sigValueNums.add(parseInt(vm[1], 10));
+      }
+      if (/\/Type\s*\/Sig\b/.test(body)) sigValueNums.add(num);
+    }
+    if (sigFieldNums.size === 0 && sigValueNums.size === 0) {
+      return { found: false, text, removedCount: 0 };
+    }
+
+    const edits = []; // { start, end, replacement }, positions into the ORIGINAL text
+
+    const trailerIdx = text.lastIndexOf("\ntrailer");
+    if (trailerIdx === -1) throw new Error("couldn't find the PDF trailer");
+    const rootM = /\/Root\s+(\d+)\s+0\s+R/.exec(text.slice(trailerIdx));
+    if (!rootM) throw new Error("couldn't find the document catalog");
+    const rootNum = parseInt(rootM[1], 10);
+    const catDictStart = objDictStart(rootNum);
+    if (catDictStart == null) throw new Error("document catalog isn't a dictionary");
+
+    // Strip /Perms (the certification marker) from the catalog, direct or indirect.
+    const permsEntry = findKey(text, catDictStart, "/Perms");
+    if (permsEntry) {
+      const permsText = text.slice(permsEntry.valStart, permsEntry.valEnd);
+      const docMdpM = /\/DocMDP\s+(\d+)\s+0\s+R/.exec(permsText);
+      if (docMdpM) sigValueNums.add(parseInt(docMdpM[1], 10));
+      const directRefM = /^(\d+)\s+0\s+R$/.exec(permsText.trim());
+      if (directRefM) {
+        const permsObjNum = parseInt(directRefM[1], 10);
+        const permsBodyStart = objDictStart(permsObjNum);
+        if (permsBodyStart != null) {
+          const dm = findKey(text, permsBodyStart, "/DocMDP");
+          if (dm) {
+            const dmRef = /^(\d+)\s+0\s+R$/.exec(text.slice(dm.valStart, dm.valEnd).trim());
+            if (dmRef) sigValueNums.add(parseInt(dmRef[1], 10));
+          }
+        }
+        const po = objects.get(permsObjNum);
+        if (po) edits.push({ start: po.headerEnd, end: po.bodyEnd, replacement: "\nnull\n" });
+      }
+      edits.push({ start: permsEntry.keyStart, end: permsEntry.valEnd, replacement: "" });
+    }
+
+    // Drop the signature field(s) from /AcroForm's /Fields, and clear /SigFlags.
+    const acroM = findKey(text, catDictStart, "/AcroForm");
+    if (acroM) {
+      const acroRef = /^(\d+)\s+0\s+R$/.exec(text.slice(acroM.valStart, acroM.valEnd).trim());
+      const acroDictStart = acroRef ? objDictStart(parseInt(acroRef[1], 10)) : (text[acroM.valStart] === "<" ? acroM.valStart : null);
+      if (acroDictStart != null) {
+        const fieldsM = findKey(text, acroDictStart, "/Fields");
+        if (fieldsM) {
+          const arrText = text.slice(fieldsM.valStart, fieldsM.valEnd);
+          let newArr = arrText;
+          for (const num of sigFieldNums) {
+            newArr = newArr.replace(new RegExp("\\s*\\b" + num + "\\s+0\\s+R\\b"), "");
+          }
+          if (newArr !== arrText) edits.push({ start: fieldsM.valStart, end: fieldsM.valEnd, replacement: newArr });
+        }
+        const sigFlagsM = findKey(text, acroDictStart, "/SigFlags");
+        if (sigFlagsM) edits.push({ start: sigFlagsM.keyStart, end: sigFlagsM.valEnd, replacement: "" });
+      }
+    }
+
+    // Drop the field from every page/object's /Annots array that lists it.
+    for (const [num, o] of objects) {
+      const body = text.slice(o.headerEnd, o.bodyEnd);
+      const am = /\/Annots\s*\[([^\]]*)\]/.exec(body);
+      if (!am) continue;
+      let inner = am[1];
+      let changed = false;
+      for (const fieldNum of sigFieldNums) {
+        const re = new RegExp("\\s*\\b" + fieldNum + "\\s+0\\s+R\\b");
+        if (re.test(inner)) { inner = inner.replace(re, ""); changed = true; }
+      }
+      if (changed) {
+        const absStart = o.headerEnd + am.index + am[0].indexOf("[");
+        const absEnd = absStart + 1 + am[1].length;
+        edits.push({ start: absStart + 1, end: absEnd, replacement: inner });
+      }
+    }
+
+    // Null out the field & value objects themselves (drops the raw signature bytes).
+    for (const num of sigFieldNums) {
+      const o = objects.get(num);
+      if (o) edits.push({ start: o.headerEnd, end: o.bodyEnd, replacement: "\nnull\n" });
+    }
+    for (const num of sigValueNums) {
+      const o = objects.get(num);
+      if (o) edits.push({ start: o.headerEnd, end: o.bodyEnd, replacement: "\nnull\n" });
+    }
+
+    // Apply back-to-front (by original-text offset) so earlier, unprocessed
+    // edits' positions stay valid; drop exact duplicates and anything that
+    // overlaps an edit already staged, defensively.
+    const seen = new Set();
+    const dedup = [];
+    for (const e of edits) {
+      const key = e.start + ":" + e.end;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      dedup.push(e);
+    }
+    dedup.sort((a, b) => b.start - a.start);
+    const applied = [];
+    let lastStart = Infinity;
+    for (const e of dedup) {
+      if (e.end > lastStart) continue;
+      applied.push(e);
+      lastStart = e.start;
+    }
+    let out = text;
+    for (const e of applied) out = out.slice(0, e.start) + e.replacement + out.slice(e.end);
+
+    return { found: true, text: out, removedCount: sigFieldNums.size, rootNum };
+  }
+
+  // Re-scans the edited QDF text for every object's *real* byte offset and
+  // writes a fresh, correct xref table + trailer in place of the stale one
+  // qpdf originally wrote (see the big comment above stripSignatures).
+  function rebuildXref(text, rootNum) {
+    const xrefIdx = text.lastIndexOf("\nxref\n");
+    if (xrefIdx === -1) throw new Error("couldn't find the xref section to rebuild");
+    const body = text.slice(0, xrefIdx + 1);
+
+    const objRe = /(^|\n)(\d+) 0 obj\r?\n/g;
+    const offsets = new Map();
+    let m;
+    while ((m = objRe.exec(body))) offsets.set(parseInt(m[2], 10), m.index + m[1].length);
+    const maxNum = Math.max(0, ...offsets.keys());
+
+    let xref = "xref\n0 " + (maxNum + 1) + "\n0000000000 65535 f \n";
+    for (let n = 1; n <= maxNum; n++) {
+      xref += offsets.has(n)
+        ? String(offsets.get(n)).padStart(10, "0") + " 00000 n \n"
+        : "0000000000 00000 f \n";
+    }
+    const startxref = body.length;
+    const trailer = "trailer\n<<\n  /Size " + (maxNum + 1) + "\n  /Root " + rootNum + " 0 R\n>>\nstartxref\n" + startxref + "\n%%EOF\n";
+    return body + xref + trailer;
+  }
+
+  async function unsignPdf(file, password) {
+    const qpdf = await loadQpdf();
+    const cleanup = () => { for (const p of ["/input.pdf", "/work.qdf", "/work2.qdf", "/output.pdf"]) { try { qpdf.FS.unlink(p); } catch (e) {} } };
+    cleanup();
+    qpdf.FS.writeFile("/input.pdf", new Uint8Array(await file.arrayBuffer()));
+    qpdfLog = [];
+    let exitCode;
+    try {
+      exitCode = qpdf.callMain(["--password=" + (password || ""), "--qdf", "--object-streams=disable", "--no-original-object-ids", "/input.pdf", "/work.qdf"]);
+    } catch (e) {
+      exitCode = -1;
+      qpdfLog.push(String((e && e.message) || e));
+    }
+    if (!(exitCode === 0 || exitCode === 3)) {
+      const log = qpdfLog.slice();
+      cleanup();
+      return { ok: false, found: true, exitCode, log };
+    }
+    let qdfBytes;
+    try { qdfBytes = qpdf.FS.readFile("/work.qdf"); } catch (e) {
+      const log = qpdfLog.slice();
+      cleanup();
+      return { ok: false, found: true, exitCode, log };
+    }
+
+    let edited;
+    try {
+      const decoded = new TextDecoder("latin1").decode(qdfBytes);
+      const stripped = stripSignatures(decoded);
+      if (!stripped.found) { cleanup(); return { ok: false, found: false }; }
+      edited = rebuildXref(stripped.text, stripped.rootNum);
+    } catch (e) {
+      cleanup();
+      return { ok: false, found: true, exitCode: -1, log: [String((e && e.message) || e)] };
+    }
+
+    const editedBytes = new Uint8Array(edited.length);
+    for (let i = 0; i < edited.length; i++) editedBytes[i] = edited.charCodeAt(i) & 0xff;
+    qpdf.FS.writeFile("/work2.qdf", editedBytes);
+    qpdfLog = [];
+    let exitCode2;
+    try {
+      exitCode2 = qpdf.callMain(["--object-streams=disable", "/work2.qdf", "/output.pdf"]);
+    } catch (e) {
+      exitCode2 = -1;
+      qpdfLog.push(String((e && e.message) || e));
+    }
+    let outBytes = null;
+    try { outBytes = qpdf.FS.readFile("/output.pdf"); } catch (e) {}
+    const log = qpdfLog.slice();
+    cleanup();
+    const ok = (exitCode2 === 0 || exitCode2 === 3) && outBytes && outBytes.length > 0;
+    return { ok, found: true, exitCode: exitCode2, outBytes, log };
+  }
+
+  /* ── Mode config: which qpdf operation the shared UI below drives. ── */
+  const MODES = {
+    unlock: {
+      heroIcon: "lock_open",
+      heroTitle: "Unlock a PDF",
+      heroSub: "Strip the owner password &amp; restrictions (printing, copying, editing) from any PDF — entirely on your device. Nothing is uploaded anywhere.",
+      passwordLabel: "Password (only if the file asks for one to open)",
+      actionIcon: "lock_open",
+      actionIdle: "Unlock PDF",
+      actionBusy: "Unlocking…",
+      resultTitle: "Restrictions removed",
+      downloadLabel: "Download unlocked PDF",
+      errorTitle: "Couldn't unlock this PDF",
+      suffix: "-unlocked.pdf",
+      note: 'Your PDF never leaves this device — everything runs locally via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly. Only unlock files you have the right to modify.',
+    },
+    unsign: {
+      heroIcon: "remove_moderator",
+      heroTitle: "Remove a PDF signature",
+      heroSub: "Strip digital signatures &amp; certification (DocMDP) from a PDF so it can be edited freely again — entirely on your device. Nothing is uploaded anywhere.",
+      passwordLabel: "Password (only if the file is also encrypted)",
+      actionIcon: "remove_moderator",
+      actionIdle: "Remove signature",
+      actionBusy: "Removing signature…",
+      resultTitle: "Signature removed",
+      downloadLabel: "Download unsigned PDF",
+      errorTitle: "Couldn't remove the signature",
+      suffix: "-unsigned.pdf",
+      note: 'Your PDF never leaves this device — everything runs locally via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly. Only remove signatures from files you have the right to modify.',
+    },
+  };
+
   /* ── UI wiring ── */
   const dropzone = $("dropzone"), dropzoneTitle = $("dropzoneTitle"), fileInput = $("fileInput");
   const fileChip = $("fileChip"), fileChipName = $("fileChipName"), fileChipMeta = $("fileChipMeta"), fileChipRemove = $("fileChipRemove");
-  const passwordInput = $("passwordInput"), togglePasswordBtn = $("togglePasswordBtn"), togglePasswordIcon = $("togglePasswordIcon");
-  const unlockBtn = $("unlockBtn"), unlockBtnIcon = $("unlockBtnIcon"), unlockBtnLabel = $("unlockBtnLabel");
+  const passwordInput = $("passwordInput"), togglePasswordBtn = $("togglePasswordBtn"), togglePasswordIcon = $("togglePasswordIcon"), passwordLabel = $("passwordLabel");
+  const actionBtn = $("actionBtn"), actionBtnIcon = $("actionBtnIcon"), actionBtnLabel = $("actionBtnLabel");
   const statusLine = $("statusLine");
-  const errorBanner = $("errorBanner"), errorBody = $("errorBody"), errorDetails = $("errorDetails");
-  const resultCard = $("resultCard"), resultSub = $("resultSub"), downloadBtn = $("downloadBtn"), resetBtn = $("resetBtn");
+  const errorBanner = $("errorBanner"), errorTitle = $("errorTitle"), errorBody = $("errorBody"), errorDetails = $("errorDetails");
+  const infoBanner = $("infoBanner"), infoBody = $("infoBody");
+  const resultCard = $("resultCard"), resultTitle = $("resultTitle"), resultSub = $("resultSub"), downloadBtn = $("downloadBtn"), downloadBtnLabel = $("downloadBtnLabel"), resetBtn = $("resetBtn");
+  const heroIconEl = $("heroIcon"), heroTitleEl = $("heroTitle"), heroSubEl = $("heroSub"), noteText = $("noteText");
+  const modeUnlockBtn = $("modeUnlockBtn"), modeUnsignBtn = $("modeUnsignBtn");
 
+  let currentMode = "unlock";
   let currentFile = null;
   let currentObjectUrl = null;
   let busy = false;
@@ -416,8 +815,12 @@
     statusLine.classList.remove("hidden");
   }
 
+  function hideInfo() { infoBanner.classList.add("hidden"); infoBody.textContent = ""; }
+  function showInfo(message) { infoBody.textContent = message; infoBanner.classList.remove("hidden"); }
+
   function hideError() { errorBanner.classList.add("hidden"); errorDetails.classList.add("hidden"); errorDetails.textContent = ""; }
   function showError(message, details) {
+    errorTitle.textContent = MODES[currentMode].errorTitle;
     errorBody.textContent = message;
     if (details) { errorDetails.textContent = details; errorDetails.classList.remove("hidden"); }
     else { errorDetails.classList.add("hidden"); errorDetails.textContent = ""; }
@@ -429,22 +832,40 @@
     if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; }
   }
 
-  function updateUnlockButton() {
-    unlockBtn.disabled = !currentFile || busy;
-    if (busy) { unlockBtnIcon.textContent = ""; unlockBtnLabel.textContent = "Unlocking…"; }
-    else if (!currentFile) { unlockBtnIcon.textContent = "lock_open"; unlockBtnLabel.textContent = "Choose a PDF first"; }
-    else { unlockBtnIcon.textContent = "lock_open"; unlockBtnLabel.textContent = "Unlock PDF"; }
+  function updateActionButton() {
+    const cfg = MODES[currentMode];
+    actionBtn.disabled = !currentFile || busy;
+    actionBtnIcon.textContent = busy ? "" : cfg.actionIcon;
+    actionBtnLabel.textContent = busy ? cfg.actionBusy : (currentFile ? cfg.actionIdle : "Choose a PDF first");
   }
 
+  function applyMode(mode) {
+    currentMode = mode;
+    const cfg = MODES[mode];
+    modeUnlockBtn.setAttribute("aria-pressed", String(mode === "unlock"));
+    modeUnsignBtn.setAttribute("aria-pressed", String(mode === "unsign"));
+    heroIconEl.textContent = cfg.heroIcon;
+    heroTitleEl.textContent = cfg.heroTitle;
+    heroSubEl.innerHTML = cfg.heroSub;
+    passwordLabel.textContent = cfg.passwordLabel;
+    resultTitle.textContent = cfg.resultTitle;
+    downloadBtnLabel.textContent = cfg.downloadLabel;
+    noteText.innerHTML = cfg.note;
+    hideError(); hideResult(); hideInfo();
+    updateActionButton();
+  }
+  modeUnlockBtn.addEventListener("click", () => { if (!busy) applyMode("unlock"); });
+  modeUnsignBtn.addEventListener("click", () => { if (!busy) applyMode("unsign"); });
+
   function selectFile(file) {
-    hideError(); hideResult();
-    if (!file) { currentFile = null; fileChip.classList.add("hidden"); dropzoneTitle.textContent = "Drop a PDF here, or tap to choose"; updateUnlockButton(); return; }
+    hideError(); hideResult(); hideInfo();
+    if (!file) { currentFile = null; fileChip.classList.add("hidden"); dropzoneTitle.textContent = "Drop a PDF here, or tap to choose"; updateActionButton(); return; }
     const looksLikePdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
     if (!looksLikePdf) {
       currentFile = null;
       fileChip.classList.add("hidden");
       showError("That doesn't look like a PDF file. Please choose a .pdf file.");
-      updateUnlockButton();
+      updateActionButton();
       return;
     }
     currentFile = file;
@@ -452,7 +873,7 @@
     fileChipMeta.textContent = formatBytes(file.size);
     fileChip.classList.remove("hidden");
     dropzoneTitle.textContent = "Drop a different PDF, or tap to change";
-    updateUnlockButton();
+    updateActionButton();
   }
 
   fileInput.addEventListener("change", () => selectFile(fileInput.files && fileInput.files[0]));
@@ -474,48 +895,57 @@
     togglePasswordBtn.setAttribute("aria-label", showing ? "Show password" : "Hide password");
   });
 
-  function suggestOutputName(name) {
-    const base = name.replace(/\.pdf$/i, "");
-    return base + "-unlocked.pdf";
+  function suggestOutputName(name, suffix) {
+    return name.replace(/\.pdf$/i, "") + suffix;
   }
 
-  async function runUnlock() {
+  async function runAction() {
     if (!currentFile || busy) return;
+    const cfg = MODES[currentMode];
     busy = true;
-    hideError(); hideResult();
-    updateUnlockButton();
-    setStatus(qpdfPromise ? "Removing owner password & restrictions…" : "Loading PDF engine (first time only)…");
+    hideError(); hideResult(); hideInfo();
+    updateActionButton();
+    setStatus(qpdfPromise ? cfg.actionBusy : "Loading PDF engine (first time only)…");
     try {
-      const result = await unlockPdf(currentFile, passwordInput.value);
+      const result = currentMode === "unlock"
+        ? await unlockPdf(currentFile, passwordInput.value)
+        : await unsignPdf(currentFile, passwordInput.value);
+
+      if (currentMode === "unsign" && result.found === false) {
+        showInfo("This PDF doesn't appear to have a digital signature or certification to remove — nothing to do.");
+        setStatus("");
+        return;
+      }
+
       if (result.ok) {
         const blob = new Blob([result.outBytes], { type: "application/pdf" });
         currentObjectUrl = URL.createObjectURL(blob);
-        const outName = suggestOutputName(currentFile.name);
+        const outName = suggestOutputName(currentFile.name, cfg.suffix);
         downloadBtn.href = currentObjectUrl;
         downloadBtn.download = outName;
         resultSub.textContent = outName + " · " + formatBytes(blob.size);
         resultCard.classList.remove("hidden");
         setStatus("");
       } else {
-        const detail = result.log.join("\n").trim();
+        const detail = (result.log || []).join("\n").trim();
         const needsPassword = /invalid password|password is invalid|wrong password/i.test(detail);
         showError(
           needsPassword
             ? "This PDF needs a password to open. Enter it above and try again."
-            : "qpdf couldn't process this file — it may be corrupted, not a real PDF, or use an unsupported encryption scheme.",
+            : "qpdf couldn't process this file — it may be corrupted, not a real PDF, or use an unsupported structure.",
           detail || ("Exit code " + result.exitCode)
         );
         setStatus("");
       }
     } catch (err) {
-      showError("Something went wrong while unlocking this PDF.", String((err && err.message) || err));
+      showError("Something went wrong while processing this PDF.", String((err && err.message) || err));
       setStatus("");
     } finally {
       busy = false;
-      updateUnlockButton();
+      updateActionButton();
     }
   }
-  unlockBtn.addEventListener("click", runUnlock);
+  actionBtn.addEventListener("click", runAction);
 
   resetBtn.addEventListener("click", () => {
     fileInput.value = "";
@@ -523,7 +953,10 @@
     selectFile(null);
     hideResult();
     hideError();
+    hideInfo();
   });
+
+  applyMode("unlock");
 })();
 </script>
 </body>
