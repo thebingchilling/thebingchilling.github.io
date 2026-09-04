@@ -398,6 +398,24 @@
     return qpdfPromise;
   }
 
+  // A true, lossless byte<->string mapping for the QDF text surgery below.
+  // NOTE: the Web `TextDecoder("latin1")` API is NOT this — per the WHATWG
+  // Encoding Standard, the "latin1" label is an alias for windows-1252,
+  // which remaps 27 byte values (0x80–0x9F) to Unicode characters that no
+  // longer fit back in a byte. That silently corrupts ~10% of bytes
+  // anywhere binary stream data (fonts, images, compressed content) is
+  // decoded through it — exactly the kind of thing that turns into garbled
+  // rendering after re-encoding. String.fromCharCode/charCodeAt, one byte
+  // per UTF-16 code unit, round-trips every value 0–255 exactly.
+  function bytesToBinaryString(bytes) {
+    const CHUNK = 0x8000;
+    let s = "";
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      s += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    }
+    return s;
+  }
+
   async function unlockPdf(file, password) {
     const qpdf = await loadQpdf();
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -726,7 +744,7 @@
 
     let edited;
     try {
-      const decoded = new TextDecoder("latin1").decode(qdfBytes);
+      const decoded = bytesToBinaryString(qdfBytes);
       const stripped = stripSignatures(decoded);
       if (!stripped.found) { cleanup(); return { ok: false, found: false }; }
       edited = rebuildXref(stripped.text, stripped.rootNum);
