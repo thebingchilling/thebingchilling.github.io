@@ -1,0 +1,29 @@
+name: Build Project Zips
+
+on:
+  push:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build zips
+        run: scripts/build-project-zips.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: media-zip
+          path: dist/media.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: live-zip
+          path: dist/live.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tools-zip
+          path: dist/tools.zip
