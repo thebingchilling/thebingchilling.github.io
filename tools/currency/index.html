@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Currency Converter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Convert a foreign currency against your main currency, with the real exchange rate and what it feels like to locals living there." />
+  <meta name="description" content="Convert to your currency with a live exchange rate, and a rate based on local spending power." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -256,8 +256,7 @@
   <main class="app-main">
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">currency_exchange</span></div>
-      <h1 class="hero__title">Currency Converter</h1>
-      <p class="hero__sub">Convert a foreign currency against your main currency, with the real exchange rate and what it feels like to locals living there.</p>
+      <h1 class="hero__title">Convert to your currency with a live exchange rate, and a rate based on local spending power.</p>
     </div>
 
     <!-- Converter ── -->
@@ -274,7 +273,7 @@
       <div id="conversionInfo"></div>
 
       <button type="button" class="adv-toggle" id="pppDetailsToggle" aria-expanded="false" aria-controls="pppDetailsBody">
-        <span class="material-icons">expand_more</span>How "feels like to locals" is calculated
+        <span class="material-icons">expand_more</span>How local spending power is calculated
       </button>
       <div class="adv-body" id="pppDetailsBody" hidden></div>
 
@@ -303,8 +302,7 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>Like the IP tool, this one can't run fully offline: exchange rates come from a third-party rate service (open.er-api.com, falling back to frankfurter.app), and purchasing-power data comes from the World Bank's API — both called directly from your browser. Your main-currency choice is saved only in this browser's local storage — never uploaded anywhere.</p>
-        <p>These are reference exchange rates, not what you'll actually get — banks, ATMs, and currency counters add their own margin and fees on top. World Bank PPP figures are only published periodically (sometimes a year or two old) and aren't available for every currency — when that's the case, this tool falls back to showing the plain exchange-rate conversion instead.</p>
+        <p>Exchange rates come from a third-party rate service (open.er-api.com, falling back to frankfurter.app), and purchasing-power data comes from the World Bank's API — both called directly from your browser. Your main-currency choice is saved only in this browser's local storage.</p>
       </div>
     </div>
   </main>
@@ -666,7 +664,7 @@
       pppDetailsBody.innerHTML = '<p class="caveat-text">Loading purchasing-power data…</p>';
       return;
     }
-    let html = '<p class="section-hint" style="margin-top:0;">Local currency units per "international dollar" — a hypothetical unit with equal purchasing power everywhere, via the World Bank.</p>';
+    let html = '<p class="section-hint" style="margin-top:0;">Local currency units per international dollar — a hypothetical World Bank unit with equal purchasing power everywhere.</p>';
     [local, main].forEach((code) => {
       const factor = pppFactorFor(code);
       html += factor
@@ -723,7 +721,7 @@
       }
     } else {
       html += resultRow("Exchange rate", rateLine, "");
-      html += '<p class="caveat-text">Type an amount above to see it converted, and what it feels like to locals.</p>';
+      html += '<p class="caveat-text">Type an amount above to see it converted.</p>';
     }
 
     conversionInfo.innerHTML = html;
