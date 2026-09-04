@@ -748,9 +748,33 @@
     }
     let outBytes = null;
     try { outBytes = qpdf.FS.readFile("/output.pdf"); } catch (e) {}
-    const log = qpdfLog.slice();
+    let log = qpdfLog.slice();
+    let ok = (exitCode2 === 0 || exitCode2 === 3) && outBytes && outBytes.length > 0;
+
+    // Sanity check: this operation should never change the page count. If it
+    // did, something about this PDF's structure tripped up the surgery above
+    // (e.g. an object-boundary or reference the text editor didn't account
+    // for) — treat that as a failure rather than silently handing back a
+    // PDF that's missing content.
+    if (ok) {
+      try {
+        qpdfLog = [];
+        qpdf.callMain(["--show-npages", "/input.pdf"]);
+        const inCount = parseInt(qpdfLog.join("").trim(), 10);
+        qpdfLog = [];
+        qpdf.callMain(["--show-npages", "/output.pdf"]);
+        const outCount = parseInt(qpdfLog.join("").trim(), 10);
+        if (Number.isFinite(inCount) && Number.isFinite(outCount) && outCount !== inCount) {
+          ok = false;
+          log = ["Page count changed unexpectedly: " + inCount + " → " + outCount + ". Refusing to hand back a possibly-damaged file."];
+        }
+      } catch (e) {
+        // If the check itself can't run, don't block on it — fall through
+        // with whatever the primary qpdf passes already validated.
+      }
+    }
+
     cleanup();
-    const ok = (exitCode2 === 0 || exitCode2 === 3) && outBytes && outBytes.length > 0;
     return { ok, found: true, exitCode: exitCode2, outBytes, log };
   }
 
