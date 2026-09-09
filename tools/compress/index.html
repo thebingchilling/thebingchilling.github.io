@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Compress</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Shrink images, audio, and video entirely on your device — a true lossless mode, or a slider/target-size mode for hitting an exact KB, MB, or percentage." />
+  <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Compress" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <script src="/shared/theme-init.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/chrome.css" />
+  <style>
+    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
+       token set to the rest of the toolbox. ── */
+    :root {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+
+      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
+      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
+      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+
+      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
+      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
+      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
+      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
+      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
+      --radius: 12px;
+      --t: 0.2s cubic-bezier(0.2,0,0,1);
+      --good: #146c2e; --good-bg: #d7f5df;
+      --warn: #7a5900; --warn-bg: #fff3cd;
+    }
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-primary: #ffb77c; --md-on-primary: #4a2800;
+        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+        --md-error: #ffb4ab; --md-on-error: #690005;
+        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+        --md-surface: #17120d;
+        --md-surface-container-lowest: #100c08;
+        --md-surface-container-low: #201a14;
+        --md-surface-container: #241e18;
+        --md-surface-container-high: #2f2822;
+        --md-surface-container-highest: #3a332c;
+        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+        --primary-dark: #ffcda0;
+        --text-faint: #a89686;
+        --good: #6fdb8f; --good-bg: #163a24;
+        --warn: #ffd668; --warn-bg: #4d3b00;
+      }
+    }
+    :root[data-theme="dark"] {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+      --good: #6fdb8f; --good-bg: #163a24;
+      --warn: #ffd668; --warn-bg: #4d3b00;
+    }
+    :root[data-theme="light"] {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+      --primary-dark: #632f00;
+      --text-faint: #8a7a6d;
+      --good: #146c2e; --good-bg: #d7f5df;
+      --warn: #7a5900; --warn-bg: #fff3cd;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body { -webkit-tap-highlight-color: transparent; }
+    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button, .btn, .dropzone { -webkit-touch-callout: none; user-select: none; }
+
+    .btn, .dropzone, .file-chip__remove, .seg-btn { position: relative; overflow: hidden; }
+
+    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    body { scrollbar-width: none; }
+    body::-webkit-scrollbar { display: none; }
+
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
+    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
+    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
+    .btn--primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
+    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .btn--block { width: 100%; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
+
+    .icon-btn { border: none; background: none; color: var(--text-muted); cursor: pointer; padding: 0.4rem; border-radius: 999px; display: inline-flex; }
+    .icon-btn:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); color: var(--primary); }
+
+    /* ── Page content ── */
+    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem max(1rem, calc((100% - 560px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
+    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
+    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
+    .hero__icon .material-icons { font-size: 30px; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+
+    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .card.hidden { display: none; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; gap: 0.5rem; }
+    .section-title h2 { margin: 0; font-family: 'Fraunces', serif; font-size: 1.02rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
+    .section-hint { margin: -0.5rem 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── Segmented tabs — one reusable component, used at three levels:
+       top-level file-type tabs, and nested method/mode toggles (smaller). ── */
+    .seg { display: flex; gap: 0.4rem; background: var(--bg2); border-radius: 999px; padding: 0.3rem; margin-bottom: 1rem; }
+    .seg--sm { padding: 0.2rem; margin-bottom: 0; }
+    .seg-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: none; background: transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; border-radius: 999px; padding: 0.55rem 0.6rem; cursor: pointer; transition: background var(--t), color var(--t); }
+    .seg--sm .seg-btn { padding: 0.5rem 0.5rem; font-size: 0.8rem; }
+    .seg-btn .material-icons { font-size: 19px; }
+    .seg-btn:hover:not(:disabled) { color: var(--text); }
+    .seg-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .seg-btn[aria-pressed="true"] { background: var(--md-surface-container-low); color: var(--primary); box-shadow: var(--el1); }
+    :root[data-theme="dark"] .seg-btn[aria-pressed="true"] { background: var(--md-surface-container-high); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg-btn[aria-pressed="true"] { background: var(--md-surface-container-high); } }
+    .seg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 16px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
+    .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+    .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
+    .dropzone .material-icons { font-size: 32px; color: var(--primary); }
+    .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
+    .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+    .file-chip { display: flex; align-items: center; gap: 0.7rem; background: var(--bg2); border-radius: 14px; padding: 0.7rem 0.8rem; margin-top: 0.9rem; }
+    .file-chip.hidden { display: none; }
+    .file-chip .material-icons { color: var(--primary); flex-shrink: 0; }
+    .file-chip__body { flex: 1; min-width: 0; }
+    .file-chip__name { font-size: 0.86rem; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-chip__meta { font-size: 0.74rem; color: var(--text-faint); }
+    .file-chip__remove { border: none; background: none; color: var(--text-muted); cursor: pointer; width: 32px; height: 32px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .file-chip__remove:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+
+    .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 0 0 0.5rem; }
+    .select-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; margin-bottom: 1rem; }
+    .select-row select { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--text); padding: 0.65rem 0.3rem 0.65rem 0; cursor: pointer; }
+
+    /* ── Sliders ── */
+    .slider-field { margin-top: 1rem; }
+    .slider-field__head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; margin-bottom: 0.35rem; }
+    .slider-field__label { font-size: 0.82rem; font-weight: 500; color: var(--text); }
+    .slider-field__value { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+    .slider-field__value input[type="number"] { width: 4.4rem; text-align: right; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; padding: 0.32rem 0.45rem; }
+    .slider-field__unit { font-size: 0.8rem; color: var(--text-faint); }
+    input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; background: var(--bg2); outline: none; margin: 0.4rem 0 0.1rem; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); cursor: pointer; box-shadow: var(--el1); border: none; }
+    input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--primary); cursor: pointer; border: none; box-shadow: var(--el1); }
+    input[type="range"]::-moz-range-track { background: var(--bg2); height: 6px; border-radius: 999px; }
+    input[type="range"]:disabled { opacity: 0.5; }
+    .slider-hint { margin: 0.3rem 0 0; font-size: 0.72rem; color: var(--text-faint); }
+
+    .size-input-row { display: flex; align-items: center; gap: 0.3rem; background: var(--bg2); border-radius: 12px; padding: 0.2rem 0.2rem 0.2rem 0.9rem; margin-top: 1rem; }
+    .size-input-row input[type="number"] { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.05rem; color: var(--primary-dark); padding: 0.6rem 0.2rem; }
+    .size-input-row select { border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--primary); padding: 0.6rem 0.7rem 0.6rem 0.3rem; cursor: pointer; }
+
+    .subpanel { margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+    .subpanel:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+    .subpanel.hidden { display: none; }
+
+    .action-row { margin-top: 1.1rem; }
+    .status-line { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 0.9rem; min-height: 1.2em; }
+    .status-line.hidden { display: none; }
+    .progress-track { width: 100%; height: 8px; border-radius: 999px; background: var(--bg2); overflow: hidden; margin-top: 0.8rem; }
+    .progress-track.hidden { display: none; }
+    .progress-fill { height: 100%; width: 0%; background: var(--primary); border-radius: 999px; transition: width 0.25s ease; }
+
+    .result-card { text-align: center; }
+    .result-card.hidden { display: none; }
+    .result-card__icon { width: 52px; height: 52px; border-radius: 999px; background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.7rem; }
+    .result-card__icon .material-icons { font-size: 28px; }
+    .result-card__title { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 0.9rem; }
+    .size-compare { display: flex; align-items: center; justify-content: center; gap: 0.8rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+    .size-compare__box { text-align: center; min-width: 4.5rem; }
+    .size-compare__label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); margin-bottom: 0.15rem; }
+    .size-compare__value { font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 600; color: var(--text); }
+    .size-compare__value--new { color: var(--primary-dark); }
+    .size-compare__arrow { color: var(--text-faint); }
+    .size-compare__arrow .material-icons { font-size: 20px; }
+    .savings-chip { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--good-bg); color: var(--good); font-size: 0.78rem; font-weight: 600; padding: 0.28rem 0.75rem; border-radius: 999px; margin-bottom: 1rem; }
+    .result-card__sub { font-size: 0.8rem; color: var(--text-muted); margin: 0 0 1.1rem; }
+    .result-card__actions { display: flex; flex-direction: column; gap: 0.55rem; }
+
+    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
+    .error-banner.hidden { display: none; }
+    .error-banner .material-icons { flex-shrink: 0; }
+    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
+    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
+    .error-banner__details { margin-top: 0.5rem; font-size: 0.72rem; opacity: 0.85; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, monospace; max-height: 8em; overflow-y: auto; }
+
+    .info-banner { display: flex; gap: 0.7rem; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
+    .info-banner.hidden { display: none; }
+    .info-banner .material-icons { flex-shrink: 0; }
+    .info-banner p { margin: 0; font-size: 0.82rem; line-height: 1.45; }
+
+    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
+    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
+    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
+    .note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <div class="top-bar__brand">
+      <span class="top-bar__name">🍦 Bingqilin</span>
+    </div>
+    <div class="top-bar__actions">
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="hero">
+      <div class="hero__icon"><span class="material-icons">compress</span></div>
+      <h1 class="hero__title">Compress</h1>
+      <p class="hero__sub">Shrink images, audio, and video entirely on your device. A real lossless mode where one exists, plus a slider or exact-size target when you need a specific file size.</p>
+    </div>
+
+    <div class="seg" role="tablist" aria-label="File type">
+      <button class="seg-btn" id="tabImageBtn" type="button" role="tab" aria-pressed="true">
+        <span class="material-icons">image</span><span>Image</span>
+      </button>
+      <button class="seg-btn" id="tabAudioBtn" type="button" role="tab" aria-pressed="false">
+        <span class="material-icons">music_note</span><span>Audio</span>
+      </button>
+      <button class="seg-btn" id="tabVideoBtn" type="button" role="tab" aria-pressed="false">
+        <span class="material-icons">movie</span><span>Video</span>
+      </button>
+    </div>
+
+    <!-- File picker ── shared across all three tabs, relabelled per tab. -->
+    <div class="card">
+      <label class="dropzone" id="dropzone" for="fileInput">
+        <span class="material-icons" id="dropzoneIcon">image</span>
+        <span class="dropzone__title" id="dropzoneTitle">Drop an image here, or tap to choose</span>
+        <span class="dropzone__sub">Processed locally in your browser — nothing is uploaded</span>
+        <input id="fileInput" type="file" accept="image/*" aria-label="Choose a file" />
+      </label>
+
+      <div class="file-chip hidden" id="fileChip">
+        <span class="material-icons" id="fileChipIcon">description</span>
+        <div class="file-chip__body">
+          <div class="file-chip__name" id="fileChipName"></div>
+          <div class="file-chip__meta" id="fileChipMeta"></div>
+        </div>
+        <button class="file-chip__remove" id="fileChipRemove" type="button" aria-label="Remove file">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Compression method: Lossless vs Target size / quality. Only the
+         Image tab genuinely has a lossless option — see the note card
+         inside each panel for why Audio/Video skip it entirely rather than
+         label something "lossless" that isn't. -->
+    <div class="card hidden" id="methodCard">
+      <div class="section-title"><h2><span class="material-icons">tune</span>Compression method</h2></div>
+      <div class="seg" id="methodSeg" role="tablist" aria-label="Compression method">
+        <button class="seg-btn" id="methodLosslessBtn" type="button" role="tab" aria-pressed="true">
+          <span class="material-icons">verified</span><span>Lossless</span>
+        </button>
+        <button class="seg-btn" id="methodTargetBtn" type="button" role="tab" aria-pressed="false">
+          <span class="material-icons">straighten</span><span>Target size &amp; quality</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lossless panel (image only). -->
+    <div class="card hidden" id="losslessCard">
+      <div class="section-title"><h2><span class="material-icons">verified</span>Lossless re-encode</h2></div>
+      <p class="section-hint" id="losslessHint">Decodes to the exact same pixels and re-encodes with a cleaner, metadata-free stream. Pixel-for-pixel identical to the original — savings depend entirely on how much overhead the original file had, so there's no size or quality dial here.</p>
+      <div class="info-banner hidden" id="losslessUnsupportedBanner">
+        <span class="material-icons">info</span>
+        <p id="losslessUnsupportedText"></p>
+      </div>
+    </div>
+
+    <!-- Target size / quality panel — shared shape across all 3 tabs, the
+         output-format select and copy are swapped in per tab. -->
+    <div class="card hidden" id="targetCard">
+      <div class="section-title"><h2><span class="material-icons">straighten</span>Target size &amp; quality</h2></div>
+      <p class="section-hint" id="targetHint"></p>
+
+      <label class="field-label" for="formatSelect" id="formatLabel">Output format</label>
+      <div class="select-row">
+        <select id="formatSelect" aria-label="Output format"></select>
+      </div>
+
+      <div class="seg seg--sm" id="sizeModeSeg" role="tablist" aria-label="How to choose the amount of compression">
+        <button class="seg-btn" id="sizeModeQualityBtn" type="button" role="tab" aria-pressed="true">
+          <span class="material-icons">tune</span><span>Quality slider</span>
+        </button>
+        <button class="seg-btn" id="sizeModeTargetBtn" type="button" role="tab" aria-pressed="false">
+          <span class="material-icons">data_usage</span><span>Target size</span>
+        </button>
+      </div>
+
+      <!-- Quality-slider sub-panel -->
+      <div class="subpanel" id="qualityPanel">
+        <div class="slider-field">
+          <div class="slider-field__head">
+            <span class="slider-field__label" id="qualitySliderLabel">Quality</span>
+            <span class="slider-field__value">
+              <input type="number" id="qualityNumber" min="1" max="100" step="1" value="80" aria-label="Quality percent" />
+              <span class="slider-field__unit">%</span>
+            </span>
+          </div>
+          <input type="range" id="qualitySlider" min="1" max="100" step="1" value="80" aria-label="Quality" />
+          <p class="slider-hint" id="qualitySliderHint">Higher = larger file, closer to the original.</p>
+        </div>
+      </div>
+
+      <!-- Target-size sub-panel -->
+      <div class="subpanel hidden" id="targetSizePanel">
+        <div class="seg seg--sm" id="targetKindSeg" role="tablist" aria-label="Target size input">
+          <button class="seg-btn" id="targetKindPercentBtn" type="button" role="tab" aria-pressed="true">
+            <span class="material-icons">percent</span><span>% of original</span>
+          </button>
+          <button class="seg-btn" id="targetKindExactBtn" type="button" role="tab" aria-pressed="false">
+            <span class="material-icons">save</span><span>Specific size</span>
+          </button>
+        </div>
+
+        <div id="targetPercentRow">
+          <div class="slider-field">
+            <div class="slider-field__head">
+              <span class="slider-field__label">Target size</span>
+              <span class="slider-field__value">
+                <input type="number" id="targetPercentNumber" min="1" max="100" step="1" value="50" aria-label="Target size, percent of original" />
+                <span class="slider-field__unit">%</span>
+              </span>
+            </div>
+            <input type="range" id="targetPercentSlider" min="1" max="100" step="1" value="50" aria-label="Target size percent" />
+            <p class="slider-hint" id="targetPercentHint"></p>
+          </div>
+        </div>
+
+        <div id="targetExactRow" class="hidden">
+          <label class="field-label" for="targetExactNumber">Exact target size</label>
+          <div class="size-input-row">
+            <input type="number" id="targetExactNumber" min="1" step="1" value="500" aria-label="Target size" />
+            <select id="targetExactUnit" aria-label="Target size unit">
+              <option value="KB">KB</option>
+              <option value="MB" selected>MB</option>
+            </select>
+          </div>
+          <p class="slider-hint" id="targetExactHint"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action ── -->
+    <div class="card">
+      <button class="btn btn--primary btn--block" id="actionBtn" type="button" disabled>
+        <span class="material-icons" id="actionBtnIcon">compress</span>
+        <span id="actionBtnLabel">Choose a file first</span>
+      </button>
+      <p class="status-line hidden" id="statusLine" role="status" aria-live="polite"></p>
+      <div class="progress-track hidden" id="progressTrack"><div class="progress-fill" id="progressFill"></div></div>
+
+      <div class="error-banner hidden" id="errorBanner" role="alert">
+        <span class="material-icons">error_outline</span>
+        <div>
+          <p class="error-banner__title">Couldn't compress this file</p>
+          <p class="error-banner__body" id="errorBody"></p>
+          <p class="error-banner__details hidden" id="errorDetails"></p>
+        </div>
+      </div>
+
+      <div class="info-banner hidden" id="infoBanner" role="status">
+        <span class="material-icons">info</span>
+        <p id="infoBody"></p>
+      </div>
+    </div>
+
+    <div class="card result-card hidden" id="resultCard">
+      <div class="result-card__icon"><span class="material-icons">task_alt</span></div>
+      <h2 class="result-card__title" id="resultTitle">Done</h2>
+      <div class="size-compare">
+        <div class="size-compare__box">
+          <div class="size-compare__label">Original</div>
+          <div class="size-compare__value" id="resultOriginalSize"></div>
+        </div>
+        <div class="size-compare__arrow"><span class="material-icons">arrow_forward</span></div>
+        <div class="size-compare__box">
+          <div class="size-compare__label">New</div>
+          <div class="size-compare__value size-compare__value--new" id="resultNewSize"></div>
+        </div>
+      </div>
+      <div><span class="savings-chip" id="resultSavingsChip"></span></div>
+      <p class="result-card__sub" id="resultSub"></p>
+      <div class="result-card__actions">
+        <a class="btn btn--primary btn--block" id="downloadBtn" href="#" download>
+          <span class="material-icons">download</span><span>Download</span>
+        </a>
+        <button class="btn btn--ghost btn--block" id="resetBtn" type="button">Compress another file</button>
+      </div>
+    </div>
+
+    <div class="card note-card" id="privacyNote">
+      <span class="material-icons">shield</span>
+      <p id="privacyNoteText">Everything runs on your device — files are never uploaded anywhere. The Image tab needs no extra downloads; Audio uses a small (~0.8&nbsp;MB) vendored MP3/Ogg&nbsp;Vorbis encoder; Video uses a vendored build of <a href="https://github.com/ffmpegwasm/ffmpeg.wasm" target="_blank" rel="noopener">FFmpeg compiled to WebAssembly</a> (~31&nbsp;MB, cached by your browser after the first use).</p>
+    </div>
+  </main>
+
+  <div class="bottom-dock">
+    <nav class="bottom-nav" aria-label="Primary">
+      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+        <span class="bottom-nav__label">Media</span>
+      </a>
+      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Live</span>
+      </a>
+      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+        <span class="bottom-nav__label">Tools</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<script src="/shared/chrome.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  BQChrome.initRipple(".icon-btn, .btn, .dropzone, .file-chip__remove, .bottom-nav__item, .seg-btn");
+  BQChrome.initTheme();
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Shared helpers
+     ═══════════════════════════════════════════════════════════════════ */
+  function formatBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(n < 10 * 1024 ? 1 : 0) + " KB";
+    if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(n < 10 * 1024 * 1024 ? 2 : 1) + " MB";
+    return (n / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+  }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function extOf(name) { const m = /\.([a-z0-9]+)$/i.exec(name || ""); return m ? m[1].toLowerCase() : ""; }
+  function baseName(name) { return (name || "file").replace(/\.[a-z0-9]+$/i, ""); }
+  function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Mode config: Image / Audio / Video. Each entry describes the shared
+     chrome (dropzone copy, accept filter, whether a lossless mode exists)
+     plus a `process(file, opts, ctx)` function that does the real work and
+     returns { blob, name }. `ctx` carries progress/status callbacks and an
+     AbortSignal-like `cancelled` flag isn't needed since we don't support
+     cancellation — the button is just disabled while busy.
+     ═══════════════════════════════════════════════════════════════════ */
+  const MODES = {}; // filled in by the per-type sections below
+
+  /* ═══════════════════════════════════════════════════════════════════
+     IMAGE
+     ═══════════════════════════════════════════════════════════════════ */
+  function canvasToBlob(canvas, type, quality) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Encoding failed"))), type, quality);
+    });
+  }
+
+  async function loadBitmap(file) {
+    if (window.createImageBitmap) {
+      try { return await createImageBitmap(file); } catch (e) { /* fall through to <img> */ }
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("This doesn't look like a valid image file."));
+        img.src = url;
+      });
+      return img;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // Binary-searches the canvas.toBlob `quality` parameter to land as close
+  // as possible to targetBytes without exceeding it (falls back to closest
+  // overall if every quality tried is too big — very low quality is still
+  // "too big" only for tiny/high-entropy targets).
+  async function searchQualityForTarget(canvas, mime, targetBytes) {
+    let lo = 0.02, hi = 1.0, best = null;
+    for (let i = 0; i < 8; i++) {
+      const mid = (lo + hi) / 2;
+      const blob = await canvasToBlob(canvas, mime, mid);
+      if (!best || Math.abs(blob.size - targetBytes) < Math.abs(best.blob.size - targetBytes)) best = { blob, quality: mid };
+      if (blob.size > targetBytes) hi = mid; else lo = mid;
+    }
+    return best;
+  }
+
+  // Quality alone often can't reach very aggressive targets on detailed
+  // images — once quality bottoms out, downscale and retry. Mirrors what
+  // most "compress to X KB" tools do; the result note says so explicitly.
+  async function encodeImageToTarget(bitmap, mime, targetBytes, onProgress) {
+    const W = bitmap.width, H = bitmap.height;
+    let scale = 1, best = null, scaledDown = false;
+    for (let attempt = 0; attempt < 7; attempt++) {
+      const w = Math.max(16, Math.round(W * scale)), h = Math.max(16, Math.round(H * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+      if (onProgress) onProgress(attempt / 7);
+      const result = await searchQualityForTarget(canvas, mime, targetBytes);
+      if (!best || Math.abs(result.blob.size - targetBytes) < Math.abs(best.blob.size - targetBytes)) {
+        best = { blob: result.blob, quality: result.quality, width: w, height: h };
+      }
+      if (result.blob.size <= targetBytes * 1.05) break;
+      scale *= 0.72;
+      scaledDown = true;
+      if (Math.round(W * scale) < 64) break;
+    }
+    best.scaledDown = scaledDown && (best.width < W);
+    return best;
+  }
+
+  /* ── Lossless PNG: canvas round-trip is genuinely lossless for the pixel
+     data (no quantization happens for PNG) and, as a side effect, drops
+     ancillary metadata chunks — the browser's built-in encoder is usually
+     at least as good as what produced the source file. ── */
+  async function losslessPng(file) {
+    const bitmap = await loadBitmap(file);
+    const w = bitmap.width, h = bitmap.height;
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d").drawImage(bitmap, 0, 0);
+    const blob = await canvasToBlob(canvas, "image/png");
+    return { blob, name: baseName(file.name) + "-lossless.png" };
+  }
+
+  /* ── Lossless JPEG: byte-level metadata surgery — never touches the
+     entropy-coded scan data, so the decoded pixels are bit-for-bit
+     identical. EXIF orientation is the one thing that would visibly change
+     if handled carelessly: if the file carries a non-default orientation
+     tag we leave EXIF alone entirely (still strip Photoshop/comment junk)
+     rather than risk the image displaying rotated after the "lossless"
+     pass. ── */
+  function readJpegExifOrientation(bytes, segStart, segLen) {
+    try {
+      const payloadStart = segStart + 4; // past FF E1 + 2-byte length
+      const sig = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00]; // "Exif\0\0"
+      for (let i = 0; i < 6; i++) if (bytes[payloadStart + i] !== sig[i]) return null;
+      const tiffStart = payloadStart + 6;
+      const byteOrder = bytes[tiffStart];
+      if (byteOrder !== 0x49 && byteOrder !== 0x4D) return null; // "II" or "MM"
+      const little = byteOrder === 0x49;
+      const dv = new DataView(bytes.buffer, bytes.byteOffset + tiffStart, segStart + 2 + segLen - tiffStart);
+      const ifd0Offset = dv.getUint32(4, little);
+      const numEntries = dv.getUint16(ifd0Offset, little);
+      for (let e = 0; e < numEntries; e++) {
+        const entryOffset = ifd0Offset + 2 + e * 12;
+        if (entryOffset + 12 > dv.byteLength) break;
+        const tag = dv.getUint16(entryOffset, little);
+        if (tag === 0x0112) return dv.getUint16(entryOffset + 8, little);
+      }
+      return null;
+    } catch (e) { return null; }
+  }
+
+  function stripJpegMetadata(bytes) {
+    if (bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) {
+      throw new Error("This doesn't look like a valid JPEG file.");
+    }
+    const KEEP_MARKERS = new Set([
+      0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF, // SOFn
+      0xC4, // DHT
+      0xDB, // DQT
+      0xDD, // DRI
+      0xE0, // APP0 (JFIF)
+    ]);
+    const ICC_SIG = "ICC_PROFILE\0";
+    function isIccApp2(bytes, payloadStart) {
+      for (let i = 0; i < ICC_SIG.length; i++) if (bytes[payloadStart + i] !== ICC_SIG.charCodeAt(i)) return false;
+      return true;
+    }
+
+    const out = [0xFF, 0xD8];
+    let i = 2, removed = 0, keptExifForOrientation = false;
+    while (i < bytes.length - 1) {
+      if (bytes[i] !== 0xFF) { out.push(bytes[i]); i++; continue; }
+      const marker = bytes[i + 1];
+      if (marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) { out.push(0xFF, marker); i += 2; continue; }
+      if (marker === 0xD9) { out.push(0xFF, 0xD9); i += 2; break; }
+      if (i + 3 >= bytes.length) break;
+      const len = (bytes[i + 2] << 8) | bytes[i + 3];
+      const segEnd = i + 2 + len;
+      if (marker === 0xDA) {
+        // Start of scan: copy the header + every entropy-coded byte through
+        // EOI completely untouched (0xFF00 stuffing and RST markers inside
+        // the scan are part of the compressed data, not metadata).
+        let j = segEnd;
+        while (j < bytes.length - 1) {
+          if (bytes[j] === 0xFF) {
+            const nx = bytes[j + 1];
+            if (nx === 0x00 || (nx >= 0xD0 && nx <= 0xD7)) { j += 2; continue; }
+            if (nx === 0xD9) break;
+          }
+          j++;
+        }
+        for (let k = i; k < j; k++) out.push(bytes[k]);
+        out.push(0xFF, 0xD9);
+        i = bytes.length;
+        break;
+      }
+      let keep = KEEP_MARKERS.has(marker);
+      if (marker === 0xE2 && isIccApp2(bytes, i + 4)) keep = true; // ICC colour profile
+      if (marker === 0xE1) { // EXIF — keep only if it encodes a non-default orientation
+        const orientation = readJpegExifOrientation(bytes, i, len);
+        if (orientation != null && orientation !== 1) { keep = true; keptExifForOrientation = true; }
+      }
+      if (keep) { for (let k = i; k < segEnd; k++) out.push(bytes[k]); }
+      else { removed += segEnd - i; }
+      i = segEnd;
+    }
+    return { bytes: new Uint8Array(out), removed, keptExifForOrientation };
+  }
+
+  async function losslessJpeg(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const { bytes: out, removed, keptExifForOrientation } = stripJpegMetadata(bytes);
+    const blob = new Blob([out], { type: "image/jpeg" });
+    return {
+      blob,
+      name: baseName(file.name) + "-lossless.jpg",
+      note: removed > 0
+        ? "Stripped " + formatBytes(removed) + " of metadata" + (keptExifForOrientation ? " (kept EXIF orientation)" : "") + " — every pixel byte is untouched."
+        : "No metadata to strip — this file's pixel data is already as compact as it gets losslessly.",
+    };
+  }
+
+  const IMAGE_LOSSLESS_TYPES = { "image/png": losslessPng, "image/jpeg": losslessJpeg };
+
+  MODES.image = {
+    label: "image", icon: "image", accept: "image/*",
+    dropTitle: "Drop an image here, or tap to choose",
+    hasLossless: true,
+    formats: [
+      { value: "image/jpeg", label: "JPEG — smallest, no transparency", ext: "jpg" },
+      { value: "image/webp", label: "WebP — smaller, supports transparency", ext: "webp" },
+    ], // PNG is deliberately not offered here: canvas's PNG encoder has no
+       // quality knob (it's always lossless), so a quality slider or a
+       // quality-based target-size search would silently do nothing to it.
+       // PNG re-compression lives entirely in the Lossless mode above.
+    targetHint: "Re-encodes as JPEG or WebP. Recompressing a photo is inherently lossy once you dial in a quality or a target size below the original — this is the \"choose exactly how much to shrink it\" mode.",
+    async losslessInfo(file) {
+      const fn = IMAGE_LOSSLESS_TYPES[file.type] || IMAGE_LOSSLESS_TYPES[({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" })[extOf(file.name)]];
+      if (fn) return { supported: true };
+      return { supported: false, message: "Lossless mode only applies to PNG and JPEG. This file is " + (file.type || ("a ." + extOf(file.name) + " file")) + " — switch to \"Target size & quality\" to compress it (re-encoding as JPEG or WebP)." };
+    },
+    async runLossless(file, ctx) {
+      const fn = IMAGE_LOSSLESS_TYPES[file.type] || IMAGE_LOSSLESS_TYPES[({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" })[extOf(file.name)]];
+      if (!fn) throw new Error("Lossless mode isn't available for this format.");
+      ctx.setStatus("Re-encoding losslessly…");
+      return fn(file);
+    },
+    async runTarget(file, opts, ctx) {
+      ctx.setStatus("Decoding image…");
+      const bitmap = await loadBitmap(file);
+      const fmt = MODES.image.formats.find((f) => f.value === opts.format) || MODES.image.formats[0];
+      if (opts.sizeMode === "quality") {
+        ctx.setStatus("Encoding…");
+        const canvas = document.createElement("canvas");
+        canvas.width = bitmap.width; canvas.height = bitmap.height;
+        canvas.getContext("2d").drawImage(bitmap, 0, 0);
+        const blob = await canvasToBlob(canvas, fmt.value, opts.quality / 100);
+        return { blob, name: baseName(file.name) + "-q" + opts.quality + "." + fmt.ext };
+      }
+      ctx.setStatus("Searching for the closest match to your target size…");
+      const result = await encodeImageToTarget(bitmap, fmt.value, opts.targetBytes, (p) => ctx.setProgress(p));
+      const note = result.scaledDown
+        ? "Quality alone couldn't hit this target on such a detailed image, so the dimensions were also reduced to " + result.width + "×" + result.height + "."
+        : "Dimensions kept at " + result.width + "×" + result.height + ".";
+      return { blob: result.blob, name: baseName(file.name) + "-" + formatBytes(opts.targetBytes).replace(/\s+/g, "") + "." + fmt.ext, note };
+    },
+  };
+
+  /* ═══════════════════════════════════════════════════════════════════
+     AUDIO — MP3 / Ogg Vorbis via vendored wasm-media-encoders.
+     ═══════════════════════════════════════════════════════════════════ */
+  // wasm-media-encoders only ships a bundler-friendly ESM build (bare
+  // "@swc/helpers/..." specifiers that a plain `import()` can't resolve)
+  // and a UMD build — so this loads the UMD build as a classic script and
+  // hands it our own vendored .wasm paths (its ESM named exports default
+  // to fetching from unpkg.com, which we don't want).
+  let audioEncoderLibPromise = null;
+  function loadAudioEncoderLib() {
+    if (!audioEncoderLibPromise) {
+      audioEncoderLibPromise = new Promise((resolve, reject) => {
+        if (window.WasmMediaEncoder) { resolve(window.WasmMediaEncoder); return; }
+        const s = document.createElement("script");
+        s.src = "/tools/compress/vendor/audio/WasmMediaEncoder.min.js";
+        s.onload = () => resolve(window.WasmMediaEncoder);
+        s.onerror = () => reject(new Error("Failed to load the audio encoder engine."));
+        document.head.appendChild(s);
+      });
+    }
+    return audioEncoderLibPromise;
+  }
+
+  const MP3_CBR_STEPS = [8, 16, 24, 32, 40, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320];
+  const MP3_SAMPLE_RATES = [8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000];
+  function nearestFrom(list, value) {
+    return list.reduce((best, v) => (Math.abs(v - value) < Math.abs(best - value) ? v : best), list[0]);
+  }
+  // Approximate Vorbis vbrQuality -> kbps, from the encoder's own docs
+  // (hydrogenaudio's recommended-settings table). Only used to pick a
+  // starting quality for target-size mode — Vorbis has no direct bitrate
+  // knob, so this is inherently approximate (the UI says so).
+  const VORBIS_QUALITY_KBPS = [[-1, 45], [0, 64], [1, 80], [2, 96], [3, 112], [4, 128], [5, 160], [6, 192], [7, 224], [8, 256], [9, 320], [10, 500]];
+  function vorbisQualityForKbps(kbps) {
+    let best = VORBIS_QUALITY_KBPS[0];
+    for (const pair of VORBIS_QUALITY_KBPS) if (Math.abs(pair[1] - kbps) < Math.abs(best[1] - kbps)) best = pair;
+    return best[0];
+  }
+
+  async function decodeAudio(file) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC();
+    try {
+      const buf = await file.arrayBuffer();
+      return await ctx.decodeAudioData(buf);
+    } finally {
+      ctx.close();
+    }
+  }
+
+  async function resampleIfNeeded(buffer, targetRate) {
+    if (buffer.sampleRate === targetRate) return buffer;
+    const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const offline = new OfflineCtx(buffer.numberOfChannels, Math.ceil(buffer.duration * targetRate), targetRate);
+    const src = offline.createBufferSource();
+    src.buffer = buffer;
+    src.connect(offline.destination);
+    src.start();
+    return offline.startRendering();
+  }
+
+  async function encodeAudio(file, mimeType, encoderConfig, ctx) {
+    ctx.setStatus("Decoding audio…");
+    let buffer = await decodeAudio(file);
+    const channels = Math.min(2, buffer.numberOfChannels);
+
+    ctx.setStatus("Loading encoder (first time only)…");
+    const WasmMediaEncoder = await loadAudioEncoderLib();
+    const wasmPath = "/tools/compress/vendor/audio/" + (mimeType === "audio/mpeg" ? "mp3.wasm" : "ogg.wasm");
+    const encoder = await WasmMediaEncoder.createEncoder(mimeType, wasmPath);
+
+    let sampleRate = buffer.sampleRate;
+    if (mimeType === "audio/mpeg" && MP3_SAMPLE_RATES.indexOf(sampleRate) === -1) {
+      sampleRate = nearestFrom(MP3_SAMPLE_RATES, sampleRate);
+      buffer = await resampleIfNeeded(buffer, sampleRate);
+    }
+
+    encoder.configure(Object.assign({ channels, sampleRate }, encoderConfig));
+
+    ctx.setStatus("Encoding…");
+    const chunkSize = 4096;
+    const total = buffer.length;
+    const chunks = [];
+    const ch0 = buffer.getChannelData(0);
+    const ch1 = channels > 1 ? buffer.getChannelData(1) : ch0;
+    for (let pos = 0; pos < total; pos += chunkSize) {
+      const end = Math.min(pos + chunkSize, total);
+      const out = encoder.encode(channels === 1 ? [ch0.subarray(pos, end)] : [ch0.subarray(pos, end), ch1.subarray(pos, end)]);
+      if (out.length) chunks.push(out.slice());
+      if ((pos / chunkSize) % 40 === 0) { ctx.setProgress(pos / total); await sleep(0); }
+    }
+    const tail = encoder.finalize();
+    if (tail.length) chunks.push(tail.slice());
+
+    let totalLen = 0; for (const c of chunks) totalLen += c.length;
+    const outBytes = new Uint8Array(totalLen);
+    let offset = 0; for (const c of chunks) { outBytes.set(c, offset); offset += c.length; }
+    return new Blob([outBytes], { type: mimeType });
+  }
+
+  MODES.audio = {
+    label: "audio", icon: "music_note", accept: "audio/*",
+    dropTitle: "Drop an audio file here, or tap to choose",
+    hasLossless: false,
+    formats: [
+      { value: "audio/mpeg", label: "MP3 — universal compatibility, precise sizing", ext: "mp3" },
+      { value: "audio/ogg", label: "Ogg Vorbis — better quality per KB, approximate sizing", ext: "ogg" },
+    ],
+    targetHint: "There's no lossless option here: an MP3/AAC/etc. file is already lossy, and re-encoding it — to anything, at any bitrate — just adds a second, unnecessary generation of loss on top. This mode re-encodes to MP3 or Ogg Vorbis at a quality or bitrate you choose instead.",
+    async runTarget(file, opts, ctx) {
+      const fmt = MODES.audio.formats.find((f) => f.value === opts.format) || MODES.audio.formats[0];
+      let config;
+      if (opts.sizeMode === "quality") {
+        config = fmt.value === "audio/mpeg"
+          ? { vbrQuality: clamp(9.999 - (opts.quality / 100) * 9.999, 0, 9.999) }
+          : { vbrQuality: clamp(-1 + (opts.quality / 100) * 11, -1, 10) };
+      } else {
+        // decodeAudioData is needed just to get duration up front too, but
+        // we already have it cheaply via an <audio> element to avoid a
+        // double-decode of large files.
+        const durationSec = await probeAudioDuration(file);
+        const kbps = (opts.targetBytes * 8) / 1000 / Math.max(0.1, durationSec);
+        config = fmt.value === "audio/mpeg"
+          ? { bitrate: nearestFrom(MP3_CBR_STEPS, kbps) }
+          : { vbrQuality: vorbisQualityForKbps(kbps) };
+      }
+      const blob = await encodeAudio(file, fmt.value, config, ctx);
+      const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
+      return { blob, name: baseName(file.name) + "-" + label + "." + fmt.ext };
+    },
+  };
+
+  function probeAudioDuration(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const el = document.createElement("audio");
+      el.preload = "metadata";
+      el.onloadedmetadata = () => { const d = el.duration; URL.revokeObjectURL(url); resolve(isFinite(d) && d > 0 ? d : 1); };
+      el.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read this audio file.")); };
+      el.src = url;
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     VIDEO — FFmpeg (WebAssembly), vendored, single-threaded core.
+     ═══════════════════════════════════════════════════════════════════ */
+  let ffmpegInstance = null;
+  let ffmpegLoadPromise = null;
+  let ffmpegLog = [];
+  async function getFfmpeg(onProgress) {
+    if (ffmpegInstance) return ffmpegInstance;
+    if (!ffmpegLoadPromise) {
+      ffmpegLoadPromise = (async () => {
+        const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
+          import("/tools/compress/vendor/ffmpeg/esm/index.js"),
+          import("/tools/compress/vendor/ffmpeg/util/index.js"),
+        ]);
+        const ffmpeg = new FFmpeg();
+        ffmpeg.on("log", ({ message }) => { ffmpegLog.push(message); if (ffmpegLog.length > 400) ffmpegLog.shift(); });
+        const base = "/tools/compress/vendor/ffmpeg/core/";
+        const coreURL = await toBlobURL(base + "ffmpeg-core.js", "text/javascript", true, (p) => onProgress && onProgress(p.total ? p.received / p.total : 0));
+        const wasmURL = await toBlobURL(base + "ffmpeg-core.wasm", "application/wasm", true, (p) => onProgress && onProgress(p.total ? p.received / p.total : 0));
+        await ffmpeg.load({ coreURL, wasmURL });
+        ffmpegInstance = ffmpeg;
+        return ffmpeg;
+      })();
+    }
+    return ffmpegLoadPromise;
+  }
+
+  async function ffprobeField(ffmpeg, inputName, args, outName) {
+    ffmpegLog = [];
+    await ffmpeg.ffprobe(["-v", "error", ...args, inputName, "-o", outName]);
+    try {
+      const data = await ffmpeg.readFile(outName, "utf8");
+      return typeof data === "string" ? data.trim() : new TextDecoder().decode(data).trim();
+    } catch (e) { return ""; }
+  }
+
+  MODES.video = {
+    label: "video", icon: "movie", accept: "video/*",
+    dropTitle: "Drop a video here, or tap to choose",
+    hasLossless: false,
+    formats: [
+      { value: "mp4", label: "MP4 (H.264) — universal compatibility", ext: "mp4", vcodec: "libx264", acodec: "aac" },
+    ],
+    targetHint: "There's no lossless option here: a lossless re-encode of already-delivered video (H.264, VP9, etc.) is either a no-op remux with barely any size change, or balloons the file far past the original — neither is what \"compress\" means for video. This mode re-encodes with FFmpeg to a quality (CRF) or a target file size you choose. Output is H.264/MP4 — the vendored FFmpeg build's VP9 encoder is unstable in this single-threaded, in-browser configuration, so it isn't offered as an option here.",
+    async runTarget(file, opts, ctx) {
+      ctx.setStatus("Loading video engine (~31 MB, first time only — cached after)…");
+      const ffmpeg = await getFfmpeg((p) => ctx.setProgress(p * 0.5));
+      const fmt = MODES.video.formats.find((f) => f.value === opts.format) || MODES.video.formats[0];
+      const inExt = extOf(file.name) || "mp4";
+      const inputName = "input." + inExt;
+      const outputName = "output." + fmt.ext;
+
+      ctx.setStatus("Reading video info…");
+      const { fetchFile } = await import("/tools/compress/vendor/ffmpeg/util/index.js");
+      await ffmpeg.writeFile(inputName, await fetchFile(file));
+      const durationStr = await ffprobeField(ffmpeg, inputName, ["-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1"], "duration.txt");
+      const audioStr = await ffprobeField(ffmpeg, inputName, ["-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0"], "audio.txt");
+      const durationSec = Math.max(0.1, parseFloat(durationStr) || 0);
+      const hasAudio = audioStr.trim().length > 0;
+
+      // -an and an explicit audio -map are mutually exclusive in FFmpeg's
+      // arg parser, so the audio map is only added when there's actually
+      // an audio stream to keep.
+      const args = ["-i", inputName, "-map", "0:v:0"];
+      if (hasAudio) args.push("-map", "0:a:0");
+      if (opts.sizeMode === "quality") {
+        const crf = Math.round(16 + (100 - opts.quality) * 0.24);
+        args.push("-c:v", fmt.vcodec, "-crf", String(crf), "-preset", "veryfast");
+      } else {
+        const audioKbps = hasAudio ? 128 : 0;
+        const totalKbps = (opts.targetBytes * 8) / 1000 / durationSec;
+        const videoKbps = Math.max(80, Math.round(totalKbps - audioKbps));
+        args.push("-c:v", fmt.vcodec, "-b:v", videoKbps + "k", "-maxrate", Math.round(videoKbps * 1.3) + "k", "-bufsize", Math.round(videoKbps * 2) + "k", "-preset", "veryfast");
+      }
+      if (hasAudio) args.push("-c:a", fmt.acodec, "-b:a", "128k"); else args.push("-an");
+      args.push("-movflags", "+faststart", outputName);
+
+      ctx.setStatus("Encoding video — this can take a while for longer clips…");
+      let offListener = null;
+      await new Promise((resolve, reject) => {
+        offListener = ({ progress }) => ctx.setProgress(0.5 + clamp(progress, 0, 1) * 0.5);
+        ffmpeg.on("progress", offListener);
+        ffmpeg.exec(args).then(resolve).catch(reject);
+      }).finally(() => { if (offListener) ffmpeg.off("progress", offListener); });
+
+      let outData;
+      try {
+        outData = await ffmpeg.readFile(outputName);
+      } catch (e) {
+        const detail = ffmpegLog.slice(-25).join("\n");
+        throw Object.assign(new Error("FFmpeg couldn't produce an output file — the source video may use a codec this build doesn't support."), { details: detail });
+      }
+      for (const name of [inputName, outputName, "duration.txt", "audio.txt"]) { try { await ffmpeg.deleteFile(name); } catch (e) {} }
+
+      const blob = new Blob([outData], { type: "video/mp4" });
+      const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
+      return { blob, name: baseName(file.name) + "-" + label + "." + fmt.ext };
+    },
+  };
+
+  /* ═══════════════════════════════════════════════════════════════════
+     UI wiring
+     ═══════════════════════════════════════════════════════════════════ */
+  const tabImageBtn = $("tabImageBtn"), tabAudioBtn = $("tabAudioBtn"), tabVideoBtn = $("tabVideoBtn");
+  const dropzone = $("dropzone"), dropzoneIcon = $("dropzoneIcon"), dropzoneTitle = $("dropzoneTitle"), fileInput = $("fileInput");
+  const fileChip = $("fileChip"), fileChipIcon = $("fileChipIcon"), fileChipName = $("fileChipName"), fileChipMeta = $("fileChipMeta"), fileChipRemove = $("fileChipRemove");
+  const methodCard = $("methodCard"), methodLosslessBtn = $("methodLosslessBtn"), methodTargetBtn = $("methodTargetBtn");
+  const losslessCard = $("losslessCard"), losslessHint = $("losslessHint");
+  const losslessUnsupportedBanner = $("losslessUnsupportedBanner"), losslessUnsupportedText = $("losslessUnsupportedText");
+  const targetCard = $("targetCard"), targetHint = $("targetHint");
+  const formatSelect = $("formatSelect"), formatLabel = $("formatLabel");
+  const sizeModeQualityBtn = $("sizeModeQualityBtn"), sizeModeTargetBtn = $("sizeModeTargetBtn");
+  const qualityPanel = $("qualityPanel"), targetSizePanel = $("targetSizePanel");
+  const qualitySlider = $("qualitySlider"), qualityNumber = $("qualityNumber"), qualitySliderLabel = $("qualitySliderLabel"), qualitySliderHint = $("qualitySliderHint");
+  const targetKindPercentBtn = $("targetKindPercentBtn"), targetKindExactBtn = $("targetKindExactBtn");
+  const targetPercentRow = $("targetPercentRow"), targetExactRow = $("targetExactRow");
+  const targetPercentSlider = $("targetPercentSlider"), targetPercentNumber = $("targetPercentNumber"), targetPercentHint = $("targetPercentHint");
+  const targetExactNumber = $("targetExactNumber"), targetExactUnit = $("targetExactUnit"), targetExactHint = $("targetExactHint");
+  const actionBtn = $("actionBtn"), actionBtnIcon = $("actionBtnIcon"), actionBtnLabel = $("actionBtnLabel");
+  const statusLine = $("statusLine"), progressTrack = $("progressTrack"), progressFill = $("progressFill");
+  const errorBanner = $("errorBanner"), errorBody = $("errorBody"), errorDetails = $("errorDetails");
+  const infoBanner = $("infoBanner"), infoBody = $("infoBody");
+  const resultCard = $("resultCard"), resultTitle = $("resultTitle"), resultOriginalSize = $("resultOriginalSize"), resultNewSize = $("resultNewSize"), resultSavingsChip = $("resultSavingsChip"), resultSub = $("resultSub");
+  const downloadBtn = $("downloadBtn"), resetBtn = $("resetBtn");
+
+  let currentModeKey = "image";
+  let currentFile = null;
+  let method = "lossless"; // "lossless" | "target"
+  let sizeMode = "quality"; // "quality" | "target"
+  let targetKind = "percent"; // "percent" | "exact"
+  let busy = false;
+  let currentObjectUrl = null;
+
+  function currentMode() { return MODES[currentModeKey]; }
+
+  function setStatus(text) {
+    if (!text) { statusLine.classList.add("hidden"); statusLine.textContent = ""; return; }
+    statusLine.textContent = text;
+    statusLine.classList.remove("hidden");
+  }
+  function setProgress(p) {
+    if (p == null) { progressTrack.classList.add("hidden"); return; }
+    progressTrack.classList.remove("hidden");
+    progressFill.style.width = clamp(p * 100, 0, 100) + "%";
+  }
+  function hideError() { errorBanner.classList.add("hidden"); errorDetails.classList.add("hidden"); errorDetails.textContent = ""; }
+  function showError(message, details) {
+    errorBody.textContent = message;
+    if (details) { errorDetails.textContent = details; errorDetails.classList.remove("hidden"); } else { errorDetails.classList.add("hidden"); }
+    errorBanner.classList.remove("hidden");
+  }
+  function hideInfo() { infoBanner.classList.add("hidden"); infoBody.textContent = ""; }
+  function showInfo(message) { infoBody.textContent = message; infoBanner.classList.remove("hidden"); }
+  function hideResult() { resultCard.classList.add("hidden"); if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; } }
+
+  function populateFormatSelect() {
+    const mode = currentMode();
+    formatSelect.innerHTML = mode.formats.map((f) => '<option value="' + f.value + '">' + f.label.replace(/&/g, "&amp;") + "</option>").join("");
+  }
+
+  function updateActionButton() {
+    const mode = currentMode();
+    const canRun = !!currentFile && !busy && (method === "target" || (mode.hasLossless && losslessSupportedForCurrentFile()));
+    actionBtn.disabled = !canRun;
+    actionBtnIcon.textContent = busy ? "" : (method === "lossless" ? "verified" : "compress");
+    if (busy) { actionBtnLabel.textContent = "Working…"; return; }
+    if (!currentFile) { actionBtnLabel.textContent = "Choose a file first"; return; }
+    actionBtnLabel.textContent = method === "lossless" ? "Compress losslessly" : "Compress";
+  }
+
+  let losslessSupportCache = { supported: true };
+  function losslessSupportedForCurrentFile() { return losslessSupportCache.supported; }
+
+  async function refreshLosslessSupport() {
+    const mode = currentMode();
+    if (!mode.hasLossless || !currentFile) { losslessSupportCache = { supported: true }; return; }
+    losslessSupportCache = await mode.losslessInfo(currentFile);
+    if (!losslessSupportCache.supported) {
+      losslessUnsupportedText.textContent = losslessSupportCache.message;
+      losslessUnsupportedBanner.classList.remove("hidden");
+    } else {
+      losslessUnsupportedBanner.classList.add("hidden");
+    }
+    updateActionButton();
+  }
+
+  function applyMethodVisibility() {
+    const mode = currentMode();
+    methodCard.classList.toggle("hidden", !mode.hasLossless);
+    const showLossless = mode.hasLossless && method === "lossless";
+    losslessCard.classList.toggle("hidden", !showLossless);
+    targetCard.classList.toggle("hidden", showLossless);
+    methodLosslessBtn.setAttribute("aria-pressed", String(method === "lossless"));
+    methodTargetBtn.setAttribute("aria-pressed", String(method === "target"));
+  }
+
+  function applySizeModeVisibility() {
+    qualityPanel.classList.toggle("hidden", sizeMode !== "quality");
+    targetSizePanel.classList.toggle("hidden", sizeMode !== "target");
+    sizeModeQualityBtn.setAttribute("aria-pressed", String(sizeMode === "quality"));
+    sizeModeTargetBtn.setAttribute("aria-pressed", String(sizeMode === "target"));
+  }
+
+  function applyTargetKindVisibility() {
+    targetPercentRow.classList.toggle("hidden", targetKind !== "percent");
+    targetExactRow.classList.toggle("hidden", targetKind !== "exact");
+    targetKindPercentBtn.setAttribute("aria-pressed", String(targetKind === "percent"));
+    targetKindExactBtn.setAttribute("aria-pressed", String(targetKind === "exact"));
+  }
+
+  function updateHints() {
+    const mode = currentMode();
+    targetHint.textContent = mode.targetHint;
+    qualitySliderLabel.textContent = { image: "Photo quality", audio: "Audio quality", video: "Video quality" }[currentModeKey];
+    const qualityWordFor = { image: "photo detail", audio: "audio fidelity", video: "video quality" }[currentModeKey];
+    qualitySliderHint.textContent = "Higher = larger file, closer to the original " + qualityWordFor + ".";
+    if (currentFile) {
+      const bytes = currentFile.size;
+      const pct = clamp(parseInt(targetPercentNumber.value, 10) || 50, 1, 100);
+      targetPercentHint.textContent = "≈ " + formatBytes(Math.round(bytes * pct / 100)) + " (original is " + formatBytes(bytes) + ")";
+      const exactBytes = exactTargetBytes();
+      targetExactHint.textContent = exactBytes ? "That's " + Math.round((exactBytes / bytes) * 100) + "% of the original " + formatBytes(bytes) + "." : "";
+    } else {
+      targetPercentHint.textContent = "";
+      targetExactHint.textContent = "";
+    }
+  }
+
+  function exactTargetBytes() {
+    const n = parseFloat(targetExactNumber.value);
+    if (!isFinite(n) || n <= 0) return 0;
+    return Math.round(n * (targetExactUnit.value === "MB" ? 1024 * 1024 : 1024));
+  }
+
+  function applyModeChrome() {
+    const mode = currentMode();
+    tabImageBtn.setAttribute("aria-pressed", String(currentModeKey === "image"));
+    tabAudioBtn.setAttribute("aria-pressed", String(currentModeKey === "audio"));
+    tabVideoBtn.setAttribute("aria-pressed", String(currentModeKey === "video"));
+    dropzoneIcon.textContent = mode.icon;
+    dropzoneTitle.textContent = mode.dropTitle;
+    fileInput.setAttribute("accept", mode.accept);
+    populateFormatSelect();
+    method = mode.hasLossless ? "lossless" : "target";
+    applyMethodVisibility();
+    applySizeModeVisibility();
+    applyTargetKindVisibility();
+    updateHints();
+    updateActionButton();
+  }
+
+  function switchMode(key) {
+    if (busy || key === currentModeKey) return;
+    currentModeKey = key;
+    selectFile(null);
+    hideError(); hideResult(); hideInfo();
+    applyModeChrome();
+  }
+  tabImageBtn.addEventListener("click", () => switchMode("image"));
+  tabAudioBtn.addEventListener("click", () => switchMode("audio"));
+  tabVideoBtn.addEventListener("click", () => switchMode("video"));
+
+  methodLosslessBtn.addEventListener("click", () => { if (busy) return; method = "lossless"; applyMethodVisibility(); updateActionButton(); });
+  methodTargetBtn.addEventListener("click", () => { if (busy) return; method = "target"; applyMethodVisibility(); updateActionButton(); });
+  sizeModeQualityBtn.addEventListener("click", () => { if (busy) return; sizeMode = "quality"; applySizeModeVisibility(); });
+  sizeModeTargetBtn.addEventListener("click", () => { if (busy) return; sizeMode = "target"; applySizeModeVisibility(); });
+  targetKindPercentBtn.addEventListener("click", () => { if (busy) return; targetKind = "percent"; applyTargetKindVisibility(); });
+  targetKindExactBtn.addEventListener("click", () => { if (busy) return; targetKind = "exact"; applyTargetKindVisibility(); });
+
+  function syncPair(range, number, min, max) {
+    range.addEventListener("input", () => { number.value = range.value; updateHints(); });
+    number.addEventListener("input", () => {
+      const v = clamp(parseInt(number.value, 10) || min, min, max);
+      range.value = String(v);
+      updateHints();
+    });
+  }
+  syncPair(qualitySlider, qualityNumber, 1, 100);
+  syncPair(targetPercentSlider, targetPercentNumber, 1, 100);
+  targetExactNumber.addEventListener("input", updateHints);
+  targetExactUnit.addEventListener("change", updateHints);
+
+  function formatMeta(file) {
+    return formatBytes(file.size) + (file.type ? " · " + file.type : "");
+  }
+
+  function selectFile(file) {
+    hideError(); hideResult(); hideInfo();
+    if (!file) {
+      currentFile = null;
+      fileChip.classList.add("hidden");
+      losslessSupportCache = { supported: true };
+      losslessUnsupportedBanner.classList.add("hidden");
+      updateActionButton();
+      return;
+    }
+    const mode = currentMode();
+    const typePrefix = mode.label; // "image" | "audio" | "video"
+    const looksRight = (file.type && file.type.indexOf(typePrefix + "/") === 0) || mode.accept === "*/*";
+    if (!looksRight && file.type) {
+      showError("That doesn't look like " + (typePrefix === "audio" ? "an audio" : "a " + typePrefix) + " file. Please choose a different file, or switch tabs above.");
+      return;
+    }
+    currentFile = file;
+    fileChipIcon.textContent = mode.icon;
+    fileChipName.textContent = file.name;
+    fileChipMeta.textContent = formatMeta(file);
+    fileChip.classList.remove("hidden");
+    updateHints();
+    updateActionButton();
+    if (mode.hasLossless) refreshLosslessSupport();
+  }
+
+  fileInput.addEventListener("change", () => selectFile(fileInput.files && fileInput.files[0]));
+  fileChipRemove.addEventListener("click", (e) => { e.preventDefault(); fileInput.value = ""; selectFile(null); });
+  ["dragenter", "dragover"].forEach((evt) => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add("dropzone--drag"); }));
+  ["dragleave", "dragend"].forEach((evt) => dropzone.addEventListener(evt, () => dropzone.classList.remove("dropzone--drag")));
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dropzone--drag");
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) { fileInput.value = ""; selectFile(file); }
+  });
+
+  function showResult(blob, name, note) {
+    currentObjectUrl = URL.createObjectURL(blob);
+    downloadBtn.href = currentObjectUrl;
+    downloadBtn.download = name;
+    resultOriginalSize.textContent = formatBytes(currentFile.size);
+    resultNewSize.textContent = formatBytes(blob.size);
+    const savedPct = currentFile.size > 0 ? Math.round((1 - blob.size / currentFile.size) * 100) : 0;
+    resultSavingsChip.textContent = savedPct > 0 ? "−" + savedPct + "%" : (savedPct < 0 ? "+" + (-savedPct) + "% (grew)" : "No change");
+    resultSub.textContent = note || name;
+    resultTitle.textContent = method === "lossless" ? "Compressed losslessly" : "Compressed";
+    resultCard.classList.remove("hidden");
+  }
+
+  async function runAction() {
+    if (!currentFile || busy) return;
+    busy = true;
+    hideError(); hideResult(); hideInfo();
+    updateActionButton();
+    setStatus("Starting…");
+    setProgress(0);
+    const ctx = { setStatus, setProgress: (p) => setProgress(p) };
+    try {
+      const mode = currentMode();
+      let result;
+      if (method === "lossless") {
+        result = await mode.runLossless(currentFile, ctx);
+      } else {
+        const opts = { format: formatSelect.value, sizeMode };
+        if (sizeMode === "quality") {
+          opts.quality = clamp(parseInt(qualityNumber.value, 10) || 80, 1, 100);
+        } else {
+          opts.targetBytes = targetKind === "percent"
+            ? Math.round(currentFile.size * clamp(parseInt(targetPercentNumber.value, 10) || 50, 1, 100) / 100)
+            : exactTargetBytes();
+          if (!opts.targetBytes || opts.targetBytes <= 0) throw new Error("Enter a target size greater than zero.");
+        }
+        result = await mode.runTarget(currentFile, opts, ctx);
+      }
+      setStatus(""); setProgress(null);
+      showResult(result.blob, result.name, result.note);
+    } catch (err) {
+      setStatus(""); setProgress(null);
+      showError((err && err.message) || String(err), err && err.details);
+    } finally {
+      busy = false;
+      updateActionButton();
+    }
+  }
+  actionBtn.addEventListener("click", runAction);
+
+  resetBtn.addEventListener("click", () => {
+    fileInput.value = "";
+    selectFile(null);
+    hideResult(); hideError(); hideInfo();
+  });
+
+  applyModeChrome();
+})();
+</script>
+</body>
+</html>
