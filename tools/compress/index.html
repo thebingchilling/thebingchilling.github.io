@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Compress</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Shrink images, audio, and video entirely on your device with a quality slider or an exact KB/MB/percent target — output always stays the same file type you started with." />
+  <meta name="description" content="Shrink images, audio, and video entirely on your device — one click to auto-pick the highest quality that's still smaller, or dial in a quality level or an exact KB/MB/percent target yourself. Output always stays the same file type you started with." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -303,7 +303,7 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">compress</span></div>
       <h1 class="hero__title">Compress</h1>
-      <p class="hero__sub">Shrink images, audio, and video entirely on your device with a quality slider or an exact size target. No format conversion — the output always stays the same file type you dropped in.</p>
+      <p class="hero__sub">Shrink images, audio, and video entirely on your device. Just compress and let it find the highest quality that's still smaller, or dial in a quality level or an exact size yourself. No format conversion — the output always stays the same file type you dropped in.</p>
     </div>
 
     <div class="seg" role="tablist" aria-label="File type">
@@ -354,8 +354,15 @@
 
       <div id="controlsWrap">
         <div class="radio-group" id="sizeModeGroup" role="radiogroup" aria-label="How to choose the amount of compression">
+          <label class="radio-option" id="sizeModeAutoOption">
+            <input type="radio" name="sizeMode" id="sizeModeAutoRadio" checked />
+            <span class="radio-option__body">
+              <span class="radio-option__title">Just compress</span>
+              <span class="radio-option__desc">Automatically finds the highest quality that's still smaller</span>
+            </span>
+          </label>
           <label class="radio-option" id="sizeModeQualityOption">
-            <input type="radio" name="sizeMode" id="sizeModeQualityRadio" checked />
+            <input type="radio" name="sizeMode" id="sizeModeQualityRadio" />
             <span class="radio-option__body">
               <span class="radio-option__title">Quality</span>
               <span class="radio-option__desc">Pick a quality level</span>
@@ -370,8 +377,14 @@
           </label>
         </div>
 
+        <!-- "Just compress" sub-panel — no controls, just an explanation of
+             what the automatic search does for whichever tab is active. -->
+        <div class="subpanel" id="autoPanel">
+          <p class="section-hint" id="autoHint" style="margin:0;"></p>
+        </div>
+
         <!-- Quality-slider sub-panel -->
-        <div class="subpanel" id="qualityPanel">
+        <div class="subpanel hidden" id="qualityPanel">
           <div class="slider-field">
             <div class="slider-field__head">
               <span class="slider-field__label" id="qualitySliderLabel">Quality</span>
@@ -577,6 +590,44 @@
     return best;
   }
 
+  // "Just compress": the highest quality whose encoded size doesn't exceed
+  // budgetBytes (the original file's size) — unlike searchQualityForTarget
+  // above, which converges toward whatever quality lands *closest* to a
+  // target either way, this only ever accepts results at or under budget,
+  // since the point is guaranteeing an actual size reduction.
+  async function searchMaxQualityUnderBudget(canvas, mime, budgetBytes) {
+    let lo = 0.02, hi = 1.0, best = null;
+    for (let i = 0; i < 8; i++) {
+      const mid = (lo + hi) / 2;
+      const blob = await canvasToBlob(canvas, mime, mid);
+      if (blob.size <= budgetBytes) { best = { blob, quality: mid }; lo = mid; }
+      else { hi = mid; }
+    }
+    if (!best) best = { blob: await canvasToBlob(canvas, mime, lo), quality: lo };
+    return best;
+  }
+
+  async function encodeImageAuto(bitmap, mime, originalBytes, onProgress) {
+    // A 2% margin so the search can't settle on a quality that's only
+    // technically smaller by a handful of bytes — a result indistinguishable
+    // from the original isn't a useful "just compress" outcome.
+    const budgetBytes = originalBytes * 0.98;
+    const W = bitmap.width, H = bitmap.height;
+    let scale = 1;
+    for (let attempt = 0; attempt < 7; attempt++) {
+      const w = Math.max(16, Math.round(W * scale)), h = Math.max(16, Math.round(H * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+      if (onProgress) onProgress(attempt / 7);
+      const result = await searchMaxQualityUnderBudget(canvas, mime, budgetBytes);
+      if (result.blob.size <= budgetBytes || Math.round(W * scale) < 64) {
+        return { blob: result.blob, quality: result.quality, width: w, height: h, scaledDown: scale < 1, fit: result.blob.size <= budgetBytes };
+      }
+      scale *= 0.72;
+    }
+  }
+
   // Canvas can only reliably *encode* three image types across browsers —
   // that's the entire universe of "same file type" outputs available here.
   // Anything else (GIF, BMP, AVIF, HEIC, TIFF, SVG, ...) can often still be
@@ -598,11 +649,31 @@
     label: "image", icon: "image", accept: "image/*",
     dropTitle: "Drop an image here, or tap to choose",
     hint: "Compresses this image without changing its format. JPEG and WebP shrink via the quality dial below; PNG has no such dial — it's always lossless — so a smaller PNG is reached by resizing instead. Only JPEG, PNG, and WebP can be compressed here.",
+    autoHint: "Finds the highest JPEG/WebP quality that still comes out smaller than the original — no size or quality to pick. PNG has no quality dial to search over, so it's just re-encoded losslessly (metadata stripped) instead.",
     capability: imageCapability,
     async run(file, opts, ctx) {
       const cap = imageCapability(file);
       ctx.setStatus("Decoding image…");
       const bitmap = await loadBitmap(file);
+      if (opts.sizeMode === "auto") {
+        if (!cap.lossyQuality) {
+          ctx.setStatus("Re-encoding losslessly…");
+          const canvas = document.createElement("canvas");
+          canvas.width = bitmap.width; canvas.height = bitmap.height;
+          canvas.getContext("2d").drawImage(bitmap, 0, 0);
+          const blob = await canvasToBlob(canvas, cap.mime);
+          const note = blob.size < file.size
+            ? "PNG is always lossless — this is just a fresh, metadata-free re-encode."
+            : "This PNG is already about as compact as it gets losslessly — there's nothing left to trim.";
+          return { blob, name: baseName(file.name) + "-auto." + cap.ext, note };
+        }
+        ctx.setStatus("Finding the highest quality that's still smaller…");
+        const result = await encodeImageAuto(bitmap, cap.mime, file.size, (p) => ctx.setProgress(p));
+        const note = result.fit
+          ? "Quality " + Math.round(result.quality * 100) + "%" + (result.scaledDown ? ", resized to " + result.width + "×" + result.height : "") + " — the highest that's still smaller than the original."
+          : "Couldn't shrink this without heavy quality loss even at " + result.width + "×" + result.height + " — this is the closest possible match.";
+        return { blob: result.blob, name: baseName(file.name) + "-auto." + cap.ext, note };
+      }
       if (opts.sizeMode === "quality") {
         ctx.setStatus("Encoding…");
         const canvas = document.createElement("canvas");
@@ -796,6 +867,53 @@
     if (rate < 4000) { bitDepth = 8; rate = Math.round(targetBytesPerSec / channels); }
     return { sampleRate: clamp(rate, 2000, originalRate), bitDepth };
   }
+  function wavBytesFor(sampleRate, bitDepth, durationSec, channels) {
+    return 44 + Math.ceil(durationSec * sampleRate) * channels * (bitDepth / 8);
+  }
+  // "Just compress" for WAV: since its size is a pure function of sample
+  // rate/bit depth/duration, the best-quality-that's-still-smaller search is
+  // exact arithmetic, no trial encoding needed. 16-bit at the original rate
+  // is tried first — a free win with no audible loss whenever the source
+  // was higher than 16-bit; only if that's not already smaller does it fall
+  // back to searching for the highest sample rate (still at 16-bit) that
+  // comes out smaller.
+  // Requires at least a 2% reduction to count as a "fit" — without a
+  // margin, the rate search below can converge on a rate a handful of Hz
+  // below the original, which is technically smaller but produces an
+  // audibly-identical file for zero practical benefit (worse, really,
+  // since resampling to a non-standard rate is itself a small quality
+  // cost with nothing to show for it).
+  function wavAutoParams(originalRate, durationSec, channels, originalBytes) {
+    const budget = originalBytes * 0.98;
+    if (wavBytesFor(originalRate, 16, durationSec, channels) < budget) {
+      return { sampleRate: originalRate, bitDepth: 16 };
+    }
+    let lo = 2000, hi = originalRate, bestRate = null;
+    for (let i = 0; i < 20; i++) {
+      const mid = Math.round((lo + hi) / 2);
+      if (wavBytesFor(mid, 16, durationSec, channels) < budget) { bestRate = mid; lo = mid; } else { hi = mid; }
+    }
+    if (bestRate) return { sampleRate: bestRate, bitDepth: 16 };
+    return { sampleRate: Math.max(2000, Math.round(originalRate * 0.5)), bitDepth: 8, noFit: true };
+  }
+  // "Just compress" for MP3/Ogg Vorbis: a binary search over VBR quality —
+  // expressed here as "goodness" 0..1 (1 = best/biggest) so the direction is
+  // the same for both codecs, which encode their vbrQuality range in
+  // opposite directions — using real encodes, since that's the only way to
+  // know an actual VBR output size in advance.
+  function vbrQualityFromGoodness(mimeType, g) {
+    return mimeType === "audio/mpeg" ? (1 - g) * 9.999 : (-1 + g * 11);
+  }
+  async function searchMaxAudioQualityUnderBudget(file, mimeType, budgetBytes, ctx) {
+    let lo = 0, hi = 1, best = null;
+    for (let i = 0; i < 6; i++) {
+      const mid = (lo + hi) / 2;
+      const blob = await encodeAudio(file, mimeType, { vbrQuality: vbrQualityFromGoodness(mimeType, mid) }, ctx);
+      if (blob.size <= budgetBytes) { best = { blob, goodness: mid }; lo = mid; } else { hi = mid; }
+    }
+    if (!best) best = { blob: await encodeAudio(file, mimeType, { vbrQuality: vbrQualityFromGoodness(mimeType, lo) }, ctx), goodness: lo, noFit: true };
+    return best;
+  }
 
   const AUDIO_CODEC_BY_TYPE = { "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/ogg": "ogg", "audio/vorbis": "ogg", "audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav", "audio/vnd.wave": "wav" };
   const AUDIO_EXT_CODEC = { mp3: "mp3", ogg: "ogg", oga: "ogg", wav: "wav" };
@@ -811,6 +929,7 @@
     label: "audio", icon: "music_note", accept: "audio/*",
     dropTitle: "Drop an audio file here, or tap to choose",
     hint: "Compresses this audio file without changing its format. MP3 and Ogg Vorbis shrink via a bitrate/quality dial; WAV has no such dial (it's uncompressed PCM), so a smaller WAV is reached by lowering its sample rate — and, for very small targets, its bit depth. Only MP3, Ogg Vorbis, and WAV are supported.",
+    autoHint: "Finds the highest MP3/Ogg Vorbis quality that still comes out smaller than the original. WAV has no quality dial, so instead it tries 16-bit at the original sample rate first (a free win if the source was higher than 16-bit), then trims the sample rate only as much as needed if that alone isn't smaller.",
     capability: audioCapability,
     async run(file, opts, ctx) {
       const cap = audioCapability(file);
@@ -818,19 +937,39 @@
         ctx.setStatus("Decoding audio…");
         const buffer0 = await getDecodedAudioBuffer(file);
         const channels = Math.min(2, buffer0.numberOfChannels);
-        const params = opts.sizeMode === "quality"
-          ? wavQualityParams(opts.quality, buffer0.sampleRate)
-          : wavParamsForTarget(opts.targetBytes, buffer0.duration, channels, buffer0.sampleRate);
+        let params, label, note;
+        if (opts.sizeMode === "auto") {
+          params = wavAutoParams(buffer0.sampleRate, buffer0.duration, channels, file.size);
+          label = "auto";
+          note = params.noFit
+            ? "Couldn't shrink this without heavy quality loss — this is the closest possible match."
+            : "Resampled to " + params.sampleRate + " Hz" + (params.bitDepth === 16 && params.sampleRate === buffer0.sampleRate ? " at 16-bit" : "") + " — the lightest change that's still smaller than the original.";
+        } else {
+          params = opts.sizeMode === "quality"
+            ? wavQualityParams(opts.quality, buffer0.sampleRate)
+            : wavParamsForTarget(opts.targetBytes, buffer0.duration, channels, buffer0.sampleRate);
+          label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
+          note = "Resampled to " + params.sampleRate + " Hz" + (params.bitDepth === 8 ? " at 8-bit" : "") + " to shrink it.";
+        }
         ctx.setStatus("Resampling…");
         const resampled = await resampleIfNeeded(buffer0, params.sampleRate);
         ctx.setStatus("Encoding WAV…");
         const blob = encodeWav(resampled, channels, params.bitDepth);
-        const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
-        const note = "Resampled to " + params.sampleRate + " Hz" + (params.bitDepth === 8 ? " at 8-bit" : "") + " to shrink it.";
         return { blob, name: baseName(file.name) + "-" + label + ".wav", note };
       }
 
       const mimeType = cap.codec === "mp3" ? "audio/mpeg" : "audio/ogg";
+      const ext = mimeType === "audio/mpeg" ? "mp3" : "ogg";
+      if (opts.sizeMode === "auto") {
+        ctx.setStatus("Finding the highest quality that's still smaller…");
+        // A 2% margin, same as the image search — otherwise this could
+        // settle on a quality only technically smaller by a few bytes.
+        const result = await searchMaxAudioQualityUnderBudget(file, mimeType, file.size * 0.98, ctx);
+        const note = result.noFit
+          ? "Couldn't shrink this without heavy quality loss — this is the closest possible match."
+          : "Found the highest quality that's still smaller than the original.";
+        return { blob: result.blob, name: baseName(file.name) + "-auto." + ext, note };
+      }
       let config;
       if (opts.sizeMode === "quality") {
         config = mimeType === "audio/mpeg"
@@ -844,7 +983,6 @@
           : { vbrQuality: vorbisQualityForKbps(kbps) };
       }
       const blob = await encodeAudio(file, mimeType, config, ctx);
-      const ext = mimeType === "audio/mpeg" ? "mp3" : "ogg";
       const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
       return { blob, name: baseName(file.name) + "-" + label + "." + ext };
     },
@@ -911,13 +1049,13 @@
     label: "video", icon: "movie", accept: "video/*",
     dropTitle: "Drop a video here, or tap to choose",
     hint: "Compresses this video without changing its container — MP4/M4V/MOV/MKV re-encode with H.264, WebM re-encodes with VP8 (this vendored FFmpeg build's VP9 encoder crashes reliably, so it's avoided). Uses a quality (CRF) or a target file size you choose. Only those containers are supported.",
+    autoHint: "Re-encodes at a strong, high-quality preset. Finding the exact highest quality that's still smaller — like Image and Audio do — would mean re-encoding the video several times over to check, and a single FFmpeg pass already takes a while, so this uses one fixed preset instead of searching.",
     capability: videoCapability,
     async run(file, opts, ctx) {
       const cap = videoCapability(file);
       ctx.setStatus("Loading video engine (~31 MB, first time only — cached after)…");
-      const ffmpeg = await getFfmpeg((p) => ctx.setProgress(p * 0.5));
+      const ffmpeg = await getFfmpeg((p) => ctx.setProgress(p * 0.15));
       const inputName = "input." + cap.ext;
-      const outputName = "output." + cap.ext;
 
       ctx.setStatus("Reading video info…");
       const { fetchFile } = await import("/tools/compress/vendor/ffmpeg/util/index.js");
@@ -926,48 +1064,83 @@
       const audioStr = await ffprobeField(ffmpeg, inputName, ["-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0"], "audio.txt");
       const durationSec = Math.max(0.1, parseFloat(durationStr) || 0);
       const hasAudio = audioStr.trim().length > 0;
-
-      // -an and an explicit audio -map are mutually exclusive in FFmpeg's
-      // arg parser, so the audio map is only added when there's actually
-      // an audio stream to keep.
-      const args = ["-i", inputName, "-map", "0:v:0"];
-      if (hasAudio) args.push("-map", "0:a:0");
       const [crfBest, crfWorst] = cap.crfRange;
       const speedFlag = cap.vcodec === "libx264" ? ["-preset", "veryfast"] : ["-cpu-used", "5"];
-      if (opts.sizeMode === "quality") {
-        const crf = Math.round(crfBest + (100 - opts.quality) * ((crfWorst - crfBest) / 100));
-        args.push("-c:v", cap.vcodec, "-crf", String(crf), ...speedFlag);
+
+      // One FFmpeg pass at a given quality or target bitrate; returns the
+      // raw output bytes. Used directly for Quality/Target-size mode, and
+      // called up to twice for Auto (see below).
+      async function runPass(sizeSpec, outputName, progressFrom, progressTo) {
+        // -an and an explicit audio -map are mutually exclusive in FFmpeg's
+        // arg parser, so the audio map is only added when there's actually
+        // an audio stream to keep.
+        const args = ["-i", inputName, "-map", "0:v:0"];
+        if (hasAudio) args.push("-map", "0:a:0");
+        if (sizeSpec.kind === "quality") {
+          const crf = Math.round(crfBest + (100 - sizeSpec.quality) * ((crfWorst - crfBest) / 100));
+          args.push("-c:v", cap.vcodec, "-crf", String(crf), ...speedFlag);
+        } else {
+          const audioKbps = hasAudio ? 128 : 0;
+          const totalKbps = (sizeSpec.targetBytes * 8) / 1000 / durationSec;
+          const videoKbps = Math.max(80, Math.round(totalKbps - audioKbps));
+          args.push("-c:v", cap.vcodec, "-b:v", videoKbps + "k", "-maxrate", Math.round(videoKbps * 1.3) + "k", "-bufsize", Math.round(videoKbps * 2) + "k", ...speedFlag);
+        }
+        if (hasAudio) args.push("-c:a", cap.acodec, "-b:a", "128k"); else args.push("-an");
+        if (cap.ext === "mp4" || cap.ext === "m4v" || cap.ext === "mov") args.push("-movflags", "+faststart");
+        args.push(outputName);
+
+        let offListener = null;
+        await new Promise((resolve, reject) => {
+          offListener = ({ progress }) => ctx.setProgress(progressFrom + clamp(progress, 0, 1) * (progressTo - progressFrom));
+          ffmpeg.on("progress", offListener);
+          ffmpeg.exec(args).then(resolve).catch(reject);
+        }).finally(() => { if (offListener) ffmpeg.off("progress", offListener); });
+
+        try {
+          return await ffmpeg.readFile(outputName);
+        } catch (e) {
+          const detail = ffmpegLog.slice(-25).join("\n");
+          throw Object.assign(new Error("FFmpeg couldn't produce an output file — the source video may use a codec this build doesn't support."), { details: detail });
+        } finally {
+          try { await ffmpeg.deleteFile(outputName); } catch (e) {}
+        }
+      }
+
+      let outData, label, note;
+      if (opts.sizeMode === "auto") {
+        // A fixed high-quality preset first (fast, and the right answer the
+        // overwhelming majority of the time for typical unoptimized camera/
+        // phone footage) — but unlike Image/Audio, this can't afford a full
+        // quality search (each attempt is a full FFmpeg pass, and those are
+        // slow), so it only ever falls back to ONE more, more aggressive
+        // pass if the first didn't actually come out smaller, rather than
+        // silently handing back a file that grew.
+        ctx.setStatus("Encoding video — this can take a while for longer clips…");
+        outData = await runPass({ kind: "quality", quality: 82 }, "output1." + cap.ext, 0.15, 0.55);
+        if (outData.length >= file.size) {
+          ctx.setStatus("That didn't shrink it — trying a more aggressive pass…");
+          const outData2 = await runPass({ kind: "quality", quality: 50 }, "output2." + cap.ext, 0.55, 0.95);
+          if (outData2.length < outData.length) outData = outData2;
+        }
+        label = "auto";
+        note = outData.length < file.size
+          ? "Used a high-quality preset that came out smaller than the original."
+          : "Couldn't shrink this without heavy quality loss — this is the closest possible match. (Re-encoding video several times to find the exact best quality, like Image and Audio do, would be too slow.)";
+      } else if (opts.sizeMode === "quality") {
+        ctx.setStatus("Encoding video — this can take a while for longer clips…");
+        outData = await runPass({ kind: "quality", quality: opts.quality }, "output." + cap.ext, 0.15, 0.95);
+        label = "q" + opts.quality;
       } else {
-        const audioKbps = hasAudio ? 128 : 0;
-        const totalKbps = (opts.targetBytes * 8) / 1000 / durationSec;
-        const videoKbps = Math.max(80, Math.round(totalKbps - audioKbps));
-        args.push("-c:v", cap.vcodec, "-b:v", videoKbps + "k", "-maxrate", Math.round(videoKbps * 1.3) + "k", "-bufsize", Math.round(videoKbps * 2) + "k", ...speedFlag);
+        ctx.setStatus("Encoding video — this can take a while for longer clips…");
+        outData = await runPass({ kind: "target", targetBytes: opts.targetBytes }, "output." + cap.ext, 0.15, 0.95);
+        label = formatBytes(opts.targetBytes).replace(/\s+/g, "");
       }
-      if (hasAudio) args.push("-c:a", cap.acodec, "-b:a", "128k"); else args.push("-an");
-      if (cap.ext === "mp4" || cap.ext === "m4v" || cap.ext === "mov") args.push("-movflags", "+faststart");
-      args.push(outputName);
-
-      ctx.setStatus("Encoding video — this can take a while for longer clips…");
-      let offListener = null;
-      await new Promise((resolve, reject) => {
-        offListener = ({ progress }) => ctx.setProgress(0.5 + clamp(progress, 0, 1) * 0.5);
-        ffmpeg.on("progress", offListener);
-        ffmpeg.exec(args).then(resolve).catch(reject);
-      }).finally(() => { if (offListener) ffmpeg.off("progress", offListener); });
-
-      let outData;
-      try {
-        outData = await ffmpeg.readFile(outputName);
-      } catch (e) {
-        const detail = ffmpegLog.slice(-25).join("\n");
-        throw Object.assign(new Error("FFmpeg couldn't produce an output file — the source video may use a codec this build doesn't support."), { details: detail });
-      }
-      for (const name of [inputName, outputName, "duration.txt", "audio.txt"]) { try { await ffmpeg.deleteFile(name); } catch (e) {} }
+      for (const name of [inputName, "duration.txt", "audio.txt"]) { try { await ffmpeg.deleteFile(name); } catch (e) {} }
+      ctx.setProgress(1);
 
       const mimeByExt = { mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime", mkv: "video/x-matroska", webm: "video/webm" };
       const blob = new Blob([outData], { type: mimeByExt[cap.ext] || "application/octet-stream" });
-      const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
-      return { blob, name: baseName(file.name) + "-" + label + "." + cap.ext };
+      return { blob, name: baseName(file.name) + "-" + label + "." + cap.ext, note };
     },
   };
 
@@ -980,8 +1153,9 @@
   const targetHint = $("targetHint");
   const unsupportedBanner = $("unsupportedBanner"), unsupportedText = $("unsupportedText");
   const controlsWrap = $("controlsWrap");
-  const sizeModeQualityRadio = $("sizeModeQualityRadio"), sizeModeTargetRadio = $("sizeModeTargetRadio");
-  const sizeModeQualityOption = $("sizeModeQualityOption"), sizeModeTargetOption = $("sizeModeTargetOption");
+  const sizeModeAutoRadio = $("sizeModeAutoRadio"), sizeModeQualityRadio = $("sizeModeQualityRadio"), sizeModeTargetRadio = $("sizeModeTargetRadio");
+  const sizeModeAutoOption = $("sizeModeAutoOption"), sizeModeQualityOption = $("sizeModeQualityOption"), sizeModeTargetOption = $("sizeModeTargetOption");
+  const autoPanel = $("autoPanel"), autoHint = $("autoHint");
   const qualityPanel = $("qualityPanel"), targetSizePanel = $("targetSizePanel");
   const qualitySlider = $("qualitySlider"), qualityNumber = $("qualityNumber"), qualitySliderLabel = $("qualitySliderLabel"), qualitySliderHint = $("qualitySliderHint"), qualityEstimateHint = $("qualityEstimateHint");
   const targetSizeSlider = $("targetSizeSlider"), targetSizeNumber = $("targetSizeNumber"), targetSizeUnit = $("targetSizeUnit"), targetSizeHint = $("targetSizeHint");
@@ -993,7 +1167,7 @@
 
   let currentModeKey = "image";
   let currentFile = null;
-  let sizeMode = "quality"; // "quality" | "target"
+  let sizeMode = "auto"; // "auto" | "quality" | "target"
   let busy = false;
   let currentObjectUrl = null;
   let capabilityCache = { supported: true };
@@ -1045,10 +1219,13 @@
   }
 
   function applySizeModeVisibility() {
+    autoPanel.classList.toggle("hidden", sizeMode !== "auto");
     qualityPanel.classList.toggle("hidden", sizeMode !== "quality");
     targetSizePanel.classList.toggle("hidden", sizeMode !== "target");
+    sizeModeAutoRadio.checked = sizeMode === "auto";
     sizeModeQualityRadio.checked = sizeMode === "quality";
     sizeModeTargetRadio.checked = sizeMode === "target";
+    sizeModeAutoOption.classList.toggle("radio-option--checked", sizeMode === "auto");
     sizeModeQualityOption.classList.toggle("radio-option--checked", sizeMode === "quality");
     sizeModeTargetOption.classList.toggle("radio-option--checked", sizeMode === "target");
   }
@@ -1083,6 +1260,7 @@
   function updateHints() {
     const mode = currentMode();
     targetHint.textContent = mode.hint;
+    autoHint.textContent = mode.autoHint;
     qualitySliderLabel.textContent = { image: "Photo quality", audio: "Audio quality", video: "Video quality" }[currentModeKey];
     const qualityWordFor = { image: "photo detail", audio: "audio fidelity", video: "video quality" }[currentModeKey];
     const noQualityDial = capabilityCache.supported && capabilityCache.lossyQuality === false;
@@ -1187,6 +1365,7 @@
   tabAudioBtn.addEventListener("click", () => switchMode("audio"));
   tabVideoBtn.addEventListener("click", () => switchMode("video"));
 
+  sizeModeAutoRadio.addEventListener("change", () => { if (busy) return; sizeMode = "auto"; applySizeModeVisibility(); updateHints(); });
   sizeModeQualityRadio.addEventListener("change", () => { if (busy) return; sizeMode = "quality"; applySizeModeVisibility(); updateHints(); });
   sizeModeTargetRadio.addEventListener("change", () => { if (busy) return; sizeMode = "target"; applySizeModeVisibility(); updateHints(); });
 
@@ -1265,7 +1444,7 @@
       const opts = { sizeMode };
       if (sizeMode === "quality") {
         opts.quality = clamp(parseInt(qualityNumber.value, 10) || 80, 1, 100);
-      } else {
+      } else if (sizeMode === "target") {
         opts.targetBytes = targetSizeBytes();
         if (!opts.targetBytes || opts.targetBytes <= 0) throw new Error("Enter a target size greater than zero.");
       }

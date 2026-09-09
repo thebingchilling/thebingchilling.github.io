@@ -65,3 +65,29 @@ lossless mode isn't meaningful for JPEG/WebP/MP3/Ogg Vorbis/video (their
 PNG/WAV the quality slider simply doesn't do anything to it — a fact the
 in-page hint says outright rather than hiding a no-op control behind a
 misleading "Lossless" label.
+
+## "Just compress" (auto mode)
+
+The default mode needs no input: it searches for the highest quality that
+still comes out smaller than the original, so "maximum quality, but smaller"
+doesn't require the user to know what a CRF or a bitrate is.
+
+- **Image** (`encodeImageAuto`/`searchMaxQualityUnderBudget`) and **audio
+  MP3/Ogg Vorbis** (`searchMaxAudioQualityUnderBudget`) run a real binary
+  search over quality, re-encoding at each step — cheap enough for images
+  (a canvas re-encode) and fast enough for audio (a WASM encode) to redo
+  several times per compress. **WAV** does the equivalent search with pure
+  arithmetic instead (`wavAutoParams`) since PCM size is a deterministic
+  function of sample rate/bit depth — no trial encoding needed.
+- All three of those searches require the result to be *at least 2% smaller*
+  than the original, not merely smaller by any margin. Without that margin,
+  a search converging by bisection can land on a quality that's technically
+  under budget by a handful of bytes — indistinguishable from the original,
+  and for WAV specifically, actively pointless (resampling to a rate 1 Hz
+  lower than the original is a small quality cost for zero real benefit).
+- **Video** does not search at all — it tries one fixed high-quality preset
+  (CRF from quality≈82), and only falls back to a single more aggressive
+  second pass if that first pass didn't actually come out smaller. Each
+  attempt is a full FFmpeg re-encode, which is far too slow to bisect the
+  way image/audio do; capping it at two passes bounds the worst case to
+  roughly double the time of a normal compress, rather than 5-6x it.
