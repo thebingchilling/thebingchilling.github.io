@@ -217,14 +217,23 @@
     .slider-field__label { font-size: 0.82rem; font-weight: 500; color: var(--text); }
     .slider-field__value { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
     .slider-field__value input[type="number"] { width: 4.4rem; text-align: right; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; padding: 0.32rem 0.45rem; }
+    .slider-field__value select { -webkit-appearance: none; appearance: none; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2352443a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 0.4rem center/14px 14px; background-color: var(--bg2); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; padding: 0.32rem 1.4rem 0.32rem 0.55rem; cursor: pointer; }
+    :root[data-theme="dark"] .slider-field__value select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d5c4b4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .slider-field__value select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d5c4b4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); } }
+    .slider-field__value select:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
     .slider-field__unit { font-size: 0.8rem; color: var(--text-faint); }
     input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; background: var(--bg2); outline: none; margin: 0.4rem 0 0.1rem; }
     input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); cursor: pointer; box-shadow: var(--el1); border: none; }
     input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--primary); cursor: pointer; border: none; box-shadow: var(--el1); }
     input[type="range"]::-moz-range-track { background: var(--bg2); height: 6px; border-radius: 999px; }
     input[type="range"]:disabled { opacity: 0.5; }
+    .slider-field__value input[type="number"]:disabled { opacity: 0.5; cursor: not-allowed; }
     .slider-hint { margin: 0.3rem 0 0; font-size: 0.72rem; color: var(--text-faint); }
-    .slider-hint--estimate { color: var(--primary-dark); font-weight: 500; min-height: 1.1em; }
+    /* A real callout, not a small caption — the whole point is that the
+       resulting size should be impossible to miss. */
+    .estimate-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 0.9rem; padding: 0.7rem 0.95rem; background: var(--bg2); border-radius: 12px; }
+    .estimate-row__label { font-size: 0.78rem; font-weight: 500; color: var(--text-muted); }
+    .estimate-row__value { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; color: var(--primary-dark); text-align: right; }
 
     /* ── Radio group — a plain "pick one" list, not a segmented/tab
        control, for the Quality vs Target-size choice. ── */
@@ -395,7 +404,10 @@
             </div>
             <input type="range" id="qualitySlider" min="1" max="100" step="1" value="80" aria-label="Quality" />
             <p class="slider-hint" id="qualitySliderHint">Higher = larger file, closer to the original.</p>
-            <p class="slider-hint slider-hint--estimate" id="qualityEstimateHint"></p>
+          </div>
+          <div class="estimate-row" id="qualityEstimateRow">
+            <span class="estimate-row__label">Resulting size</span>
+            <span class="estimate-row__value" id="qualityEstimateHint">Choose a file to preview</span>
           </div>
         </div>
 
@@ -1267,6 +1279,11 @@
     qualitySliderHint.textContent = noQualityDial
       ? "PNG is always lossless, so this slider has no effect on it — use Target size to shrink a PNG (by resizing)."
       : "Higher = larger file, closer to the original " + qualityWordFor + ".";
+    // Disabled rather than just described as inert — a slider that visibly
+    // still moves but never changes anything reads as broken, not "not
+    // applicable here".
+    qualitySlider.disabled = noQualityDial;
+    qualityNumber.disabled = noQualityDial;
     targetSizeHint.textContent = currentFile
       ? "That's " + targetSizePercent() + "% of the original " + formatBytes(currentFile.size) + "."
       : "";
@@ -1296,16 +1313,22 @@
   }
   async function runQualityEstimate() {
     const token = ++qualityEstimateToken;
-    if (!currentFile || !capabilityCache.supported || sizeMode !== "quality") { qualityEstimateHint.textContent = ""; return; }
+    if (!currentFile) { qualityEstimateHint.textContent = "Choose a file to preview"; return; }
+    if (!capabilityCache.supported || sizeMode !== "quality") return;
     const quality = clamp(parseInt(qualityNumber.value, 10) || 80, 1, 100);
     const silentCtx = { setStatus: () => {}, setProgress: () => {} };
 
     if (currentModeKey === "video") {
-      qualityEstimateHint.textContent = "Exact size depends on the video's content — shown after compressing.";
+      qualityEstimateHint.textContent = "Depends on the video's content — shown after compressing";
       return;
     }
 
     if (currentModeKey === "image") {
+      if (capabilityCache.lossyQuality === false) {
+        qualityEstimateHint.textContent = "No change — PNG is always lossless";
+        return;
+      }
+      qualityEstimateHint.textContent = "Estimating…";
       try {
         const bitmap = await loadBitmap(currentFile);
         if (token !== qualityEstimateToken) return;
