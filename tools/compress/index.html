@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Compress</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Shrink images, audio, and video entirely on your device to an exact KB, MB, or percent of the original — output always stays the same file type you started with." />
+  <meta name="description" content="Shrink images and audio entirely on your device to an exact KB, MB, or percent of the original, with an optional one-click switch to a more space-efficient format." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -260,6 +260,17 @@
     .info-banner .material-icons { flex-shrink: 0; }
     .info-banner p { margin: 0; font-size: 0.82rem; line-height: 1.45; }
 
+    /* ── Format-conversion suggestion — an opt-in offer, not an automatic
+       switch: shown only when converting would keep full quality (lossless)
+       and land smaller, with a button the user has to click to accept. ── */
+    .format-suggestion { display: flex; align-items: center; gap: 0.8rem; background: var(--md-primary-container); color: var(--md-on-primary-container); border-radius: 14px; padding: 0.8rem 0.9rem; margin-top: 0.9rem; }
+    .format-suggestion.hidden { display: none; }
+    .format-suggestion .material-icons { flex-shrink: 0; }
+    .format-suggestion__body { flex: 1; min-width: 0; }
+    .format-suggestion__text { margin: 0; font-size: 0.82rem; line-height: 1.45; }
+    .format-suggestion__btn { flex-shrink: 0; background: var(--md-primary); color: var(--md-on-primary); border: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; padding: 0.5rem 1rem; cursor: pointer; white-space: nowrap; transition: filter var(--t); }
+    .format-suggestion__btn:hover { filter: brightness(1.08); }
+    .format-suggestion__btn.is-active { background: transparent; color: var(--md-on-primary-container); border: 1px solid currentColor; }
     .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
     .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
     .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
@@ -283,7 +294,7 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">compress</span></div>
       <h1 class="hero__title">Compress</h1>
-      <p class="hero__sub">Shrink images, audio, and video entirely on your device to an exact size. No format conversion — the output always stays the same file type you dropped in.</p>
+      <p class="hero__sub">Shrink images and audio entirely on your device to an exact size. The output keeps your original format unless you choose to switch to a more space-efficient one.</p>
     </div>
 
     <div class="seg" role="tablist" aria-label="File type">
@@ -292,9 +303,6 @@
       </button>
       <button class="seg-btn" id="tabAudioBtn" type="button" role="tab" aria-pressed="false">
         <span class="material-icons">music_note</span><span>Audio</span>
-      </button>
-      <button class="seg-btn" id="tabVideoBtn" type="button" role="tab" aria-pressed="false">
-        <span class="material-icons">movie</span><span>Video</span>
       </button>
     </div>
 
@@ -319,10 +327,11 @@
       </div>
     </div>
 
-    <!-- Compress options — shared shape across all 3 tabs, hint text swapped
-         in per tab. No format picker: output always stays the same file
-         type as the input, so unsupported formats get a banner here instead
-         of a fallback conversion. -->
+    <!-- Compress options — shared shape across both tabs, hint text swapped
+         in per tab. There's still no format picker/dropdown; a format switch
+         only ever happens through the opt-in suggestion below, and only when
+         it's a lossless win. Formats this tool can't re-encode at all get a
+         banner here instead. -->
     <div class="card" id="targetCard">
       <div class="section-title"><h2><span class="material-icons">straighten</span>Target size</h2></div>
       <p class="section-hint" id="targetHint"></p>
@@ -350,6 +359,14 @@
           <input type="range" id="targetSizeSlider" min="1" max="100" step="1" value="50" aria-label="Target size" />
           <p class="slider-hint" id="targetSizeHint"></p>
         </div>
+      </div>
+
+      <div class="format-suggestion hidden" id="formatSuggestion">
+        <span class="material-icons">swap_horiz</span>
+        <div class="format-suggestion__body">
+          <p class="format-suggestion__text" id="formatSuggestionText"></p>
+        </div>
+        <button class="format-suggestion__btn" id="formatSuggestionBtn" type="button"></button>
       </div>
     </div>
 
@@ -398,7 +415,7 @@
 
     <div class="card note-card" id="privacyNote">
       <span class="material-icons">shield</span>
-      <p id="privacyNoteText">Everything runs on your device — files are never uploaded anywhere, and there's no format conversion; the output always stays the same file type you started with. The Image tab needs no extra downloads; Audio uses a small (~0.6&nbsp;MB) vendored MP3/Ogg&nbsp;Vorbis encoder (WAV needs none at all); Video uses a vendored build of <a href="https://github.com/ffmpegwasm/ffmpeg.wasm" target="_blank" rel="noopener">FFmpeg compiled to WebAssembly</a> (~31&nbsp;MB, cached by your browser after the first use).</p>
+      <p id="privacyNoteText">Everything runs on your device — files are never uploaded anywhere. The output keeps your original file type unless you click the format-switch suggestion, which only ever offers a lossless swap to a more space-efficient format. The Audio tab uses a small (~0.6&nbsp;MB) vendored MP3/Ogg&nbsp;Vorbis encoder (WAV needs none at all); the lossless format switch (PNG→WebP, WAV→FLAC) uses small vendored encoders too, downloaded only if you use it.</p>
     </div>
   </main>
 
@@ -444,13 +461,15 @@
   function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
   /* ═══════════════════════════════════════════════════════════════════
-     Mode config: Image / Audio / Video. Each entry describes the shared
-     chrome (dropzone copy, accept filter), a `capability(file)` function
-     that decides whether this exact file's format can be compressed at
-     all — there's no format conversion, so an unsupported format is a
-     dead end here rather than a fallback to some other output type — and
-     a `run(file, opts, ctx)` function that does the real work and returns
-     { blob, name, note }. `ctx` carries progress/status callbacks.
+     Mode config: Image / Audio. Each entry describes the shared chrome
+     (dropzone copy, accept filter), a `capability(file)` function that
+     decides whether this exact file's format can be compressed at all —
+     an unsupported format is a dead end here rather than a fallback to
+     some other output type — a `run(file, opts, ctx)` function that does
+     the real work and returns { blob, name, note }, and an optional
+     `convertSuggestion(file)` that offers a one-click, lossless switch to
+     a more space-efficient format (never automatic — the user has to
+     click it). `ctx` carries progress/status callbacks.
      ═══════════════════════════════════════════════════════════════════ */
   const MODES = {}; // filled in by the per-type sections below
 
@@ -538,21 +557,67 @@
     return { supported: true, mime, ext: IMAGE_MIME_EXT[mime] };
   }
 
+  // Encodes a bitmap to WebP via the vendored libwebp WASM build in
+  // genuinely lossless mode (bit-exact pixels, not just high-quality lossy)
+  // — canvas's own toBlob("image/webp", ...) has no lossless mode at all.
+  async function encodeLosslessWebp(bitmap) {
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width; canvas.height = bitmap.height;
+    const c2d = canvas.getContext("2d");
+    c2d.drawImage(bitmap, 0, 0);
+    const imageData = c2d.getImageData(0, 0, canvas.width, canvas.height);
+    const { default: encodeWebp } = await import("/tools/compress/vendor/webp/encode.js");
+    const buf = await encodeWebp(imageData, { lossless: 1, exact: 1 });
+    return new Blob([buf], { type: "image/webp" });
+  }
+
   MODES.image = {
     label: "image", icon: "image", accept: "image/*",
     dropTitle: "Drop an image here, or tap to choose",
-    hint: "Compresses this image to your target size without changing its format. JPEG and WebP shrink via quality; PNG is always lossless, so a smaller PNG is reached by resizing instead. Only JPEG, PNG, and WebP can be compressed here.",
+    hint: "Compresses this image to your target size without changing its format by default. JPEG and WebP shrink via quality; PNG is always lossless, so a smaller PNG is reached by resizing instead. If converting losslessly to a smaller format would help, a one-click suggestion appears below — nothing converts unless you accept it. Only JPEG, PNG, and WebP can be compressed here.",
     capability: imageCapability,
+    // PNG is the only format here canvas can't already export losslessly at
+    // a smaller size on its own, and WebP's lossless mode is meaningfully
+    // more space-efficient than PNG's — so this is the one conversion
+    // that's a pure win (same pixels, smaller file) worth suggesting.
+    async convertSuggestion(file) {
+      const cap = imageCapability(file);
+      if (!cap.supported || cap.mime !== "image/png") return null;
+      const bitmap = await loadBitmap(file);
+      const blob = await encodeLosslessWebp(bitmap);
+      if (blob.size >= file.size) return null;
+      return { ext: "webp", mime: "image/webp", label: "WebP", fromLabel: "PNG", lossless: true, newSize: blob.size, blob };
+    },
     async run(file, opts, ctx) {
       const cap = imageCapability(file);
+      const convert = opts.convert;
+      const outMime = convert ? convert.mime : cap.mime;
+      const outExt = convert ? convert.ext : cap.ext;
       ctx.setStatus("Decoding image…");
       const bitmap = await loadBitmap(file);
+
+      // The suggestion's lossless blob was already computed when the file
+      // was selected (from the same file, so it's still valid) — if it
+      // already meets the target, use it directly rather than running a
+      // lossy search that would only make quality worse for no reason.
+      if (convert && convert.lossless && convert.newSize <= opts.targetBytes) {
+        ctx.setProgress(1);
+        return {
+          blob: convert.blob,
+          name: baseName(file.name) + "." + outExt,
+          note: "Converted to " + convert.label + " losslessly — no quality lost, and it already met your target size.",
+        };
+      }
+
       ctx.setStatus("Searching for the closest match to your target size…");
-      const result = await encodeImageToTarget(bitmap, cap.mime, opts.targetBytes, (p) => ctx.setProgress(p));
-      const note = result.scaledDown
+      const result = await encodeImageToTarget(bitmap, outMime, opts.targetBytes, (p) => ctx.setProgress(p));
+      const sizeNote = result.scaledDown
         ? "Quality alone couldn't hit this target on such a detailed image, so the dimensions were also reduced to " + result.width + "×" + result.height + "."
         : "Dimensions kept at " + result.width + "×" + result.height + ".";
-      return { blob: result.blob, name: baseName(file.name) + "-" + formatBytes(opts.targetBytes).replace(/\s+/g, "") + "." + cap.ext, note };
+      const note = convert
+        ? "Converted to " + convert.label + ", but even a lossless " + convert.label + " was bigger than your target, so quality was reduced too. " + sizeNote
+        : sizeNote;
+      return { blob: result.blob, name: baseName(file.name) + "-" + formatBytes(opts.targetBytes).replace(/\s+/g, "") + "." + outExt, note };
     },
   };
 
@@ -769,151 +834,16 @@
   };
 
   /* ═══════════════════════════════════════════════════════════════════
-     VIDEO — FFmpeg (WebAssembly), vendored, single-threaded core.
-     ═══════════════════════════════════════════════════════════════════ */
-  let ffmpegInstance = null;
-  let ffmpegLoadPromise = null;
-  let ffmpegLog = [];
-  async function getFfmpeg(onProgress) {
-    if (ffmpegInstance) return ffmpegInstance;
-    if (!ffmpegLoadPromise) {
-      ffmpegLoadPromise = (async () => {
-        const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-          import("/tools/compress/vendor/ffmpeg/esm/index.js"),
-          import("/tools/compress/vendor/ffmpeg/util/index.js"),
-        ]);
-        const ffmpeg = new FFmpeg();
-        ffmpeg.on("log", ({ message }) => { ffmpegLog.push(message); if (ffmpegLog.length > 400) ffmpegLog.shift(); });
-        const base = "/tools/compress/vendor/ffmpeg/core/";
-        const coreURL = await toBlobURL(base + "ffmpeg-core.js", "text/javascript", true, (p) => onProgress && onProgress(p.total ? p.received / p.total : 0));
-        const wasmURL = await toBlobURL(base + "ffmpeg-core.wasm", "application/wasm", true, (p) => onProgress && onProgress(p.total ? p.received / p.total : 0));
-        await ffmpeg.load({ coreURL, wasmURL });
-        ffmpegInstance = ffmpeg;
-        return ffmpeg;
-      })();
-    }
-    return ffmpegLoadPromise;
-  }
-
-  async function ffprobeField(ffmpeg, inputName, args, outName) {
-    ffmpegLog = [];
-    await ffmpeg.ffprobe(["-v", "error", ...args, inputName, "-o", outName]);
-    try {
-      const data = await ffmpeg.readFile(outName, "utf8");
-      return typeof data === "string" ? data.trim() : new TextDecoder().decode(data).trim();
-    } catch (e) { return ""; }
-  }
-
-  // Codec per container, kept to combinations already verified to work in
-  // this specific vendored single-threaded core build. Notably NOT here:
-  // VP9 (libvpx-vp9) — it crashes the wasm module with a memory-access
-  // fault on every input/argument combination tried, regardless of CRF or
-  // bitrate settings, so WebM re-encodes use VP8 (libvpx) instead.
-  const VIDEO_CONTAINER_CODECS = {
-    mp4: { vcodec: "libx264", acodec: "aac", crfRange: [16, 40] },
-    m4v: { vcodec: "libx264", acodec: "aac", crfRange: [16, 40] },
-    mov: { vcodec: "libx264", acodec: "aac", crfRange: [16, 40] },
-    mkv: { vcodec: "libx264", acodec: "aac", crfRange: [16, 40] },
-    webm: { vcodec: "libvpx", acodec: "libvorbis", crfRange: [10, 40] },
-  };
-  function videoCapability(file) {
-    const ext = extOf(file.name);
-    const cfg = VIDEO_CONTAINER_CODECS[ext];
-    if (!cfg) {
-      return { supported: false, message: "This video container can't be compressed here — only MP4, M4V, MOV, MKV, and WebM are supported (this file is a ." + (ext || "?") + " file)." };
-    }
-    return Object.assign({ supported: true, ext }, cfg);
-  }
-
-  MODES.video = {
-    label: "video", icon: "movie", accept: "video/*",
-    dropTitle: "Drop a video here, or tap to choose",
-    hint: "Compresses this video to your target size without changing its container — MP4/M4V/MOV/MKV re-encode with H.264, WebM re-encodes with VP8 (this vendored FFmpeg build's VP9 encoder crashes reliably, so it's avoided). Only those containers are supported. Video runs entirely in your browser with no hardware acceleration, so it's much slower than realtime — a couple of minutes of footage can take several minutes to compress. The page stays responsive and the progress bar keeps moving, so let it finish rather than closing the tab or switching away, which can interrupt it partway through.",
-    capability: videoCapability,
-    async run(file, opts, ctx) {
-      const cap = videoCapability(file);
-      ctx.setStatus("Loading video engine (~31 MB, first time only — cached after)…");
-      const ffmpeg = await getFfmpeg((p) => ctx.setProgress(p * 0.15));
-      const inputName = "input." + cap.ext;
-      const outputName = "output." + cap.ext;
-
-      ctx.setStatus("Reading video info…");
-      const { fetchFile } = await import("/tools/compress/vendor/ffmpeg/util/index.js");
-      await ffmpeg.writeFile(inputName, await fetchFile(file));
-      const durationStr = await ffprobeField(ffmpeg, inputName, ["-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1"], "duration.txt");
-      const audioStr = await ffprobeField(ffmpeg, inputName, ["-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0"], "audio.txt");
-      const durationSec = Math.max(0.1, parseFloat(durationStr) || 0);
-      const hasAudio = audioStr.trim().length > 0;
-      // The size here comes entirely from the bitrate cap below, not the
-      // encoder preset — preset only trades quality-per-bit for speed, not
-      // final size — so it's set to the fastest option available. This
-      // single-threaded WASM encoder is already several times slower than
-      // realtime; on a multi-minute clip, "veryfast" could mean waiting
-      // 10+ minutes, easily read as a broken/stuck tool even though it's
-      // still working.
-      const speedFlag = cap.vcodec === "libx264" ? ["-preset", "ultrafast"] : ["-cpu-used", "8"];
-
-      // -an and an explicit audio -map are mutually exclusive in FFmpeg's
-      // arg parser, so the audio map is only added when there's actually
-      // an audio stream to keep.
-      const args = ["-i", inputName, "-map", "0:v:0"];
-      if (hasAudio) args.push("-map", "0:a:0");
-      // H.264/VP8 both require even width and height for yuv420p (the
-      // default pixel format) — a source with an odd dimension in either
-      // axis (common from screen recordings and some crop/edit tools)
-      // fails outright otherwise, so this is applied unconditionally
-      // rather than only when a check happens to catch an odd source.
-      args.push("-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2");
-      const audioKbps = hasAudio ? 128 : 0;
-      const totalKbps = (opts.targetBytes * 8) / 1000 / durationSec;
-      const videoKbps = Math.max(80, Math.round(totalKbps - audioKbps));
-      args.push("-c:v", cap.vcodec, "-b:v", videoKbps + "k", "-maxrate", Math.round(videoKbps * 1.3) + "k", "-bufsize", Math.round(videoKbps * 2) + "k", ...speedFlag);
-      if (hasAudio) args.push("-c:a", cap.acodec, "-b:a", "128k"); else args.push("-an");
-      if (cap.ext === "mp4" || cap.ext === "m4v" || cap.ext === "mov") args.push("-movflags", "+faststart");
-      args.push(outputName);
-
-      ctx.setStatus("Encoding video — this can take a while for longer clips…");
-      let offListener = null;
-      let exitCode;
-      await new Promise((resolve, reject) => {
-        offListener = ({ progress }) => ctx.setProgress(0.15 + clamp(progress, 0, 1) * 0.8);
-        ffmpeg.on("progress", offListener);
-        ffmpeg.exec(args).then((code) => { exitCode = code; resolve(); }).catch(reject);
-      }).finally(() => { if (offListener) ffmpeg.off("progress", offListener); });
-
-      // ffmpeg.exec() resolves with an exit code rather than rejecting on
-      // failure, and a failed encode can still leave an empty file behind
-      // (readFile succeeds, just with 0 bytes) — both need an explicit
-      // check, or a failed compress silently "succeeds" with a broken
-      // video the user can't actually open.
-      let outData = null;
-      try { outData = await ffmpeg.readFile(outputName); } catch (e) { /* handled below */ }
-      if (exitCode !== 0 || !outData || outData.length < 1024) {
-        const detail = ffmpegLog.slice(-25).join("\n");
-        try { await ffmpeg.deleteFile(outputName); } catch (e) {}
-        for (const name of [inputName, "duration.txt", "audio.txt"]) { try { await ffmpeg.deleteFile(name); } catch (e) {} }
-        throw Object.assign(new Error("FFmpeg couldn't compress this video — it may use a codec or structure this build doesn't support."), { details: detail });
-      }
-      for (const name of [inputName, outputName, "duration.txt", "audio.txt"]) { try { await ffmpeg.deleteFile(name); } catch (e) {} }
-      ctx.setProgress(1);
-
-      const mimeByExt = { mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime", mkv: "video/x-matroska", webm: "video/webm" };
-      const blob = new Blob([outData], { type: mimeByExt[cap.ext] || "application/octet-stream" });
-      const label = formatBytes(opts.targetBytes).replace(/\s+/g, "");
-      return { blob, name: baseName(file.name) + "-" + label + "." + cap.ext };
-    },
-  };
-
-  /* ═══════════════════════════════════════════════════════════════════
      UI wiring
      ═══════════════════════════════════════════════════════════════════ */
-  const tabImageBtn = $("tabImageBtn"), tabAudioBtn = $("tabAudioBtn"), tabVideoBtn = $("tabVideoBtn");
+  const tabImageBtn = $("tabImageBtn"), tabAudioBtn = $("tabAudioBtn");
   const dropzone = $("dropzone"), dropzoneIcon = $("dropzoneIcon"), dropzoneTitle = $("dropzoneTitle"), fileInput = $("fileInput");
   const fileChip = $("fileChip"), fileChipIcon = $("fileChipIcon"), fileChipName = $("fileChipName"), fileChipMeta = $("fileChipMeta"), fileChipRemove = $("fileChipRemove");
   const targetHint = $("targetHint");
   const unsupportedBanner = $("unsupportedBanner"), unsupportedText = $("unsupportedText");
   const controlsWrap = $("controlsWrap");
   const targetSizeSlider = $("targetSizeSlider"), targetSizeNumber = $("targetSizeNumber"), targetSizeUnit = $("targetSizeUnit"), targetSizeHint = $("targetSizeHint");
+  const formatSuggestion = $("formatSuggestion"), formatSuggestionText = $("formatSuggestionText"), formatSuggestionBtn = $("formatSuggestionBtn");
   const actionBtn = $("actionBtn"), actionBtnIcon = $("actionBtnIcon"), actionBtnLabel = $("actionBtnLabel");
   const statusLine = $("statusLine"), progressTrack = $("progressTrack"), progressFill = $("progressFill");
   const errorBanner = $("errorBanner"), errorBody = $("errorBody"), errorDetails = $("errorDetails");
@@ -925,6 +855,14 @@
   let busy = false;
   let currentObjectUrl = null;
   let capabilityCache = { supported: true };
+  // The opt-in "convert to a smaller, equal-quality format" suggestion:
+  // `pendingSuggestion` is whatever the current file's mode found (or null);
+  // `activeConversion` is only set once the user clicks the button to accept
+  // it. `suggestionToken` guards the async check against a stale result
+  // landing after the user has already switched files or tabs.
+  let pendingSuggestion = null;
+  let activeConversion = null;
+  let suggestionToken = 0;
 
   function currentMode() { return MODES[currentModeKey]; }
 
@@ -1022,11 +960,52 @@
       : "";
   }
 
+  function renderFormatSuggestion() {
+    if (!pendingSuggestion || !currentFile) {
+      formatSuggestion.classList.add("hidden");
+      formatSuggestionText.textContent = "";
+      return;
+    }
+    const s = pendingSuggestion;
+    const pct = Math.round((1 - s.newSize / currentFile.size) * 100);
+    if (activeConversion) {
+      formatSuggestionText.textContent = "Converting to " + s.label + ", losslessly — " + formatBytes(s.newSize) + " instead of " + formatBytes(currentFile.size) + " (" + pct + "% smaller), pixel-for-pixel identical.";
+      formatSuggestionBtn.textContent = "Undo";
+      formatSuggestionBtn.classList.add("is-active");
+    } else {
+      formatSuggestionText.textContent = "This " + s.fromLabel + " converts losslessly to " + s.label + " at " + formatBytes(s.newSize) + " — " + pct + "% smaller, with no change to the image at all.";
+      formatSuggestionBtn.textContent = "Convert to " + s.label;
+      formatSuggestionBtn.classList.remove("is-active");
+    }
+    formatSuggestion.classList.remove("hidden");
+  }
+
+  // Kicks off the current mode's (optional) check for a lossless,
+  // smaller-format alternative. Runs async and can take a moment on a large
+  // file, so a token guards against a stale result landing after the user
+  // has already moved on to a different file or tab.
+  async function refreshFormatSuggestion() {
+    const mode = currentMode();
+    activeConversion = null;
+    pendingSuggestion = null;
+    const myToken = ++suggestionToken;
+    renderFormatSuggestion();
+    if (!currentFile || !capabilityCache.supported || !mode.convertSuggestion) return;
+    let suggestion = null;
+    try { suggestion = await mode.convertSuggestion(currentFile); } catch (e) { suggestion = null; }
+    if (myToken !== suggestionToken) return; // file/tab changed while this ran
+    pendingSuggestion = suggestion;
+    renderFormatSuggestion();
+  }
+  formatSuggestionBtn.addEventListener("click", () => {
+    activeConversion = activeConversion ? null : pendingSuggestion;
+    renderFormatSuggestion();
+  });
+
   function applyModeChrome() {
     const mode = currentMode();
     tabImageBtn.setAttribute("aria-pressed", String(currentModeKey === "image"));
     tabAudioBtn.setAttribute("aria-pressed", String(currentModeKey === "audio"));
-    tabVideoBtn.setAttribute("aria-pressed", String(currentModeKey === "video"));
     dropzoneIcon.textContent = mode.icon;
     dropzoneTitle.textContent = mode.dropTitle;
     fileInput.setAttribute("accept", mode.accept);
@@ -1043,7 +1022,6 @@
   }
   tabImageBtn.addEventListener("click", () => switchMode("image"));
   tabAudioBtn.addEventListener("click", () => switchMode("audio"));
-  tabVideoBtn.addEventListener("click", () => switchMode("video"));
 
   targetSizeSlider.addEventListener("input", syncTargetSizeFromSlider);
   targetSizeNumber.addEventListener("input", syncTargetSizeFromNumber);
@@ -1060,10 +1038,11 @@
       fileChip.classList.add("hidden");
       refreshCapability();
       updateHints();
+      refreshFormatSuggestion();
       return;
     }
     const mode = currentMode();
-    const typePrefix = mode.label; // "image" | "audio" | "video"
+    const typePrefix = mode.label; // "image" | "audio"
     const looksRight = (file.type && file.type.indexOf(typePrefix + "/") === 0) || mode.accept === "*/*";
     if (!looksRight && file.type) {
       showError("That doesn't look like " + (typePrefix === "audio" ? "an audio" : "a " + typePrefix) + " file. Please choose a different file, or switch tabs above.");
@@ -1077,6 +1056,7 @@
     targetSizeSlider.value = "50";
     refreshCapability();
     syncTargetSizeFromSlider(); // also refreshes hints
+    refreshFormatSuggestion();
   }
 
   fileInput.addEventListener("change", () => selectFile(fileInput.files && fileInput.files[0]));
@@ -1114,7 +1094,7 @@
       const mode = currentMode();
       const targetBytes = targetSizeBytes();
       if (!targetBytes || targetBytes <= 0) throw new Error("Enter a target size greater than zero.");
-      const result = await mode.run(currentFile, { targetBytes }, ctx);
+      const result = await mode.run(currentFile, { targetBytes, convert: activeConversion }, ctx);
       setStatus(""); setProgress(null);
       showResult(result.blob, result.name, result.note);
     } catch (err) {
