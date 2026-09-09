@@ -224,6 +224,18 @@
     input[type="range"]::-moz-range-track { background: var(--bg2); height: 6px; border-radius: 999px; }
     input[type="range"]:disabled { opacity: 0.5; }
     .slider-hint { margin: 0.3rem 0 0; font-size: 0.72rem; color: var(--text-faint); }
+    .slider-hint--estimate { color: var(--primary-dark); font-weight: 500; min-height: 1.1em; }
+
+    /* ── Radio group — a plain "pick one" list, not a segmented/tab
+       control, for the Quality vs Target-size choice. ── */
+    .radio-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .radio-option { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.75rem 0.9rem; border-radius: 14px; background: var(--bg2); cursor: pointer; transition: background var(--t); }
+    .radio-option:hover { background: color-mix(in srgb, var(--primary) 8%, var(--bg2)); }
+    .radio-option input[type="radio"] { width: 18px; height: 18px; margin-top: 0.1rem; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+    .radio-option__body { display: flex; flex-direction: column; gap: 0.1rem; }
+    .radio-option__title { font-size: 0.88rem; font-weight: 500; color: var(--text); }
+    .radio-option__desc { font-size: 0.76rem; color: var(--text-faint); }
+    .radio-option--checked { background: color-mix(in srgb, var(--primary) 12%, var(--bg2)); }
 
     .size-input-row { display: flex; align-items: center; gap: 0.3rem; background: var(--bg2); border-radius: 12px; padding: 0.2rem 0.2rem 0.2rem 0.9rem; margin-top: 1rem; }
     .size-input-row input[type="number"] { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.05rem; color: var(--primary-dark); padding: 0.6rem 0.2rem; }
@@ -341,13 +353,21 @@
       </div>
 
       <div id="controlsWrap">
-        <div class="seg seg--sm" id="sizeModeSeg" role="tablist" aria-label="How to choose the amount of compression">
-          <button class="seg-btn" id="sizeModeQualityBtn" type="button" role="tab" aria-pressed="true">
-            <span class="material-icons">tune</span><span>Quality slider</span>
-          </button>
-          <button class="seg-btn" id="sizeModeTargetBtn" type="button" role="tab" aria-pressed="false">
-            <span class="material-icons">data_usage</span><span>Target size</span>
-          </button>
+        <div class="radio-group" id="sizeModeGroup" role="radiogroup" aria-label="How to choose the amount of compression">
+          <label class="radio-option" id="sizeModeQualityOption">
+            <input type="radio" name="sizeMode" id="sizeModeQualityRadio" checked />
+            <span class="radio-option__body">
+              <span class="radio-option__title">Quality</span>
+              <span class="radio-option__desc">Pick a quality level</span>
+            </span>
+          </label>
+          <label class="radio-option" id="sizeModeTargetOption">
+            <input type="radio" name="sizeMode" id="sizeModeTargetRadio" />
+            <span class="radio-option__body">
+              <span class="radio-option__title">Target size</span>
+              <span class="radio-option__desc">Pick an exact file size</span>
+            </span>
+          </label>
         </div>
 
         <!-- Quality-slider sub-panel -->
@@ -362,44 +382,28 @@
             </div>
             <input type="range" id="qualitySlider" min="1" max="100" step="1" value="80" aria-label="Quality" />
             <p class="slider-hint" id="qualitySliderHint">Higher = larger file, closer to the original.</p>
+            <p class="slider-hint slider-hint--estimate" id="qualityEstimateHint"></p>
           </div>
         </div>
 
-        <!-- Target-size sub-panel -->
+        <!-- Target-size sub-panel — one slider (internally percent-of-
+             original, so it always spans a sensible range for whatever
+             file is loaded), paired with a directly-editable size number
+             instead of a raw percentage. -->
         <div class="subpanel hidden" id="targetSizePanel">
-          <div class="seg seg--sm" id="targetKindSeg" role="tablist" aria-label="Target size input">
-            <button class="seg-btn" id="targetKindPercentBtn" type="button" role="tab" aria-pressed="true">
-              <span class="material-icons">percent</span><span>% of original</span>
-            </button>
-            <button class="seg-btn" id="targetKindExactBtn" type="button" role="tab" aria-pressed="false">
-              <span class="material-icons">save</span><span>Specific size</span>
-            </button>
-          </div>
-
-          <div id="targetPercentRow">
-            <div class="slider-field">
-              <div class="slider-field__head">
-                <span class="slider-field__label">Target size</span>
-                <span class="slider-field__value">
-                  <input type="number" id="targetPercentNumber" min="1" max="100" step="1" value="50" aria-label="Target size, percent of original" />
-                  <span class="slider-field__unit">%</span>
-                </span>
-              </div>
-              <input type="range" id="targetPercentSlider" min="1" max="100" step="1" value="50" aria-label="Target size percent" />
-              <p class="slider-hint" id="targetPercentHint"></p>
+          <div class="slider-field">
+            <div class="slider-field__head">
+              <span class="slider-field__label">Target size</span>
+              <span class="slider-field__value">
+                <input type="number" id="targetSizeNumber" min="0" step="1" value="500" aria-label="Target size" />
+                <select id="targetSizeUnit" aria-label="Target size unit">
+                  <option value="KB">KB</option>
+                  <option value="MB" selected>MB</option>
+                </select>
+              </span>
             </div>
-          </div>
-
-          <div id="targetExactRow" class="hidden">
-            <label class="field-label" for="targetExactNumber">Exact target size</label>
-            <div class="size-input-row">
-              <input type="number" id="targetExactNumber" min="1" step="1" value="500" aria-label="Target size" />
-              <select id="targetExactUnit" aria-label="Target size unit">
-                <option value="KB">KB</option>
-                <option value="MB" selected>MB</option>
-              </select>
-            </div>
-            <p class="slider-hint" id="targetExactHint"></p>
+            <input type="range" id="targetSizeSlider" min="1" max="100" step="1" value="50" aria-label="Target size" />
+            <p class="slider-hint" id="targetSizeHint"></p>
           </div>
         </div>
       </div>
@@ -650,7 +654,11 @@
   // Approximate Vorbis vbrQuality -> kbps, from the encoder's own docs
   // (hydrogenaudio's recommended-settings table). Only used to pick a
   // starting quality for target-size mode — Vorbis has no direct bitrate
-  // knob, so this is inherently approximate (the UI says so).
+  // knob, so this is inherently approximate (the UI says so). The live
+  // size estimate in quality mode uses a real encode instead (see
+  // runQualityEstimate below) rather than this kind of table, since actual
+  // VBR output size varies with content far more than a generic "typical"
+  // bitrate table can predict.
   const VORBIS_QUALITY_KBPS = [[-1, 45], [0, 64], [1, 80], [2, 96], [3, 112], [4, 128], [5, 160], [6, 192], [7, 224], [8, 256], [9, 320], [10, 500]];
   function vorbisQualityForKbps(kbps) {
     let best = VORBIS_QUALITY_KBPS[0];
@@ -667,6 +675,17 @@
     } finally {
       ctx.close();
     }
+  }
+
+  // Decoding a whole file via decodeAudioData is the expensive part of a
+  // WAV re-encode — cached by file reference so the live quality-slider
+  // estimate and the real run() below share one decode instead of two.
+  let audioBufferCache = { file: null, buffer: null };
+  async function getDecodedAudioBuffer(file) {
+    if (audioBufferCache.file === file) return audioBufferCache.buffer;
+    const buffer = await decodeAudio(file);
+    audioBufferCache = { file, buffer };
+    return buffer;
   }
 
   async function resampleIfNeeded(buffer, targetRate) {
@@ -797,7 +816,7 @@
       const cap = audioCapability(file);
       if (cap.codec === "wav") {
         ctx.setStatus("Decoding audio…");
-        const buffer0 = await decodeAudio(file);
+        const buffer0 = await getDecodedAudioBuffer(file);
         const channels = Math.min(2, buffer0.numberOfChannels);
         const params = opts.sizeMode === "quality"
           ? wavQualityParams(opts.quality, buffer0.sampleRate)
@@ -961,13 +980,11 @@
   const targetHint = $("targetHint");
   const unsupportedBanner = $("unsupportedBanner"), unsupportedText = $("unsupportedText");
   const controlsWrap = $("controlsWrap");
-  const sizeModeQualityBtn = $("sizeModeQualityBtn"), sizeModeTargetBtn = $("sizeModeTargetBtn");
+  const sizeModeQualityRadio = $("sizeModeQualityRadio"), sizeModeTargetRadio = $("sizeModeTargetRadio");
+  const sizeModeQualityOption = $("sizeModeQualityOption"), sizeModeTargetOption = $("sizeModeTargetOption");
   const qualityPanel = $("qualityPanel"), targetSizePanel = $("targetSizePanel");
-  const qualitySlider = $("qualitySlider"), qualityNumber = $("qualityNumber"), qualitySliderLabel = $("qualitySliderLabel"), qualitySliderHint = $("qualitySliderHint");
-  const targetKindPercentBtn = $("targetKindPercentBtn"), targetKindExactBtn = $("targetKindExactBtn");
-  const targetPercentRow = $("targetPercentRow"), targetExactRow = $("targetExactRow");
-  const targetPercentSlider = $("targetPercentSlider"), targetPercentNumber = $("targetPercentNumber"), targetPercentHint = $("targetPercentHint");
-  const targetExactNumber = $("targetExactNumber"), targetExactUnit = $("targetExactUnit"), targetExactHint = $("targetExactHint");
+  const qualitySlider = $("qualitySlider"), qualityNumber = $("qualityNumber"), qualitySliderLabel = $("qualitySliderLabel"), qualitySliderHint = $("qualitySliderHint"), qualityEstimateHint = $("qualityEstimateHint");
+  const targetSizeSlider = $("targetSizeSlider"), targetSizeNumber = $("targetSizeNumber"), targetSizeUnit = $("targetSizeUnit"), targetSizeHint = $("targetSizeHint");
   const actionBtn = $("actionBtn"), actionBtnIcon = $("actionBtnIcon"), actionBtnLabel = $("actionBtnLabel");
   const statusLine = $("statusLine"), progressTrack = $("progressTrack"), progressFill = $("progressFill");
   const errorBanner = $("errorBanner"), errorBody = $("errorBody"), errorDetails = $("errorDetails");
@@ -977,7 +994,6 @@
   let currentModeKey = "image";
   let currentFile = null;
   let sizeMode = "quality"; // "quality" | "target"
-  let targetKind = "percent"; // "percent" | "exact"
   let busy = false;
   let currentObjectUrl = null;
   let capabilityCache = { supported: true };
@@ -1031,15 +1047,37 @@
   function applySizeModeVisibility() {
     qualityPanel.classList.toggle("hidden", sizeMode !== "quality");
     targetSizePanel.classList.toggle("hidden", sizeMode !== "target");
-    sizeModeQualityBtn.setAttribute("aria-pressed", String(sizeMode === "quality"));
-    sizeModeTargetBtn.setAttribute("aria-pressed", String(sizeMode === "target"));
+    sizeModeQualityRadio.checked = sizeMode === "quality";
+    sizeModeTargetRadio.checked = sizeMode === "target";
+    sizeModeQualityOption.classList.toggle("radio-option--checked", sizeMode === "quality");
+    sizeModeTargetOption.classList.toggle("radio-option--checked", sizeMode === "target");
   }
 
-  function applyTargetKindVisibility() {
-    targetPercentRow.classList.toggle("hidden", targetKind !== "percent");
-    targetExactRow.classList.toggle("hidden", targetKind !== "exact");
-    targetKindPercentBtn.setAttribute("aria-pressed", String(targetKind === "percent"));
-    targetKindExactBtn.setAttribute("aria-pressed", String(targetKind === "exact"));
+  // Target size is driven by a single slider, stored internally as a
+  // percent of the original file's size (so it always spans a sensible
+  // range no matter how big or small that file is) — but the number next
+  // to it always shows the resulting size directly, in KB or MB, rather
+  // than a raw percentage.
+  function targetSizePercent() { return clamp(parseInt(targetSizeSlider.value, 10) || 50, 1, 100); }
+  function targetSizeBytes() {
+    const n = parseFloat(targetSizeNumber.value);
+    if (!isFinite(n) || n <= 0) return 0;
+    return Math.round(n * (targetSizeUnit.value === "MB" ? 1024 * 1024 : 1024));
+  }
+  function setTargetSizeNumberFromBytes(bytes) {
+    const unit = bytes >= 1024 * 1024 ? "MB" : "KB";
+    targetSizeUnit.value = unit;
+    targetSizeNumber.value = unit === "MB" ? Math.round((bytes / (1024 * 1024)) * 100) / 100 : Math.round(bytes / 1024);
+  }
+  function syncTargetSizeFromSlider() {
+    if (currentFile) setTargetSizeNumberFromBytes(Math.round(currentFile.size * targetSizePercent() / 100));
+    updateHints();
+  }
+  function syncTargetSizeFromNumber() {
+    if (currentFile && currentFile.size > 0) {
+      targetSizeSlider.value = String(clamp(Math.round((targetSizeBytes() / currentFile.size) * 100), 1, 100));
+    }
+    updateHints();
   }
 
   function updateHints() {
@@ -1051,22 +1089,78 @@
     qualitySliderHint.textContent = noQualityDial
       ? "PNG is always lossless, so this slider has no effect on it — use Target size to shrink a PNG (by resizing)."
       : "Higher = larger file, closer to the original " + qualityWordFor + ".";
-    if (currentFile) {
-      const bytes = currentFile.size;
-      const pct = clamp(parseInt(targetPercentNumber.value, 10) || 50, 1, 100);
-      targetPercentHint.textContent = "≈ " + formatBytes(Math.round(bytes * pct / 100)) + " (original is " + formatBytes(bytes) + ")";
-      const exactBytes = exactTargetBytes();
-      targetExactHint.textContent = exactBytes ? "That's " + Math.round((exactBytes / bytes) * 100) + "% of the original " + formatBytes(bytes) + "." : "";
-    } else {
-      targetPercentHint.textContent = "";
-      targetExactHint.textContent = "";
-    }
+    targetSizeHint.textContent = currentFile
+      ? "That's " + targetSizePercent() + "% of the original " + formatBytes(currentFile.size) + "."
+      : "";
+    scheduleQualityEstimate();
   }
 
-  function exactTargetBytes() {
-    const n = parseFloat(targetExactNumber.value);
-    if (!isFinite(n) || n <= 0) return 0;
-    return Math.round(n * (targetExactUnit.value === "MB" ? 1024 * 1024 : 1024));
+  /* ── Live "how big will this be" readout for the Quality slider ──
+     Image and audio both run the exact same real encode used by the actual
+     Compress button — cheap enough (a canvas re-encode, or a WASM MP3/Ogg
+     Vorbis/WAV encode) to redo after a short pause in dragging, and that
+     means the number shown is always exactly what you'd get, never a
+     guess. A generic bitrate-table approximation was tried first and
+     dropped: LAME/Vorbis VBR bitrate depends heavily on the audio's actual
+     complexity, and on a couple of test clips the table's "typical" bitrate
+     was off by 30-300% from the real encode — not a useful estimate.
+     Video is the one exception: an FFmpeg encode is far too slow to redo on
+     every slider tick, so a plain note is shown instead. ── */
+  let qualityEstimateToken = 0;
+  let qualityEstimateTimer = null;
+  function scheduleQualityEstimate() {
+    if (qualityEstimateTimer) clearTimeout(qualityEstimateTimer);
+    qualityEstimateTimer = setTimeout(runQualityEstimate, 150);
+  }
+  function showQualityEstimate(bytes) {
+    const pct = currentFile.size > 0 ? Math.round((bytes / currentFile.size) * 100) : 0;
+    qualityEstimateHint.textContent = "New size: " + formatBytes(bytes) + " (" + pct + "% of original)";
+  }
+  async function runQualityEstimate() {
+    const token = ++qualityEstimateToken;
+    if (!currentFile || !capabilityCache.supported || sizeMode !== "quality") { qualityEstimateHint.textContent = ""; return; }
+    const quality = clamp(parseInt(qualityNumber.value, 10) || 80, 1, 100);
+    const silentCtx = { setStatus: () => {}, setProgress: () => {} };
+
+    if (currentModeKey === "video") {
+      qualityEstimateHint.textContent = "Exact size depends on the video's content — shown after compressing.";
+      return;
+    }
+
+    if (currentModeKey === "image") {
+      try {
+        const bitmap = await loadBitmap(currentFile);
+        if (token !== qualityEstimateToken) return;
+        const canvas = document.createElement("canvas");
+        canvas.width = bitmap.width; canvas.height = bitmap.height;
+        canvas.getContext("2d").drawImage(bitmap, 0, 0);
+        const blob = await canvasToBlob(canvas, capabilityCache.mime, quality / 100);
+        if (token !== qualityEstimateToken) return;
+        showQualityEstimate(blob.size);
+      } catch (e) { if (token === qualityEstimateToken) qualityEstimateHint.textContent = ""; }
+      return;
+    }
+
+    // audio
+    qualityEstimateHint.textContent = "Estimating…";
+    try {
+      if (capabilityCache.codec === "wav") {
+        const buffer = await getDecodedAudioBuffer(currentFile);
+        if (token !== qualityEstimateToken) return;
+        const params = wavQualityParams(quality, buffer.sampleRate);
+        const channels = Math.min(2, buffer.numberOfChannels);
+        const bytes = 44 + Math.ceil(buffer.duration * params.sampleRate) * channels * (params.bitDepth / 8);
+        showQualityEstimate(bytes);
+      } else {
+        const mimeType = capabilityCache.codec === "mp3" ? "audio/mpeg" : "audio/ogg";
+        const config = mimeType === "audio/mpeg"
+          ? { vbrQuality: clamp(9.999 - (quality / 100) * 9.999, 0, 9.999) }
+          : { vbrQuality: clamp(-1 + (quality / 100) * 11, -1, 10) };
+        const blob = await encodeAudio(currentFile, mimeType, config, silentCtx);
+        if (token !== qualityEstimateToken) return;
+        showQualityEstimate(blob.size);
+      }
+    } catch (e) { if (token === qualityEstimateToken) qualityEstimateHint.textContent = ""; }
   }
 
   function applyModeChrome() {
@@ -1078,7 +1172,6 @@
     dropzoneTitle.textContent = mode.dropTitle;
     fileInput.setAttribute("accept", mode.accept);
     applySizeModeVisibility();
-    applyTargetKindVisibility();
     refreshCapability();
     updateHints();
   }
@@ -1094,23 +1187,17 @@
   tabAudioBtn.addEventListener("click", () => switchMode("audio"));
   tabVideoBtn.addEventListener("click", () => switchMode("video"));
 
-  sizeModeQualityBtn.addEventListener("click", () => { if (busy) return; sizeMode = "quality"; applySizeModeVisibility(); });
-  sizeModeTargetBtn.addEventListener("click", () => { if (busy) return; sizeMode = "target"; applySizeModeVisibility(); });
-  targetKindPercentBtn.addEventListener("click", () => { if (busy) return; targetKind = "percent"; applyTargetKindVisibility(); });
-  targetKindExactBtn.addEventListener("click", () => { if (busy) return; targetKind = "exact"; applyTargetKindVisibility(); });
+  sizeModeQualityRadio.addEventListener("change", () => { if (busy) return; sizeMode = "quality"; applySizeModeVisibility(); updateHints(); });
+  sizeModeTargetRadio.addEventListener("change", () => { if (busy) return; sizeMode = "target"; applySizeModeVisibility(); updateHints(); });
 
-  function syncPair(range, number, min, max) {
-    range.addEventListener("input", () => { number.value = range.value; updateHints(); });
-    number.addEventListener("input", () => {
-      const v = clamp(parseInt(number.value, 10) || min, min, max);
-      range.value = String(v);
-      updateHints();
-    });
-  }
-  syncPair(qualitySlider, qualityNumber, 1, 100);
-  syncPair(targetPercentSlider, targetPercentNumber, 1, 100);
-  targetExactNumber.addEventListener("input", updateHints);
-  targetExactUnit.addEventListener("change", updateHints);
+  qualitySlider.addEventListener("input", () => { qualityNumber.value = qualitySlider.value; updateHints(); });
+  qualityNumber.addEventListener("input", () => {
+    qualitySlider.value = String(clamp(parseInt(qualityNumber.value, 10) || 1, 1, 100));
+    updateHints();
+  });
+  targetSizeSlider.addEventListener("input", syncTargetSizeFromSlider);
+  targetSizeNumber.addEventListener("input", syncTargetSizeFromNumber);
+  targetSizeUnit.addEventListener("change", syncTargetSizeFromNumber);
 
   function formatMeta(file) {
     return formatBytes(file.size) + (file.type ? " · " + file.type : "");
@@ -1122,6 +1209,7 @@
       currentFile = null;
       fileChip.classList.add("hidden");
       refreshCapability();
+      updateHints();
       return;
     }
     const mode = currentMode();
@@ -1136,8 +1224,9 @@
     fileChipName.textContent = file.name;
     fileChipMeta.textContent = formatMeta(file);
     fileChip.classList.remove("hidden");
+    targetSizeSlider.value = "50";
     refreshCapability();
-    updateHints();
+    syncTargetSizeFromSlider(); // also refreshes hints/estimate
   }
 
   fileInput.addEventListener("change", () => selectFile(fileInput.files && fileInput.files[0]));
@@ -1177,9 +1266,7 @@
       if (sizeMode === "quality") {
         opts.quality = clamp(parseInt(qualityNumber.value, 10) || 80, 1, 100);
       } else {
-        opts.targetBytes = targetKind === "percent"
-          ? Math.round(currentFile.size * clamp(parseInt(targetPercentNumber.value, 10) || 50, 1, 100) / 100)
-          : exactTargetBytes();
+        opts.targetBytes = targetSizeBytes();
         if (!opts.targetBytes || opts.targetBytes <= 0) throw new Error("Enter a target size greater than zero.");
       }
       const result = await mode.run(currentFile, opts, ctx);
