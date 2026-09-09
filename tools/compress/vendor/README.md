@@ -46,16 +46,22 @@ To update: `npm pack wasm-media-encoders@<version>`, then copy
 `dist/umd/WasmMediaEncoder.min.js` and `wasm/{mp3,ogg}.wasm` from the
 tarball over these files.
 
-## Why no vendored lossless encoder
+## Why there's no format conversion, and no separate lossless mode
 
-The Lossless mode in the Image tab doesn't need a vendored library — it uses
-the browser's own `<canvas>` PNG encoder (genuinely lossless: identical
-pixels, just a fresh, metadata-free re-encode) and a small hand-rolled JPEG
-byte-surgery routine (strips EXIF/ICC/thumbnails without touching a single
-compressed pixel byte). Both live directly in `/tools/compress/index.html`.
+Every tab keeps the output in the same file type as the input — there's no
+"convert to X" picker. That's also why there's a `capability(file)` check per
+tab in `/tools/compress/index.html`: if the dropped file's format isn't one
+this tool can re-encode back into itself (canvas only reliably *encodes*
+JPEG/PNG/WebP; the audio/video encoders here only cover MP3/Ogg Vorbis/WAV
+and MP4·M4V·MOV·MKV/WebM respectively), it's reported as unsupported rather
+than silently switched to some other format.
 
-True lossless recompression of already-lossy audio or video (MP3, AAC, H.264,
-etc.) isn't a real operation — you can't losslessly "recompress" data that's
-already been through lossy quantization, only decode-and-re-encode it lossily
-again. So the Audio and Video tabs only offer the quality/target-size mode;
-see the in-page note on each tab for specifics.
+There's also no dedicated "Lossless" toggle. PNG's own re-encode through
+`<canvas>` is still genuinely lossless (identical pixels, just a fresh,
+metadata-free stream) and WAV is uncompressed PCM either way — but every tab
+uses the same single quality-slider/target-size UI, since a separate
+lossless mode isn't meaningful for JPEG/WebP/MP3/Ogg Vorbis/video (their
+"lossless" case is just the quality slider turned all the way up), and for
+PNG/WAV the quality slider simply doesn't do anything to it — a fact the
+in-page hint says outright rather than hiding a no-op control behind a
+misleading "Lossless" label.

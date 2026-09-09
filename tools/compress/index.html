@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Compress</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Shrink images, audio, and video entirely on your device — a true lossless mode, or a slider/target-size mode for hitting an exact KB, MB, or percentage." />
+  <meta name="description" content="Shrink images, audio, and video entirely on your device with a quality slider or an exact KB/MB/percent target — output always stays the same file type you started with." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -291,7 +291,7 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">compress</span></div>
       <h1 class="hero__title">Compress</h1>
-      <p class="hero__sub">Shrink images, audio, and video entirely on your device. A real lossless mode where one exists, plus a slider or exact-size target when you need a specific file size.</p>
+      <p class="hero__sub">Shrink images, audio, and video entirely on your device with a quality slider or an exact size target. No format conversion — the output always stays the same file type you dropped in.</p>
     </div>
 
     <div class="seg" role="tablist" aria-label="File type">
@@ -327,102 +327,80 @@
       </div>
     </div>
 
-    <!-- Compression method: Lossless vs Target size / quality. Only the
-         Image tab genuinely has a lossless option — see the note card
-         inside each panel for why Audio/Video skip it entirely rather than
-         label something "lossless" that isn't. -->
-    <div class="card hidden" id="methodCard">
-      <div class="section-title"><h2><span class="material-icons">tune</span>Compression method</h2></div>
-      <div class="seg" id="methodSeg" role="tablist" aria-label="Compression method">
-        <button class="seg-btn" id="methodLosslessBtn" type="button" role="tab" aria-pressed="true">
-          <span class="material-icons">verified</span><span>Lossless</span>
-        </button>
-        <button class="seg-btn" id="methodTargetBtn" type="button" role="tab" aria-pressed="false">
-          <span class="material-icons">straighten</span><span>Target size &amp; quality</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Lossless panel (image only). -->
-    <div class="card hidden" id="losslessCard">
-      <div class="section-title"><h2><span class="material-icons">verified</span>Lossless re-encode</h2></div>
-      <p class="section-hint" id="losslessHint">Decodes to the exact same pixels and re-encodes with a cleaner, metadata-free stream. Pixel-for-pixel identical to the original — savings depend entirely on how much overhead the original file had, so there's no size or quality dial here.</p>
-      <div class="info-banner hidden" id="losslessUnsupportedBanner">
-        <span class="material-icons">info</span>
-        <p id="losslessUnsupportedText"></p>
-      </div>
-    </div>
-
-    <!-- Target size / quality panel — shared shape across all 3 tabs, the
-         output-format select and copy are swapped in per tab. -->
-    <div class="card hidden" id="targetCard">
-      <div class="section-title"><h2><span class="material-icons">straighten</span>Target size &amp; quality</h2></div>
+    <!-- Compress options — shared shape across all 3 tabs, hint text swapped
+         in per tab. No format picker: output always stays the same file
+         type as the input, so unsupported formats get a banner here instead
+         of a fallback conversion. -->
+    <div class="card" id="targetCard">
+      <div class="section-title"><h2><span class="material-icons">tune</span>Compress</h2></div>
       <p class="section-hint" id="targetHint"></p>
 
-      <label class="field-label" for="formatSelect" id="formatLabel">Output format</label>
-      <div class="select-row">
-        <select id="formatSelect" aria-label="Output format"></select>
+      <div class="info-banner hidden" id="unsupportedBanner">
+        <span class="material-icons">info</span>
+        <p id="unsupportedText"></p>
       </div>
 
-      <div class="seg seg--sm" id="sizeModeSeg" role="tablist" aria-label="How to choose the amount of compression">
-        <button class="seg-btn" id="sizeModeQualityBtn" type="button" role="tab" aria-pressed="true">
-          <span class="material-icons">tune</span><span>Quality slider</span>
-        </button>
-        <button class="seg-btn" id="sizeModeTargetBtn" type="button" role="tab" aria-pressed="false">
-          <span class="material-icons">data_usage</span><span>Target size</span>
-        </button>
-      </div>
-
-      <!-- Quality-slider sub-panel -->
-      <div class="subpanel" id="qualityPanel">
-        <div class="slider-field">
-          <div class="slider-field__head">
-            <span class="slider-field__label" id="qualitySliderLabel">Quality</span>
-            <span class="slider-field__value">
-              <input type="number" id="qualityNumber" min="1" max="100" step="1" value="80" aria-label="Quality percent" />
-              <span class="slider-field__unit">%</span>
-            </span>
-          </div>
-          <input type="range" id="qualitySlider" min="1" max="100" step="1" value="80" aria-label="Quality" />
-          <p class="slider-hint" id="qualitySliderHint">Higher = larger file, closer to the original.</p>
-        </div>
-      </div>
-
-      <!-- Target-size sub-panel -->
-      <div class="subpanel hidden" id="targetSizePanel">
-        <div class="seg seg--sm" id="targetKindSeg" role="tablist" aria-label="Target size input">
-          <button class="seg-btn" id="targetKindPercentBtn" type="button" role="tab" aria-pressed="true">
-            <span class="material-icons">percent</span><span>% of original</span>
+      <div id="controlsWrap">
+        <div class="seg seg--sm" id="sizeModeSeg" role="tablist" aria-label="How to choose the amount of compression">
+          <button class="seg-btn" id="sizeModeQualityBtn" type="button" role="tab" aria-pressed="true">
+            <span class="material-icons">tune</span><span>Quality slider</span>
           </button>
-          <button class="seg-btn" id="targetKindExactBtn" type="button" role="tab" aria-pressed="false">
-            <span class="material-icons">save</span><span>Specific size</span>
+          <button class="seg-btn" id="sizeModeTargetBtn" type="button" role="tab" aria-pressed="false">
+            <span class="material-icons">data_usage</span><span>Target size</span>
           </button>
         </div>
 
-        <div id="targetPercentRow">
+        <!-- Quality-slider sub-panel -->
+        <div class="subpanel" id="qualityPanel">
           <div class="slider-field">
             <div class="slider-field__head">
-              <span class="slider-field__label">Target size</span>
+              <span class="slider-field__label" id="qualitySliderLabel">Quality</span>
               <span class="slider-field__value">
-                <input type="number" id="targetPercentNumber" min="1" max="100" step="1" value="50" aria-label="Target size, percent of original" />
+                <input type="number" id="qualityNumber" min="1" max="100" step="1" value="80" aria-label="Quality percent" />
                 <span class="slider-field__unit">%</span>
               </span>
             </div>
-            <input type="range" id="targetPercentSlider" min="1" max="100" step="1" value="50" aria-label="Target size percent" />
-            <p class="slider-hint" id="targetPercentHint"></p>
+            <input type="range" id="qualitySlider" min="1" max="100" step="1" value="80" aria-label="Quality" />
+            <p class="slider-hint" id="qualitySliderHint">Higher = larger file, closer to the original.</p>
           </div>
         </div>
 
-        <div id="targetExactRow" class="hidden">
-          <label class="field-label" for="targetExactNumber">Exact target size</label>
-          <div class="size-input-row">
-            <input type="number" id="targetExactNumber" min="1" step="1" value="500" aria-label="Target size" />
-            <select id="targetExactUnit" aria-label="Target size unit">
-              <option value="KB">KB</option>
-              <option value="MB" selected>MB</option>
-            </select>
+        <!-- Target-size sub-panel -->
+        <div class="subpanel hidden" id="targetSizePanel">
+          <div class="seg seg--sm" id="targetKindSeg" role="tablist" aria-label="Target size input">
+            <button class="seg-btn" id="targetKindPercentBtn" type="button" role="tab" aria-pressed="true">
+              <span class="material-icons">percent</span><span>% of original</span>
+            </button>
+            <button class="seg-btn" id="targetKindExactBtn" type="button" role="tab" aria-pressed="false">
+              <span class="material-icons">save</span><span>Specific size</span>
+            </button>
           </div>
-          <p class="slider-hint" id="targetExactHint"></p>
+
+          <div id="targetPercentRow">
+            <div class="slider-field">
+              <div class="slider-field__head">
+                <span class="slider-field__label">Target size</span>
+                <span class="slider-field__value">
+                  <input type="number" id="targetPercentNumber" min="1" max="100" step="1" value="50" aria-label="Target size, percent of original" />
+                  <span class="slider-field__unit">%</span>
+                </span>
+              </div>
+              <input type="range" id="targetPercentSlider" min="1" max="100" step="1" value="50" aria-label="Target size percent" />
+              <p class="slider-hint" id="targetPercentHint"></p>
+            </div>
+          </div>
+
+          <div id="targetExactRow" class="hidden">
+            <label class="field-label" for="targetExactNumber">Exact target size</label>
+            <div class="size-input-row">
+              <input type="number" id="targetExactNumber" min="1" step="1" value="500" aria-label="Target size" />
+              <select id="targetExactUnit" aria-label="Target size unit">
+                <option value="KB">KB</option>
+                <option value="MB" selected>MB</option>
+              </select>
+            </div>
+            <p class="slider-hint" id="targetExactHint"></p>
+          </div>
         </div>
       </div>
     </div>
@@ -443,11 +421,6 @@
           <p class="error-banner__body" id="errorBody"></p>
           <p class="error-banner__details hidden" id="errorDetails"></p>
         </div>
-      </div>
-
-      <div class="info-banner hidden" id="infoBanner" role="status">
-        <span class="material-icons">info</span>
-        <p id="infoBody"></p>
       </div>
     </div>
 
@@ -477,7 +450,7 @@
 
     <div class="card note-card" id="privacyNote">
       <span class="material-icons">shield</span>
-      <p id="privacyNoteText">Everything runs on your device — files are never uploaded anywhere. The Image tab needs no extra downloads; Audio uses a small (~0.8&nbsp;MB) vendored MP3/Ogg&nbsp;Vorbis encoder; Video uses a vendored build of <a href="https://github.com/ffmpegwasm/ffmpeg.wasm" target="_blank" rel="noopener">FFmpeg compiled to WebAssembly</a> (~31&nbsp;MB, cached by your browser after the first use).</p>
+      <p id="privacyNoteText">Everything runs on your device — files are never uploaded anywhere, and there's no format conversion; the output always stays the same file type you started with. The Image tab needs no extra downloads; Audio uses a small (~0.6&nbsp;MB) vendored MP3/Ogg&nbsp;Vorbis encoder (WAV needs none at all); Video uses a vendored build of <a href="https://github.com/ffmpegwasm/ffmpeg.wasm" target="_blank" rel="noopener">FFmpeg compiled to WebAssembly</a> (~31&nbsp;MB, cached by your browser after the first use).</p>
     </div>
   </main>
 
@@ -524,11 +497,12 @@
 
   /* ═══════════════════════════════════════════════════════════════════
      Mode config: Image / Audio / Video. Each entry describes the shared
-     chrome (dropzone copy, accept filter, whether a lossless mode exists)
-     plus a `process(file, opts, ctx)` function that does the real work and
-     returns { blob, name }. `ctx` carries progress/status callbacks and an
-     AbortSignal-like `cancelled` flag isn't needed since we don't support
-     cancellation — the button is just disabled while busy.
+     chrome (dropzone copy, accept filter), a `capability(file)` function
+     that decides whether this exact file's format can be compressed at
+     all — there's no format conversion, so an unsupported format is a
+     dead end here rather than a fallback to some other output type — and
+     a `run(file, opts, ctx)` function that does the real work and returns
+     { blob, name, note }. `ctx` carries progress/status callbacks.
      ═══════════════════════════════════════════════════════════════════ */
   const MODES = {}; // filled in by the per-type sections below
 
@@ -599,167 +573,54 @@
     return best;
   }
 
-  /* ── Lossless PNG: canvas round-trip is genuinely lossless for the pixel
-     data (no quantization happens for PNG) and, as a side effect, drops
-     ancillary metadata chunks — the browser's built-in encoder is usually
-     at least as good as what produced the source file. ── */
-  async function losslessPng(file) {
-    const bitmap = await loadBitmap(file);
-    const w = bitmap.width, h = bitmap.height;
-    const canvas = document.createElement("canvas");
-    canvas.width = w; canvas.height = h;
-    canvas.getContext("2d").drawImage(bitmap, 0, 0);
-    const blob = await canvasToBlob(canvas, "image/png");
-    return { blob, name: baseName(file.name) + "-lossless.png" };
-  }
+  // Canvas can only reliably *encode* three image types across browsers —
+  // that's the entire universe of "same file type" outputs available here.
+  // Anything else (GIF, BMP, AVIF, HEIC, TIFF, SVG, ...) can often still be
+  // *decoded*, but re-encoding it back to that same format isn't something
+  // canvas.toBlob supports, so it's reported as unsupported rather than
+  // silently switched to a different format.
+  const IMAGE_MIME_EXT = { "image/jpeg": "jpg", "image/webp": "webp", "image/png": "png" };
+  const IMAGE_EXT_MIME = { jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", png: "image/png" };
 
-  /* ── Lossless JPEG: byte-level metadata surgery — never touches the
-     entropy-coded scan data, so the decoded pixels are bit-for-bit
-     identical. EXIF orientation is the one thing that would visibly change
-     if handled carelessly: if the file carries a non-default orientation
-     tag we leave EXIF alone entirely (still strip Photoshop/comment junk)
-     rather than risk the image displaying rotated after the "lossless"
-     pass. ── */
-  function readJpegExifOrientation(bytes, segStart, segLen) {
-    try {
-      const payloadStart = segStart + 4; // past FF E1 + 2-byte length
-      const sig = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00]; // "Exif\0\0"
-      for (let i = 0; i < 6; i++) if (bytes[payloadStart + i] !== sig[i]) return null;
-      const tiffStart = payloadStart + 6;
-      const byteOrder = bytes[tiffStart];
-      if (byteOrder !== 0x49 && byteOrder !== 0x4D) return null; // "II" or "MM"
-      const little = byteOrder === 0x49;
-      const dv = new DataView(bytes.buffer, bytes.byteOffset + tiffStart, segStart + 2 + segLen - tiffStart);
-      const ifd0Offset = dv.getUint32(4, little);
-      const numEntries = dv.getUint16(ifd0Offset, little);
-      for (let e = 0; e < numEntries; e++) {
-        const entryOffset = ifd0Offset + 2 + e * 12;
-        if (entryOffset + 12 > dv.byteLength) break;
-        const tag = dv.getUint16(entryOffset, little);
-        if (tag === 0x0112) return dv.getUint16(entryOffset + 8, little);
-      }
-      return null;
-    } catch (e) { return null; }
-  }
-
-  function stripJpegMetadata(bytes) {
-    if (bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) {
-      throw new Error("This doesn't look like a valid JPEG file.");
+  function imageCapability(file) {
+    const mime = IMAGE_MIME_EXT[file.type] ? file.type : IMAGE_EXT_MIME[extOf(file.name)];
+    if (!mime) {
+      return { supported: false, message: "This image format can't be compressed here — only JPEG, PNG, and WebP are supported (this file is " + (file.type || ("a ." + (extOf(file.name) || "?") + " file")) + ")." };
     }
-    const KEEP_MARKERS = new Set([
-      0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF, // SOFn
-      0xC4, // DHT
-      0xDB, // DQT
-      0xDD, // DRI
-      0xE0, // APP0 (JFIF)
-    ]);
-    const ICC_SIG = "ICC_PROFILE\0";
-    function isIccApp2(bytes, payloadStart) {
-      for (let i = 0; i < ICC_SIG.length; i++) if (bytes[payloadStart + i] !== ICC_SIG.charCodeAt(i)) return false;
-      return true;
-    }
-
-    const out = [0xFF, 0xD8];
-    let i = 2, removed = 0, keptExifForOrientation = false;
-    while (i < bytes.length - 1) {
-      if (bytes[i] !== 0xFF) { out.push(bytes[i]); i++; continue; }
-      const marker = bytes[i + 1];
-      if (marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) { out.push(0xFF, marker); i += 2; continue; }
-      if (marker === 0xD9) { out.push(0xFF, 0xD9); i += 2; break; }
-      if (i + 3 >= bytes.length) break;
-      const len = (bytes[i + 2] << 8) | bytes[i + 3];
-      const segEnd = i + 2 + len;
-      if (marker === 0xDA) {
-        // Start of scan: copy the header + every entropy-coded byte through
-        // EOI completely untouched (0xFF00 stuffing and RST markers inside
-        // the scan are part of the compressed data, not metadata).
-        let j = segEnd;
-        while (j < bytes.length - 1) {
-          if (bytes[j] === 0xFF) {
-            const nx = bytes[j + 1];
-            if (nx === 0x00 || (nx >= 0xD0 && nx <= 0xD7)) { j += 2; continue; }
-            if (nx === 0xD9) break;
-          }
-          j++;
-        }
-        for (let k = i; k < j; k++) out.push(bytes[k]);
-        out.push(0xFF, 0xD9);
-        i = bytes.length;
-        break;
-      }
-      let keep = KEEP_MARKERS.has(marker);
-      if (marker === 0xE2 && isIccApp2(bytes, i + 4)) keep = true; // ICC colour profile
-      if (marker === 0xE1) { // EXIF — keep only if it encodes a non-default orientation
-        const orientation = readJpegExifOrientation(bytes, i, len);
-        if (orientation != null && orientation !== 1) { keep = true; keptExifForOrientation = true; }
-      }
-      if (keep) { for (let k = i; k < segEnd; k++) out.push(bytes[k]); }
-      else { removed += segEnd - i; }
-      i = segEnd;
-    }
-    return { bytes: new Uint8Array(out), removed, keptExifForOrientation };
+    return { supported: true, mime, ext: IMAGE_MIME_EXT[mime], lossyQuality: mime !== "image/png" };
   }
-
-  async function losslessJpeg(file) {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const { bytes: out, removed, keptExifForOrientation } = stripJpegMetadata(bytes);
-    const blob = new Blob([out], { type: "image/jpeg" });
-    return {
-      blob,
-      name: baseName(file.name) + "-lossless.jpg",
-      note: removed > 0
-        ? "Stripped " + formatBytes(removed) + " of metadata" + (keptExifForOrientation ? " (kept EXIF orientation)" : "") + " — every pixel byte is untouched."
-        : "No metadata to strip — this file's pixel data is already as compact as it gets losslessly.",
-    };
-  }
-
-  const IMAGE_LOSSLESS_TYPES = { "image/png": losslessPng, "image/jpeg": losslessJpeg };
 
   MODES.image = {
     label: "image", icon: "image", accept: "image/*",
     dropTitle: "Drop an image here, or tap to choose",
-    hasLossless: true,
-    formats: [
-      { value: "image/jpeg", label: "JPEG — smallest, no transparency", ext: "jpg", lossyQuality: true },
-      { value: "image/webp", label: "WebP — smaller, supports transparency", ext: "webp", lossyQuality: true },
-      { value: "image/png", label: "PNG — always lossless, shrinks only by resizing", ext: "png", lossyQuality: false },
-    ],
-    targetHint: "Re-encodes as JPEG, WebP, or PNG — defaults to whatever format you dropped in, but you can pick a different one below. JPEG/WebP shrink via a quality dial; PNG has no such dial (it's always lossless), so a PNG target size is reached by resizing instead.",
-    async losslessInfo(file) {
-      const fn = IMAGE_LOSSLESS_TYPES[file.type] || IMAGE_LOSSLESS_TYPES[({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" })[extOf(file.name)]];
-      if (fn) return { supported: true };
-      return { supported: false, message: "Lossless mode only applies to PNG and JPEG. This file is " + (file.type || ("a ." + extOf(file.name) + " file")) + " — switch to \"Target size & quality\" to compress it (re-encoding as JPEG or WebP)." };
-    },
-    async runLossless(file, ctx) {
-      const fn = IMAGE_LOSSLESS_TYPES[file.type] || IMAGE_LOSSLESS_TYPES[({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" })[extOf(file.name)]];
-      if (!fn) throw new Error("Lossless mode isn't available for this format.");
-      ctx.setStatus("Re-encoding losslessly…");
-      return fn(file);
-    },
-    async runTarget(file, opts, ctx) {
+    hint: "Compresses this image without changing its format. JPEG and WebP shrink via the quality dial below; PNG has no such dial — it's always lossless — so a smaller PNG is reached by resizing instead. Only JPEG, PNG, and WebP can be compressed here.",
+    capability: imageCapability,
+    async run(file, opts, ctx) {
+      const cap = imageCapability(file);
       ctx.setStatus("Decoding image…");
       const bitmap = await loadBitmap(file);
-      const fmt = MODES.image.formats.find((f) => f.value === opts.format) || MODES.image.formats[0];
       if (opts.sizeMode === "quality") {
         ctx.setStatus("Encoding…");
         const canvas = document.createElement("canvas");
         canvas.width = bitmap.width; canvas.height = bitmap.height;
         canvas.getContext("2d").drawImage(bitmap, 0, 0);
-        const blob = await canvasToBlob(canvas, fmt.value, opts.quality / 100);
-        const note = fmt.lossyQuality ? undefined : "PNG is always lossless, so the quality slider had no effect — this is just a fresh, metadata-free PNG re-encode.";
-        return { blob, name: baseName(file.name) + "-q" + opts.quality + "." + fmt.ext, note };
+        const blob = await canvasToBlob(canvas, cap.mime, opts.quality / 100);
+        const note = cap.lossyQuality ? undefined : "PNG is always lossless, so the quality slider had no effect — this is just a fresh, metadata-free re-encode.";
+        return { blob, name: baseName(file.name) + "-q" + opts.quality + "." + cap.ext, note };
       }
       ctx.setStatus("Searching for the closest match to your target size…");
-      const result = await encodeImageToTarget(bitmap, fmt.value, opts.targetBytes, (p) => ctx.setProgress(p));
+      const result = await encodeImageToTarget(bitmap, cap.mime, opts.targetBytes, (p) => ctx.setProgress(p));
       const note = result.scaledDown
         ? "Quality alone couldn't hit this target on such a detailed image, so the dimensions were also reduced to " + result.width + "×" + result.height + "."
         : "Dimensions kept at " + result.width + "×" + result.height + ".";
-      return { blob: result.blob, name: baseName(file.name) + "-" + formatBytes(opts.targetBytes).replace(/\s+/g, "") + "." + fmt.ext, note };
+      return { blob: result.blob, name: baseName(file.name) + "-" + formatBytes(opts.targetBytes).replace(/\s+/g, "") + "." + cap.ext, note };
     },
   };
 
   /* ═══════════════════════════════════════════════════════════════════
-     AUDIO — MP3 / Ogg Vorbis via vendored wasm-media-encoders.
+     AUDIO — MP3 / Ogg Vorbis via vendored wasm-media-encoders, or a plain
+     hand-written WAV re-encode (sample-rate/bit-depth reduction — the only
+     two things that shrink uncompressed PCM).
      ═══════════════════════════════════════════════════════════════════ */
   // wasm-media-encoders only ships a bundler-friendly ESM build (bare
   // "@swc/helpers/..." specifiers that a plain `import()` can't resolve)
@@ -858,38 +719,6 @@
     return new Blob([outBytes], { type: mimeType });
   }
 
-  MODES.audio = {
-    label: "audio", icon: "music_note", accept: "audio/*",
-    dropTitle: "Drop an audio file here, or tap to choose",
-    hasLossless: false,
-    formats: [
-      { value: "audio/mpeg", label: "MP3 — universal compatibility, precise sizing", ext: "mp3" },
-      { value: "audio/ogg", label: "Ogg Vorbis — better quality per KB, approximate sizing", ext: "ogg" },
-    ],
-    targetHint: "There's no lossless option here: an MP3/AAC/etc. file is already lossy, and re-encoding it — to anything, at any bitrate — just adds a second, unnecessary generation of loss on top. This mode re-encodes to MP3 or Ogg Vorbis at a quality or bitrate you choose instead.",
-    async runTarget(file, opts, ctx) {
-      const fmt = MODES.audio.formats.find((f) => f.value === opts.format) || MODES.audio.formats[0];
-      let config;
-      if (opts.sizeMode === "quality") {
-        config = fmt.value === "audio/mpeg"
-          ? { vbrQuality: clamp(9.999 - (opts.quality / 100) * 9.999, 0, 9.999) }
-          : { vbrQuality: clamp(-1 + (opts.quality / 100) * 11, -1, 10) };
-      } else {
-        // decodeAudioData is needed just to get duration up front too, but
-        // we already have it cheaply via an <audio> element to avoid a
-        // double-decode of large files.
-        const durationSec = await probeAudioDuration(file);
-        const kbps = (opts.targetBytes * 8) / 1000 / Math.max(0.1, durationSec);
-        config = fmt.value === "audio/mpeg"
-          ? { bitrate: nearestFrom(MP3_CBR_STEPS, kbps) }
-          : { vbrQuality: vorbisQualityForKbps(kbps) };
-      }
-      const blob = await encodeAudio(file, fmt.value, config, ctx);
-      const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
-      return { blob, name: baseName(file.name) + "-" + label + "." + fmt.ext };
-    },
-  };
-
   function probeAudioDuration(file) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
@@ -900,6 +729,107 @@
       el.src = url;
     });
   }
+
+  function writeAsciiString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  }
+
+  // A plain, hand-written PCM WAV writer — no encoder needed. WAV is
+  // uncompressed audio, so there's no bitrate/quality dial the way there is
+  // for MP3/Vorbis; the only two levers that shrink it are sample rate and
+  // bit depth, both applied here.
+  function encodeWav(buffer, channels, bitDepth) {
+    const sampleRate = buffer.sampleRate;
+    const bytesPerSample = bitDepth === 8 ? 1 : 2;
+    const numSamples = buffer.length;
+    const blockAlign = channels * bytesPerSample;
+    const dataSize = numSamples * blockAlign;
+    const out = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(out);
+    writeAsciiString(view, 0, "RIFF"); view.setUint32(4, 36 + dataSize, true); writeAsciiString(view, 8, "WAVE");
+    writeAsciiString(view, 12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channels, true);
+    view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true); view.setUint16(34, bitDepth, true);
+    writeAsciiString(view, 36, "data"); view.setUint32(40, dataSize, true);
+    const chans = []; for (let c = 0; c < channels; c++) chans.push(buffer.getChannelData(c));
+    let offset = 44;
+    for (let i = 0; i < numSamples; i++) {
+      for (let c = 0; c < channels; c++) {
+        const s = clamp(chans[c][i], -1, 1);
+        if (bitDepth === 16) { view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true); offset += 2; }
+        else { view.setUint8(offset, Math.round((s * 0.5 + 0.5) * 255)); offset += 1; }
+      }
+    }
+    return new Blob([out], { type: "audio/wav" });
+  }
+
+  function wavQualityParams(quality, originalRate) {
+    if (quality >= 50) {
+      const frac = 0.5 + ((quality - 50) / 50) * 0.5; // 0.5..1.0 of the original rate
+      return { sampleRate: Math.max(4000, Math.round(originalRate * frac)), bitDepth: 16 };
+    }
+    const frac = Math.max(0.08, quality / 50); // 0.08..1.0 of half the original rate, plus 8-bit
+    return { sampleRate: Math.max(4000, Math.round(originalRate * 0.5 * frac)), bitDepth: 8 };
+  }
+  function wavParamsForTarget(targetBytes, durationSec, channels, originalRate) {
+    const targetBytesPerSec = targetBytes / Math.max(0.1, durationSec);
+    let bitDepth = 16, rate = Math.round(targetBytesPerSec / (channels * 2));
+    if (rate < 4000) { bitDepth = 8; rate = Math.round(targetBytesPerSec / channels); }
+    return { sampleRate: clamp(rate, 2000, originalRate), bitDepth };
+  }
+
+  const AUDIO_CODEC_BY_TYPE = { "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/ogg": "ogg", "audio/vorbis": "ogg", "audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav", "audio/vnd.wave": "wav" };
+  const AUDIO_EXT_CODEC = { mp3: "mp3", ogg: "ogg", oga: "ogg", wav: "wav" };
+  function audioCapability(file) {
+    const codec = AUDIO_CODEC_BY_TYPE[file.type] || AUDIO_EXT_CODEC[extOf(file.name)];
+    if (!codec) {
+      return { supported: false, message: "This audio format can't be compressed here — only MP3, Ogg Vorbis, and WAV are supported (this file is " + (file.type || ("a ." + (extOf(file.name) || "?") + " file")) + ")." };
+    }
+    return { supported: true, codec };
+  }
+
+  MODES.audio = {
+    label: "audio", icon: "music_note", accept: "audio/*",
+    dropTitle: "Drop an audio file here, or tap to choose",
+    hint: "Compresses this audio file without changing its format. MP3 and Ogg Vorbis shrink via a bitrate/quality dial; WAV has no such dial (it's uncompressed PCM), so a smaller WAV is reached by lowering its sample rate — and, for very small targets, its bit depth. Only MP3, Ogg Vorbis, and WAV are supported.",
+    capability: audioCapability,
+    async run(file, opts, ctx) {
+      const cap = audioCapability(file);
+      if (cap.codec === "wav") {
+        ctx.setStatus("Decoding audio…");
+        const buffer0 = await decodeAudio(file);
+        const channels = Math.min(2, buffer0.numberOfChannels);
+        const params = opts.sizeMode === "quality"
+          ? wavQualityParams(opts.quality, buffer0.sampleRate)
+          : wavParamsForTarget(opts.targetBytes, buffer0.duration, channels, buffer0.sampleRate);
+        ctx.setStatus("Resampling…");
+        const resampled = await resampleIfNeeded(buffer0, params.sampleRate);
+        ctx.setStatus("Encoding WAV…");
+        const blob = encodeWav(resampled, channels, params.bitDepth);
+        const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
+        const note = "Resampled to " + params.sampleRate + " Hz" + (params.bitDepth === 8 ? " at 8-bit" : "") + " to shrink it.";
+        return { blob, name: baseName(file.name) + "-" + label + ".wav", note };
+      }
+
+      const mimeType = cap.codec === "mp3" ? "audio/mpeg" : "audio/ogg";
+      let config;
+      if (opts.sizeMode === "quality") {
+        config = mimeType === "audio/mpeg"
+          ? { vbrQuality: clamp(9.999 - (opts.quality / 100) * 9.999, 0, 9.999) }
+          : { vbrQuality: clamp(-1 + (opts.quality / 100) * 11, -1, 10) };
+      } else {
+        const durationSec = await probeAudioDuration(file);
+        const kbps = (opts.targetBytes * 8) / 1000 / Math.max(0.1, durationSec);
+        config = mimeType === "audio/mpeg"
+          ? { bitrate: nearestFrom(MP3_CBR_STEPS, kbps) }
+          : { vbrQuality: vorbisQualityForKbps(kbps) };
+      }
+      const blob = await encodeAudio(file, mimeType, config, ctx);
+      const ext = mimeType === "audio/mpeg" ? "mp3" : "ogg";
+      const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
+      return { blob, name: baseName(file.name) + "-" + label + "." + ext };
+    },
+  };
 
   /* ═══════════════════════════════════════════════════════════════════
      VIDEO — FFmpeg (WebAssembly), vendored, single-threaded core.
@@ -937,21 +867,38 @@
     } catch (e) { return ""; }
   }
 
+  // Codec per container, kept to combinations already verified to work in
+  // this specific vendored single-threaded core build. Notably NOT here:
+  // VP9 (libvpx-vp9) — it crashes the wasm module with a memory-access
+  // fault on every input/argument combination tried, regardless of CRF or
+  // bitrate settings, so WebM re-encodes use VP8 (libvpx) instead.
+  const VIDEO_CONTAINER_CODECS = {
+    mp4: { vcodec: "libx264", acodec: "aac", crfRange: [16, 40] },
+    m4v: { vcodec: "libx264", acodec: "aac", crfRange: [16, 40] },
+    mov: { vcodec: "libx264", acodec: "aac", crfRange: [16, 40] },
+    mkv: { vcodec: "libx264", acodec: "aac", crfRange: [16, 40] },
+    webm: { vcodec: "libvpx", acodec: "libvorbis", crfRange: [10, 40] },
+  };
+  function videoCapability(file) {
+    const ext = extOf(file.name);
+    const cfg = VIDEO_CONTAINER_CODECS[ext];
+    if (!cfg) {
+      return { supported: false, message: "This video container can't be compressed here — only MP4, M4V, MOV, MKV, and WebM are supported (this file is a ." + (ext || "?") + " file)." };
+    }
+    return Object.assign({ supported: true, ext }, cfg);
+  }
+
   MODES.video = {
     label: "video", icon: "movie", accept: "video/*",
     dropTitle: "Drop a video here, or tap to choose",
-    hasLossless: false,
-    formats: [
-      { value: "mp4", label: "MP4 (H.264) — universal compatibility", ext: "mp4", vcodec: "libx264", acodec: "aac" },
-    ],
-    targetHint: "There's no lossless option here: a lossless re-encode of already-delivered video (H.264, VP9, etc.) is either a no-op remux with barely any size change, or balloons the file far past the original — neither is what \"compress\" means for video. This mode re-encodes with FFmpeg to a quality (CRF) or a target file size you choose. Output is H.264/MP4 — the vendored FFmpeg build's VP9 encoder is unstable in this single-threaded, in-browser configuration, so it isn't offered as an option here.",
-    async runTarget(file, opts, ctx) {
+    hint: "Compresses this video without changing its container — MP4/M4V/MOV/MKV re-encode with H.264, WebM re-encodes with VP8 (this vendored FFmpeg build's VP9 encoder crashes reliably, so it's avoided). Uses a quality (CRF) or a target file size you choose. Only those containers are supported.",
+    capability: videoCapability,
+    async run(file, opts, ctx) {
+      const cap = videoCapability(file);
       ctx.setStatus("Loading video engine (~31 MB, first time only — cached after)…");
       const ffmpeg = await getFfmpeg((p) => ctx.setProgress(p * 0.5));
-      const fmt = MODES.video.formats.find((f) => f.value === opts.format) || MODES.video.formats[0];
-      const inExt = extOf(file.name) || "mp4";
-      const inputName = "input." + inExt;
-      const outputName = "output." + fmt.ext;
+      const inputName = "input." + cap.ext;
+      const outputName = "output." + cap.ext;
 
       ctx.setStatus("Reading video info…");
       const { fetchFile } = await import("/tools/compress/vendor/ffmpeg/util/index.js");
@@ -966,17 +913,20 @@
       // an audio stream to keep.
       const args = ["-i", inputName, "-map", "0:v:0"];
       if (hasAudio) args.push("-map", "0:a:0");
+      const [crfBest, crfWorst] = cap.crfRange;
+      const speedFlag = cap.vcodec === "libx264" ? ["-preset", "veryfast"] : ["-cpu-used", "5"];
       if (opts.sizeMode === "quality") {
-        const crf = Math.round(16 + (100 - opts.quality) * 0.24);
-        args.push("-c:v", fmt.vcodec, "-crf", String(crf), "-preset", "veryfast");
+        const crf = Math.round(crfBest + (100 - opts.quality) * ((crfWorst - crfBest) / 100));
+        args.push("-c:v", cap.vcodec, "-crf", String(crf), ...speedFlag);
       } else {
         const audioKbps = hasAudio ? 128 : 0;
         const totalKbps = (opts.targetBytes * 8) / 1000 / durationSec;
         const videoKbps = Math.max(80, Math.round(totalKbps - audioKbps));
-        args.push("-c:v", fmt.vcodec, "-b:v", videoKbps + "k", "-maxrate", Math.round(videoKbps * 1.3) + "k", "-bufsize", Math.round(videoKbps * 2) + "k", "-preset", "veryfast");
+        args.push("-c:v", cap.vcodec, "-b:v", videoKbps + "k", "-maxrate", Math.round(videoKbps * 1.3) + "k", "-bufsize", Math.round(videoKbps * 2) + "k", ...speedFlag);
       }
-      if (hasAudio) args.push("-c:a", fmt.acodec, "-b:a", "128k"); else args.push("-an");
-      args.push("-movflags", "+faststart", outputName);
+      if (hasAudio) args.push("-c:a", cap.acodec, "-b:a", "128k"); else args.push("-an");
+      if (cap.ext === "mp4" || cap.ext === "m4v" || cap.ext === "mov") args.push("-movflags", "+faststart");
+      args.push(outputName);
 
       ctx.setStatus("Encoding video — this can take a while for longer clips…");
       let offListener = null;
@@ -995,9 +945,10 @@
       }
       for (const name of [inputName, outputName, "duration.txt", "audio.txt"]) { try { await ffmpeg.deleteFile(name); } catch (e) {} }
 
-      const blob = new Blob([outData], { type: "video/mp4" });
+      const mimeByExt = { mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime", mkv: "video/x-matroska", webm: "video/webm" };
+      const blob = new Blob([outData], { type: mimeByExt[cap.ext] || "application/octet-stream" });
       const label = opts.sizeMode === "quality" ? "q" + opts.quality : formatBytes(opts.targetBytes).replace(/\s+/g, "");
-      return { blob, name: baseName(file.name) + "-" + label + "." + fmt.ext };
+      return { blob, name: baseName(file.name) + "-" + label + "." + cap.ext };
     },
   };
 
@@ -1007,11 +958,9 @@
   const tabImageBtn = $("tabImageBtn"), tabAudioBtn = $("tabAudioBtn"), tabVideoBtn = $("tabVideoBtn");
   const dropzone = $("dropzone"), dropzoneIcon = $("dropzoneIcon"), dropzoneTitle = $("dropzoneTitle"), fileInput = $("fileInput");
   const fileChip = $("fileChip"), fileChipIcon = $("fileChipIcon"), fileChipName = $("fileChipName"), fileChipMeta = $("fileChipMeta"), fileChipRemove = $("fileChipRemove");
-  const methodCard = $("methodCard"), methodLosslessBtn = $("methodLosslessBtn"), methodTargetBtn = $("methodTargetBtn");
-  const losslessCard = $("losslessCard"), losslessHint = $("losslessHint");
-  const losslessUnsupportedBanner = $("losslessUnsupportedBanner"), losslessUnsupportedText = $("losslessUnsupportedText");
-  const targetCard = $("targetCard"), targetHint = $("targetHint");
-  const formatSelect = $("formatSelect"), formatLabel = $("formatLabel");
+  const targetHint = $("targetHint");
+  const unsupportedBanner = $("unsupportedBanner"), unsupportedText = $("unsupportedText");
+  const controlsWrap = $("controlsWrap");
   const sizeModeQualityBtn = $("sizeModeQualityBtn"), sizeModeTargetBtn = $("sizeModeTargetBtn");
   const qualityPanel = $("qualityPanel"), targetSizePanel = $("targetSizePanel");
   const qualitySlider = $("qualitySlider"), qualityNumber = $("qualityNumber"), qualitySliderLabel = $("qualitySliderLabel"), qualitySliderHint = $("qualitySliderHint");
@@ -1022,17 +971,16 @@
   const actionBtn = $("actionBtn"), actionBtnIcon = $("actionBtnIcon"), actionBtnLabel = $("actionBtnLabel");
   const statusLine = $("statusLine"), progressTrack = $("progressTrack"), progressFill = $("progressFill");
   const errorBanner = $("errorBanner"), errorBody = $("errorBody"), errorDetails = $("errorDetails");
-  const infoBanner = $("infoBanner"), infoBody = $("infoBody");
   const resultCard = $("resultCard"), resultTitle = $("resultTitle"), resultOriginalSize = $("resultOriginalSize"), resultNewSize = $("resultNewSize"), resultSavingsChip = $("resultSavingsChip"), resultSub = $("resultSub");
   const downloadBtn = $("downloadBtn"), resetBtn = $("resetBtn");
 
   let currentModeKey = "image";
   let currentFile = null;
-  let method = "lossless"; // "lossless" | "target"
   let sizeMode = "quality"; // "quality" | "target"
   let targetKind = "percent"; // "percent" | "exact"
   let busy = false;
   let currentObjectUrl = null;
+  let capabilityCache = { supported: true };
 
   function currentMode() { return MODES[currentModeKey]; }
 
@@ -1052,64 +1000,32 @@
     if (details) { errorDetails.textContent = details; errorDetails.classList.remove("hidden"); } else { errorDetails.classList.add("hidden"); }
     errorBanner.classList.remove("hidden");
   }
-  function hideInfo() { infoBanner.classList.add("hidden"); infoBody.textContent = ""; }
-  function showInfo(message) { infoBody.textContent = message; infoBanner.classList.remove("hidden"); }
   function hideResult() { resultCard.classList.add("hidden"); if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; } }
 
-  function populateFormatSelect() {
-    const mode = currentMode();
-    formatSelect.innerHTML = mode.formats.map((f) => '<option value="' + f.value + '">' + f.label.replace(/&/g, "&amp;") + "</option>").join("");
-  }
-
-  function currentFormatEntry() {
-    const mode = currentMode();
-    return mode.formats.find((f) => f.value === formatSelect.value) || mode.formats[0];
-  }
-
-  // Defaults the output format to whatever format the file already is
-  // (PNG in stays PNG out, JPEG stays JPEG, etc.) instead of always forcing
-  // a conversion — matches only when that exact format is offered as an
-  // output for this tab; otherwise the previous/default selection stands.
-  function preselectFormatForFile(file) {
-    const mode = currentMode();
-    const match = mode.formats.find((f) => f.value === file.type);
-    if (match) formatSelect.value = match.value;
-  }
-
   function updateActionButton() {
-    const mode = currentMode();
-    const canRun = !!currentFile && !busy && (method === "target" || (mode.hasLossless && losslessSupportedForCurrentFile()));
+    const canRun = !!currentFile && !busy && capabilityCache.supported;
     actionBtn.disabled = !canRun;
-    actionBtnIcon.textContent = busy ? "" : (method === "lossless" ? "verified" : "compress");
+    actionBtnIcon.textContent = busy ? "" : "compress";
     if (busy) { actionBtnLabel.textContent = "Working…"; return; }
     if (!currentFile) { actionBtnLabel.textContent = "Choose a file first"; return; }
-    actionBtnLabel.textContent = method === "lossless" ? "Compress losslessly" : "Compress";
+    actionBtnLabel.textContent = capabilityCache.supported ? "Compress" : "Unsupported format";
   }
 
-  let losslessSupportCache = { supported: true };
-  function losslessSupportedForCurrentFile() { return losslessSupportCache.supported; }
-
-  async function refreshLosslessSupport() {
+  // Runs on every file selection and tab switch: decides whether this
+  // exact file's format can be compressed at all (there's no conversion to
+  // fall back to), and shows/hides the controls accordingly.
+  function refreshCapability() {
     const mode = currentMode();
-    if (!mode.hasLossless || !currentFile) { losslessSupportCache = { supported: true }; return; }
-    losslessSupportCache = await mode.losslessInfo(currentFile);
-    if (!losslessSupportCache.supported) {
-      losslessUnsupportedText.textContent = losslessSupportCache.message;
-      losslessUnsupportedBanner.classList.remove("hidden");
+    capabilityCache = currentFile ? mode.capability(currentFile) : { supported: true };
+    if (!capabilityCache.supported) {
+      unsupportedText.textContent = capabilityCache.message;
+      unsupportedBanner.classList.remove("hidden");
+      controlsWrap.classList.add("hidden");
     } else {
-      losslessUnsupportedBanner.classList.add("hidden");
+      unsupportedBanner.classList.add("hidden");
+      controlsWrap.classList.remove("hidden");
     }
     updateActionButton();
-  }
-
-  function applyMethodVisibility() {
-    const mode = currentMode();
-    methodCard.classList.toggle("hidden", !mode.hasLossless);
-    const showLossless = mode.hasLossless && method === "lossless";
-    losslessCard.classList.toggle("hidden", !showLossless);
-    targetCard.classList.toggle("hidden", showLossless);
-    methodLosslessBtn.setAttribute("aria-pressed", String(method === "lossless"));
-    methodTargetBtn.setAttribute("aria-pressed", String(method === "target"));
   }
 
   function applySizeModeVisibility() {
@@ -1128,12 +1044,12 @@
 
   function updateHints() {
     const mode = currentMode();
-    targetHint.textContent = mode.targetHint;
+    targetHint.textContent = mode.hint;
     qualitySliderLabel.textContent = { image: "Photo quality", audio: "Audio quality", video: "Video quality" }[currentModeKey];
     const qualityWordFor = { image: "photo detail", audio: "audio fidelity", video: "video quality" }[currentModeKey];
-    const fmt = currentFormatEntry();
-    qualitySliderHint.textContent = fmt && fmt.lossyQuality === false
-      ? "PNG is always lossless, so this slider has no effect on it — switch to Target size to shrink a PNG (by resizing), or pick JPEG/WebP for a quality dial."
+    const noQualityDial = capabilityCache.supported && capabilityCache.lossyQuality === false;
+    qualitySliderHint.textContent = noQualityDial
+      ? "PNG is always lossless, so this slider has no effect on it — use Target size to shrink a PNG (by resizing)."
       : "Higher = larger file, closer to the original " + qualityWordFor + ".";
     if (currentFile) {
       const bytes = currentFile.size;
@@ -1161,28 +1077,23 @@
     dropzoneIcon.textContent = mode.icon;
     dropzoneTitle.textContent = mode.dropTitle;
     fileInput.setAttribute("accept", mode.accept);
-    populateFormatSelect();
-    method = mode.hasLossless ? "lossless" : "target";
-    applyMethodVisibility();
     applySizeModeVisibility();
     applyTargetKindVisibility();
+    refreshCapability();
     updateHints();
-    updateActionButton();
   }
 
   function switchMode(key) {
     if (busy || key === currentModeKey) return;
     currentModeKey = key;
     selectFile(null);
-    hideError(); hideResult(); hideInfo();
+    hideError(); hideResult();
     applyModeChrome();
   }
   tabImageBtn.addEventListener("click", () => switchMode("image"));
   tabAudioBtn.addEventListener("click", () => switchMode("audio"));
   tabVideoBtn.addEventListener("click", () => switchMode("video"));
 
-  methodLosslessBtn.addEventListener("click", () => { if (busy) return; method = "lossless"; applyMethodVisibility(); updateActionButton(); });
-  methodTargetBtn.addEventListener("click", () => { if (busy) return; method = "target"; applyMethodVisibility(); updateActionButton(); });
   sizeModeQualityBtn.addEventListener("click", () => { if (busy) return; sizeMode = "quality"; applySizeModeVisibility(); });
   sizeModeTargetBtn.addEventListener("click", () => { if (busy) return; sizeMode = "target"; applySizeModeVisibility(); });
   targetKindPercentBtn.addEventListener("click", () => { if (busy) return; targetKind = "percent"; applyTargetKindVisibility(); });
@@ -1200,20 +1111,17 @@
   syncPair(targetPercentSlider, targetPercentNumber, 1, 100);
   targetExactNumber.addEventListener("input", updateHints);
   targetExactUnit.addEventListener("change", updateHints);
-  formatSelect.addEventListener("change", updateHints);
 
   function formatMeta(file) {
     return formatBytes(file.size) + (file.type ? " · " + file.type : "");
   }
 
   function selectFile(file) {
-    hideError(); hideResult(); hideInfo();
+    hideError(); hideResult();
     if (!file) {
       currentFile = null;
       fileChip.classList.add("hidden");
-      losslessSupportCache = { supported: true };
-      losslessUnsupportedBanner.classList.add("hidden");
-      updateActionButton();
+      refreshCapability();
       return;
     }
     const mode = currentMode();
@@ -1228,10 +1136,8 @@
     fileChipName.textContent = file.name;
     fileChipMeta.textContent = formatMeta(file);
     fileChip.classList.remove("hidden");
-    preselectFormatForFile(file);
+    refreshCapability();
     updateHints();
-    updateActionButton();
-    if (mode.hasLossless) refreshLosslessSupport();
   }
 
   fileInput.addEventListener("change", () => selectFile(fileInput.files && fileInput.files[0]));
@@ -1254,35 +1160,29 @@
     const savedPct = currentFile.size > 0 ? Math.round((1 - blob.size / currentFile.size) * 100) : 0;
     resultSavingsChip.textContent = savedPct > 0 ? "−" + savedPct + "%" : (savedPct < 0 ? "+" + (-savedPct) + "% (grew)" : "No change");
     resultSub.textContent = note || name;
-    resultTitle.textContent = method === "lossless" ? "Compressed losslessly" : "Compressed";
     resultCard.classList.remove("hidden");
   }
 
   async function runAction() {
-    if (!currentFile || busy) return;
+    if (!currentFile || busy || !capabilityCache.supported) return;
     busy = true;
-    hideError(); hideResult(); hideInfo();
+    hideError(); hideResult();
     updateActionButton();
     setStatus("Starting…");
     setProgress(0);
     const ctx = { setStatus, setProgress: (p) => setProgress(p) };
     try {
       const mode = currentMode();
-      let result;
-      if (method === "lossless") {
-        result = await mode.runLossless(currentFile, ctx);
+      const opts = { sizeMode };
+      if (sizeMode === "quality") {
+        opts.quality = clamp(parseInt(qualityNumber.value, 10) || 80, 1, 100);
       } else {
-        const opts = { format: formatSelect.value, sizeMode };
-        if (sizeMode === "quality") {
-          opts.quality = clamp(parseInt(qualityNumber.value, 10) || 80, 1, 100);
-        } else {
-          opts.targetBytes = targetKind === "percent"
-            ? Math.round(currentFile.size * clamp(parseInt(targetPercentNumber.value, 10) || 50, 1, 100) / 100)
-            : exactTargetBytes();
-          if (!opts.targetBytes || opts.targetBytes <= 0) throw new Error("Enter a target size greater than zero.");
-        }
-        result = await mode.runTarget(currentFile, opts, ctx);
+        opts.targetBytes = targetKind === "percent"
+          ? Math.round(currentFile.size * clamp(parseInt(targetPercentNumber.value, 10) || 50, 1, 100) / 100)
+          : exactTargetBytes();
+        if (!opts.targetBytes || opts.targetBytes <= 0) throw new Error("Enter a target size greater than zero.");
       }
+      const result = await mode.run(currentFile, opts, ctx);
       setStatus(""); setProgress(null);
       showResult(result.blob, result.name, result.note);
     } catch (err) {
@@ -1298,7 +1198,7 @@
   resetBtn.addEventListener("click", () => {
     fileInput.value = "";
     selectFile(null);
-    hideResult(); hideError(); hideInfo();
+    hideResult(); hideError();
   });
 
   applyModeChrome();
