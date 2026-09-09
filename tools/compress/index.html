@@ -415,7 +415,7 @@
 
     <div class="card note-card" id="privacyNote">
       <span class="material-icons">shield</span>
-      <p id="privacyNoteText">Everything runs on your device — files are never uploaded anywhere. The output keeps your original file type unless you click the format-switch suggestion, which only ever offers a lossless swap to a more space-efficient format. The Audio tab uses a small (~0.6&nbsp;MB) vendored MP3/Ogg&nbsp;Vorbis encoder (WAV needs none at all); the lossless format switch (PNG→WebP, WAV→FLAC) uses small vendored encoders too, downloaded only if you use it.</p>
+      <p id="privacyNoteText">Everything runs on your device — files are never uploaded anywhere. The output keeps your original file type unless you click the format-switch suggestion, which only ever offers a lossless swap to a more space-efficient format. The Audio tab uses a small (~0.6&nbsp;MB) vendored MP3/Ogg&nbsp;Vorbis encoder (WAV needs none at all); dropping a PNG or WAV file also downloads a small vendored WebP or FLAC encoder (under 0.5&nbsp;MB) to check whether that lossless switch is even worth suggesting — it's used for the check either way, whether or not you accept it.</p>
     </div>
   </main>
 
@@ -646,6 +646,64 @@
     return audioEncoderLibPromise;
   }
 
+  // libflac.js only ships classic-script (non-ESM) builds, loaded the same
+  // way as the WasmMediaEncoder above — with FLAC_SCRIPT_LOCATION set first
+  // so its wasm loader finds the vendored .wasm instead of guessing.
+  let flacEncoderPromise = null;
+  function loadFlacEncoder() {
+    if (!flacEncoderPromise) {
+      flacEncoderPromise = new Promise((resolve, reject) => {
+        if (window.Flac && window.Flac.isReady && window.Flac.isReady()) { resolve(window.Flac); return; }
+        window.FLAC_SCRIPT_LOCATION = "/tools/compress/vendor/flac/";
+        const s = document.createElement("script");
+        s.src = "/tools/compress/vendor/flac/libflac.min.wasm.js";
+        s.onload = () => {
+          if (window.Flac.isReady && window.Flac.isReady()) resolve(window.Flac);
+          else window.Flac.on("ready", () => resolve(window.Flac));
+        };
+        s.onerror = () => reject(new Error("Failed to load the FLAC encoder engine."));
+        document.head.appendChild(s);
+      });
+    }
+    return flacEncoderPromise;
+  }
+
+  // FLAC has no lossy mode at all — this is always a bit-exact re-encode of
+  // the same PCM data, typically 40-60% smaller than the equivalent WAV
+  // purely from better (lossless) compression of the waveform.
+  async function encodeFlac(buffer, onProgress) {
+    const Flac = await loadFlacEncoder();
+    const channels = Math.min(2, buffer.numberOfChannels);
+    const flac_encoder = Flac.create_libflac_encoder(buffer.sampleRate, channels, 16, 5, 0, false, 0);
+    if (!flac_encoder) throw new Error("Couldn't start the FLAC encoder.");
+    const chunks = [];
+    const status = Flac.init_encoder_stream(flac_encoder, (encodedData) => chunks.push(encodedData.slice()), () => {});
+    if (status !== 0) { Flac.FLAC__stream_encoder_delete(flac_encoder); throw new Error("Couldn't initialize the FLAC encoder."); }
+
+    const chans = []; for (let c = 0; c < channels; c++) chans.push(buffer.getChannelData(c));
+    const total = buffer.length;
+    const chunkSize = 65536;
+    for (let pos = 0; pos < total; pos += chunkSize) {
+      const end = Math.min(pos + chunkSize, total);
+      const len = end - pos;
+      const interleaved = new Int32Array(len * channels);
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < channels; c++) interleaved[i * channels + c] = Math.round(clamp(chans[c][pos + i], -1, 1) * 32767);
+      }
+      const ok = Flac.FLAC__stream_encoder_process_interleaved(flac_encoder, interleaved, len);
+      if (!ok) { Flac.FLAC__stream_encoder_delete(flac_encoder); throw new Error("FLAC encoding failed partway through."); }
+      if (onProgress) { onProgress(end / total); await sleep(0); }
+    }
+    const finishOk = Flac.FLAC__stream_encoder_finish(flac_encoder);
+    Flac.FLAC__stream_encoder_delete(flac_encoder);
+    if (!finishOk) throw new Error("FLAC encoding didn't finish cleanly.");
+
+    let totalLen = 0; for (const c of chunks) totalLen += c.length;
+    const outBytes = new Uint8Array(totalLen);
+    let offset = 0; for (const c of chunks) { outBytes.set(c, offset); offset += c.length; }
+    return new Blob([outBytes], { type: "audio/flac" });
+  }
+
   const MP3_CBR_STEPS = [8, 16, 24, 32, 40, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320];
   const MP3_SAMPLE_RATES = [8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000];
   function nearestFrom(list, value) {
@@ -802,17 +860,45 @@
   MODES.audio = {
     label: "audio", icon: "music_note", accept: "audio/*",
     dropTitle: "Drop an audio file here, or tap to choose",
-    hint: "Compresses this audio file to your target size without changing its format. MP3 and Ogg Vorbis shrink via bitrate; WAV has no bitrate to adjust (it's uncompressed PCM), so a smaller WAV is reached by lowering its sample rate — and, for very small targets, its bit depth. Only MP3, Ogg Vorbis, and WAV are supported.",
+    hint: "Compresses this audio file to your target size without changing its format by default. MP3 and Ogg Vorbis shrink via bitrate; WAV has no bitrate to adjust (it's uncompressed PCM), so a smaller WAV is reached by lowering its sample rate — and, for very small targets, its bit depth. If converting losslessly to FLAC would help, a one-click suggestion appears below — nothing converts unless you accept it. Only MP3, Ogg Vorbis, and WAV are supported.",
     capability: audioCapability,
+    // WAV is the only format here with an obvious, purely-lossless smaller
+    // alternative: FLAC compresses the exact same PCM samples losslessly,
+    // typically 40-60% smaller, versus MP3/Ogg Vorbis which are already
+    // lossy and have no lossless format to switch to.
+    async convertSuggestion(file) {
+      const cap = audioCapability(file);
+      if (!cap.supported || cap.codec !== "wav") return null;
+      const buffer = await getDecodedAudioBuffer(file);
+      const blob = await encodeFlac(buffer);
+      if (blob.size >= file.size) return null;
+      return { ext: "flac", mime: "audio/flac", label: "FLAC", fromLabel: "WAV", lossless: true, newSize: blob.size, blob };
+    },
     async run(file, opts, ctx) {
       const cap = audioCapability(file);
+      const convert = opts.convert;
       if (cap.codec === "wav") {
+        // The suggestion's lossless blob was already encoded from this same
+        // file when it was selected — if it already meets the target, use
+        // it directly rather than resampling WAV for no reason.
+        if (convert && convert.lossless && convert.newSize <= opts.targetBytes) {
+          ctx.setProgress(1);
+          return {
+            blob: convert.blob,
+            name: baseName(file.name) + "." + convert.ext,
+            note: "Converted to " + convert.label + " losslessly — no quality lost, and it already met your target size.",
+          };
+        }
         ctx.setStatus("Decoding audio…");
         const buffer0 = await getDecodedAudioBuffer(file);
         const channels = Math.min(2, buffer0.numberOfChannels);
         const params = wavParamsForTarget(opts.targetBytes, buffer0.duration, channels, buffer0.sampleRate);
         const label = formatBytes(opts.targetBytes).replace(/\s+/g, "");
-        const note = "Resampled to " + params.sampleRate + " Hz" + (params.bitDepth === 8 ? " at 8-bit" : "") + " to shrink it.";
+        let note = "Resampled to " + params.sampleRate + " Hz" + (params.bitDepth === 8 ? " at 8-bit" : "") + " to shrink it.";
+        // FLAC has no lossy mode to fall back to, unlike the image side's
+        // WebP (lossless *or* lossy) — so an accepted-but-too-big FLAC
+        // suggestion just falls back to the normal WAV resample path.
+        if (convert) note = "Even lossless FLAC was bigger than your target, so this was resampled as WAV instead, same as without converting. " + note;
         ctx.setStatus("Resampling…");
         const resampled = await resampleIfNeeded(buffer0, params.sampleRate);
         ctx.setStatus("Encoding WAV…");
@@ -969,11 +1055,11 @@
     const s = pendingSuggestion;
     const pct = Math.round((1 - s.newSize / currentFile.size) * 100);
     if (activeConversion) {
-      formatSuggestionText.textContent = "Converting to " + s.label + ", losslessly — " + formatBytes(s.newSize) + " instead of " + formatBytes(currentFile.size) + " (" + pct + "% smaller), pixel-for-pixel identical.";
+      formatSuggestionText.textContent = "Converting to " + s.label + ", losslessly — " + formatBytes(s.newSize) + " instead of " + formatBytes(currentFile.size) + " (" + pct + "% smaller), with nothing lost.";
       formatSuggestionBtn.textContent = "Undo";
       formatSuggestionBtn.classList.add("is-active");
     } else {
-      formatSuggestionText.textContent = "This " + s.fromLabel + " converts losslessly to " + s.label + " at " + formatBytes(s.newSize) + " — " + pct + "% smaller, with no change to the image at all.";
+      formatSuggestionText.textContent = "This " + s.fromLabel + " converts losslessly to " + s.label + " at " + formatBytes(s.newSize) + " — " + pct + "% smaller, with nothing lost.";
       formatSuggestionBtn.textContent = "Convert to " + s.label;
       formatSuggestionBtn.classList.remove("is-active");
     }
