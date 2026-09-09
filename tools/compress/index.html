@@ -828,7 +828,7 @@
   MODES.video = {
     label: "video", icon: "movie", accept: "video/*",
     dropTitle: "Drop a video here, or tap to choose",
-    hint: "Compresses this video to your target size without changing its container — MP4/M4V/MOV/MKV re-encode with H.264, WebM re-encodes with VP8 (this vendored FFmpeg build's VP9 encoder crashes reliably, so it's avoided). Only those containers are supported.",
+    hint: "Compresses this video to your target size without changing its container — MP4/M4V/MOV/MKV re-encode with H.264, WebM re-encodes with VP8 (this vendored FFmpeg build's VP9 encoder crashes reliably, so it's avoided). Only those containers are supported. Video runs entirely in your browser with no hardware acceleration, so it's much slower than realtime — a couple of minutes of footage can take several minutes to compress. The page stays responsive and the progress bar keeps moving, so let it finish rather than closing the tab or switching away, which can interrupt it partway through.",
     capability: videoCapability,
     async run(file, opts, ctx) {
       const cap = videoCapability(file);
@@ -844,7 +844,14 @@
       const audioStr = await ffprobeField(ffmpeg, inputName, ["-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0"], "audio.txt");
       const durationSec = Math.max(0.1, parseFloat(durationStr) || 0);
       const hasAudio = audioStr.trim().length > 0;
-      const speedFlag = cap.vcodec === "libx264" ? ["-preset", "veryfast"] : ["-cpu-used", "5"];
+      // The size here comes entirely from the bitrate cap below, not the
+      // encoder preset — preset only trades quality-per-bit for speed, not
+      // final size — so it's set to the fastest option available. This
+      // single-threaded WASM encoder is already several times slower than
+      // realtime; on a multi-minute clip, "veryfast" could mean waiting
+      // 10+ minutes, easily read as a broken/stuck tool even though it's
+      // still working.
+      const speedFlag = cap.vcodec === "libx264" ? ["-preset", "ultrafast"] : ["-cpu-used", "8"];
 
       // -an and an explicit audio -map are mutually exclusive in FFmpeg's
       // arg parser, so the audio map is only added when there's actually
@@ -921,15 +928,30 @@
 
   function currentMode() { return MODES[currentModeKey]; }
 
-  function setStatus(text) {
-    if (!text) { statusLine.classList.add("hidden"); statusLine.textContent = ""; return; }
-    statusLine.textContent = text;
+  // Status text and progress fraction are set independently (from different
+  // callbacks at different times), but the status line needs to show both
+  // together — a live percentage next to the message — so a long video
+  // encode doesn't look stalled just because the wording hasn't changed in
+  // a while.
+  let lastStatusBase = "";
+  let lastProgressFrac = null;
+  function renderStatusLine() {
+    if (!lastStatusBase) { statusLine.classList.add("hidden"); statusLine.textContent = ""; return; }
+    const pct = lastProgressFrac == null ? "" : " (" + Math.round(clamp(lastProgressFrac, 0, 1) * 100) + "%)";
+    statusLine.textContent = lastStatusBase + pct;
     statusLine.classList.remove("hidden");
   }
+  function setStatus(text) {
+    lastStatusBase = text || "";
+    renderStatusLine();
+  }
   function setProgress(p) {
-    if (p == null) { progressTrack.classList.add("hidden"); return; }
-    progressTrack.classList.remove("hidden");
-    progressFill.style.width = clamp(p * 100, 0, 100) + "%";
+    lastProgressFrac = p;
+    if (p == null) { progressTrack.classList.add("hidden"); } else {
+      progressTrack.classList.remove("hidden");
+      progressFill.style.width = clamp(p * 100, 0, 100) + "%";
+    }
+    renderStatusLine();
   }
   function hideError() { errorBanner.classList.add("hidden"); errorDetails.classList.add("hidden"); errorDetails.textContent = ""; }
   function showError(message, details) {

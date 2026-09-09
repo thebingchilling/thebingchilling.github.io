@@ -100,3 +100,22 @@ Both are fixed in `MODES.video.run()`: every encode now applies
 pixel off either axis — imperceptible — regardless of the source's actual
 dimensions), and the exit code plus a minimum output-size check both have to
 pass before a result is treated as successful.
+
+## Why video re-encodes at the fastest preset
+
+Tested against a realistic 108 MB, 60-second 1080p H.264 clip (the kind a
+phone actually produces), this single-threaded WASM build took about 4
+minutes to re-encode at `-preset veryfast` — with no percentage shown next
+to the progress bar, just a static "this can take a while" message. That
+combination (several minutes, no numeric feedback) is exactly what makes a
+tool that's still working look broken, especially if the tab is backgrounded
+mid-encode on mobile, which can throttle or kill the work outright.
+
+Since the final size here comes entirely from the `-b:v`/`-maxrate`/
+`-bufsize` bitrate cap, not the encoder preset — preset only trades
+quality-per-bit for speed, never the output size — there's no size cost to
+using the fastest preset available (`ultrafast` for libx264, `-cpu-used 8`
+for VP8). Re-running the same 108 MB clip with this change: ~84 seconds for
+an identical 19.6 MB result, roughly 3x faster. The status line also now
+shows a live percentage (e.g. "Encoding video… (42%)") next to the message,
+so a long-running compress reads as progressing rather than stalled.
