@@ -122,8 +122,13 @@ export const downloadWithProgress = async (url, cb) => {
     }
     catch (e) {
         console.log(`failed to send download progress event: `, e);
-        // Fetch arrayBuffer directly when it is not possible to get progress.
-        buf = await resp.arrayBuffer();
+        // The streaming reader above has already consumed (and disturbed)
+        // resp's body, so calling resp.arrayBuffer() here throws "body
+        // stream already read" and masks whatever actually went wrong
+        // (e.g. a network hiccup partway through this ~31 MB download).
+        // A fresh fetch gets real bytes back and, as a side effect, retries
+        // the download once instead of hard-failing on a transient error.
+        buf = await (await fetch(url)).arrayBuffer();
         cb &&
             cb({
                 url,

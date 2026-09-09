@@ -26,6 +26,17 @@ here. Keep the three versions in lockstep with what the ffmpeg.wasm project
 tests together (check their release notes) — mismatched versions can fail to
 load silently.
 
+**`ffmpeg/util/index.js` carries a local patch** (not present in the
+upstream v0.12.2 package): `downloadWithProgress`'s error fallback used to
+call `resp.arrayBuffer()` on the same `Response` its streaming reader had
+already consumed, which throws `Failed to execute 'arrayBuffer' on
+'Response': body stream already read` — masking the real cause (typically a
+network hiccup partway through fetching the ~31 MB core files) behind a
+confusing, unrelated error. The fallback now does a fresh `fetch(url)`
+instead of reusing the disturbed response. **Re-apply this patch after any
+future update to this file** — it's easy to lose by copying the upstream
+file back in wholesale.
+
 ## `audio/` — MP3 &amp; Ogg Vorbis encoding
 
 [`wasm-media-encoders`](https://www.npmjs.com/package/wasm-media-encoders) v0.7.0. MIT.
