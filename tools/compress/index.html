@@ -720,13 +720,11 @@
     dropTitle: "Drop an image here, or tap to choose",
     hasLossless: true,
     formats: [
-      { value: "image/jpeg", label: "JPEG — smallest, no transparency", ext: "jpg" },
-      { value: "image/webp", label: "WebP — smaller, supports transparency", ext: "webp" },
-    ], // PNG is deliberately not offered here: canvas's PNG encoder has no
-       // quality knob (it's always lossless), so a quality slider or a
-       // quality-based target-size search would silently do nothing to it.
-       // PNG re-compression lives entirely in the Lossless mode above.
-    targetHint: "Re-encodes as JPEG or WebP. Recompressing a photo is inherently lossy once you dial in a quality or a target size below the original — this is the \"choose exactly how much to shrink it\" mode.",
+      { value: "image/jpeg", label: "JPEG — smallest, no transparency", ext: "jpg", lossyQuality: true },
+      { value: "image/webp", label: "WebP — smaller, supports transparency", ext: "webp", lossyQuality: true },
+      { value: "image/png", label: "PNG — always lossless, shrinks only by resizing", ext: "png", lossyQuality: false },
+    ],
+    targetHint: "Re-encodes as JPEG, WebP, or PNG — defaults to whatever format you dropped in, but you can pick a different one below. JPEG/WebP shrink via a quality dial; PNG has no such dial (it's always lossless), so a PNG target size is reached by resizing instead.",
     async losslessInfo(file) {
       const fn = IMAGE_LOSSLESS_TYPES[file.type] || IMAGE_LOSSLESS_TYPES[({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" })[extOf(file.name)]];
       if (fn) return { supported: true };
@@ -748,7 +746,8 @@
         canvas.width = bitmap.width; canvas.height = bitmap.height;
         canvas.getContext("2d").drawImage(bitmap, 0, 0);
         const blob = await canvasToBlob(canvas, fmt.value, opts.quality / 100);
-        return { blob, name: baseName(file.name) + "-q" + opts.quality + "." + fmt.ext };
+        const note = fmt.lossyQuality ? undefined : "PNG is always lossless, so the quality slider had no effect — this is just a fresh, metadata-free PNG re-encode.";
+        return { blob, name: baseName(file.name) + "-q" + opts.quality + "." + fmt.ext, note };
       }
       ctx.setStatus("Searching for the closest match to your target size…");
       const result = await encodeImageToTarget(bitmap, fmt.value, opts.targetBytes, (p) => ctx.setProgress(p));
@@ -1062,6 +1061,21 @@
     formatSelect.innerHTML = mode.formats.map((f) => '<option value="' + f.value + '">' + f.label.replace(/&/g, "&amp;") + "</option>").join("");
   }
 
+  function currentFormatEntry() {
+    const mode = currentMode();
+    return mode.formats.find((f) => f.value === formatSelect.value) || mode.formats[0];
+  }
+
+  // Defaults the output format to whatever format the file already is
+  // (PNG in stays PNG out, JPEG stays JPEG, etc.) instead of always forcing
+  // a conversion — matches only when that exact format is offered as an
+  // output for this tab; otherwise the previous/default selection stands.
+  function preselectFormatForFile(file) {
+    const mode = currentMode();
+    const match = mode.formats.find((f) => f.value === file.type);
+    if (match) formatSelect.value = match.value;
+  }
+
   function updateActionButton() {
     const mode = currentMode();
     const canRun = !!currentFile && !busy && (method === "target" || (mode.hasLossless && losslessSupportedForCurrentFile()));
@@ -1117,7 +1131,10 @@
     targetHint.textContent = mode.targetHint;
     qualitySliderLabel.textContent = { image: "Photo quality", audio: "Audio quality", video: "Video quality" }[currentModeKey];
     const qualityWordFor = { image: "photo detail", audio: "audio fidelity", video: "video quality" }[currentModeKey];
-    qualitySliderHint.textContent = "Higher = larger file, closer to the original " + qualityWordFor + ".";
+    const fmt = currentFormatEntry();
+    qualitySliderHint.textContent = fmt && fmt.lossyQuality === false
+      ? "PNG is always lossless, so this slider has no effect on it — switch to Target size to shrink a PNG (by resizing), or pick JPEG/WebP for a quality dial."
+      : "Higher = larger file, closer to the original " + qualityWordFor + ".";
     if (currentFile) {
       const bytes = currentFile.size;
       const pct = clamp(parseInt(targetPercentNumber.value, 10) || 50, 1, 100);
@@ -1183,6 +1200,7 @@
   syncPair(targetPercentSlider, targetPercentNumber, 1, 100);
   targetExactNumber.addEventListener("input", updateHints);
   targetExactUnit.addEventListener("change", updateHints);
+  formatSelect.addEventListener("change", updateHints);
 
   function formatMeta(file) {
     return formatBytes(file.size) + (file.type ? " · " + file.type : "");
@@ -1210,6 +1228,7 @@
     fileChipName.textContent = file.name;
     fileChipMeta.textContent = formatMeta(file);
     fileChip.classList.remove("hidden");
+    preselectFormatForFile(file);
     updateHints();
     updateActionButton();
     if (mode.hasLossless) refreshLosslessSupport();
