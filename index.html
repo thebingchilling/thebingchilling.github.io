@@ -1140,21 +1140,12 @@ function loadPlayer({ mediaType, id, season, episode, label, rolledEpData = null
 
   if (playerFrame.src !== url) {
     setPlayerOverlayLoading("Loading player…");
-    // Force the previous source to stop immediately (audio included)
-    // instead of swapping src directly to the new URL in one step - the
-    // browser doesn't always tear down the old document (and stop its
-    // media) right away when it's racing the same navigation as the next
-    // one, which reads as the old source lingering/switching feeling slow.
-    playerFrame.src = "about:blank";
-    playerFrame.title = "Video player";
-    requestAnimationFrame(() => {
-      playerFrame.src = url || "";
-      playerFrame.title = `Video player — ${label || ""}`;
-      if (url) {
-        playerFrame.addEventListener("load", setPlayerOverlayReady, { once: true });
-        setTimeout(() => { if (playerFrame.src === url) setPlayerOverlayReady(); }, 8000);
-      }
-    });
+    playerFrame.src = url || "";
+    playerFrame.title = `Video player — ${label || ""}`;
+    if (url) {
+      playerFrame.addEventListener("load", setPlayerOverlayReady, { once: true });
+      setTimeout(() => { if (playerFrame.src === url) setPlayerOverlayReady(); }, 8000);
+    }
   }
   if (!url) setPlayerOverlayLoading(lastPlayerUrlError || "Couldn't load a player for this title.");
 
