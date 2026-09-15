@@ -649,11 +649,6 @@
           <button id="sfSave" class="btn btn--primary btn--sm" type="button">Save</button>
         </div>
       </div>
-      <div style="margin-top:0.6rem;">
-        <label class="source-form__label" for="proxyUrlInput">Ad-strip proxy URL (optional)</label>
-        <input type="text" id="proxyUrlInput" placeholder="https://ad-strip-proxy.you.workers.dev" autocomplete="off" />
-        <span class="source-form__hint">Routes embed URLs through a self-hosted proxy instead of loading them directly. See worker/README.md.</span>
-      </div>
     </div>
 
     <!-- Import / Export config -->
@@ -827,15 +822,6 @@ async function initSources() {
   activeSourceIdx = Math.min(Number(idxRaw || 0) || 0, Math.max(0, SOURCES.length - 1));
 }
 
-// Optional ad-strip proxy (see worker/README.md) — when set, embed URLs are
-// routed through it instead of loaded directly, so it can spoof headers and
-// inject a script that neutralizes window.open()/window.top redirects.
-let PROXY_URL = "";
-function proxySave(url) { Store.set("bq_proxy_url", url); }
-async function initProxy() {
-  try { PROXY_URL = (await Store.get("bq_proxy_url")) || ""; } catch (e) { PROXY_URL = ""; }
-}
-
 /* ═══════════════════════════════════════════════════════
    TMDB
 ═══════════════════════════════════════════════════════ */
@@ -932,7 +918,6 @@ const sfMovieUrl       = $("sfMovieUrl");
 const sfTvUrl          = $("sfTvUrl");
 const sfCancel         = $("sfCancel");
 const sfSave           = $("sfSave");
-const proxyUrlInput    = $("proxyUrlInput");
 const configTextarea   = $("configTextarea");
 const configImportBtn  = $("configImportBtn");
 const configExportBtn  = $("configExportBtn");
@@ -1063,7 +1048,6 @@ function buildPlayerUrl({ mediaType, tmdbId, season = 1, episode = 1 }) {
     console.warn("Blocked non-HTTPS player URL");
     return "";
   }
-  if (PROXY_URL) return PROXY_URL + (PROXY_URL.includes("?") ? "&" : "?") + "url=" + encodeURIComponent(url);
   return url;
 }
 
@@ -1730,13 +1714,6 @@ settingsSheet.addEventListener("click", e => {
   else if (action==="delete") { if (SOURCES.length<=1){if(!confirm("Delete the last source? You will need to import or add a new one."))return;} SOURCES.splice(idx,1); if (activeSourceIdx>=SOURCES.length) setActiveSource(Math.max(0,SOURCES.length-1)); sourcesSave(SOURCES); renderSourceList(); if (SOURCES.length) focusSourceControl(Math.min(idx, SOURCES.length-1), "delete"); else addSourceBtn.focus(); }
 });
 
-proxyUrlInput.addEventListener("change", () => {
-  PROXY_URL = proxyUrlInput.value.trim();
-  if (PROXY_URL && !PROXY_URL.startsWith("https://")) { PROXY_URL = ""; proxyUrlInput.value = ""; }
-  proxySave(PROXY_URL);
-  reloadCurrentPlayerIfActive();
-});
-
 addSourceBtn.addEventListener("click", () => { editingSourceIdx=-1; sfName.value=""; sfMovieUrl.value=""; sfTvUrl.value=""; sourceFormTitle.textContent="Add source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); });
 sfCancel.addEventListener("click", () => { sourceForm.classList.add("hidden"); addSourceBtn.classList.remove("hidden"); });
 sfSave.addEventListener("click", () => {
@@ -1851,8 +1828,6 @@ try {
 
 (async () => {
   await initSources();
-  await initProxy();
-  proxyUrlInput.value = PROXY_URL;
   updateSourceMenuButton();
   handleHashRoute();
 })();
