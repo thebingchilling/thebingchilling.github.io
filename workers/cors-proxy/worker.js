@@ -36,7 +36,14 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin || "*",
     "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
+    // The CORS spec carves Authorization out of the "*" wildcard on
+    // purpose — it must always be named explicitly, wildcard or not, or
+    // the browser's preflight refuses to let the real request send it at
+    // all. Reddit's OAuth calls (Basic for the token exchange, Bearer for
+    // the gallery fetch) both depend on this header reaching the Worker,
+    // so without this the forwarded-Authorization fix downstream never
+    // gets a chance to run.
+    "Access-Control-Allow-Headers": "*, Authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
