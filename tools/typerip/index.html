@@ -294,7 +294,6 @@
   </div>
 </div>
 
-<script src="/tools/typerip/vendor/opentype.js"></script>
 <script src="/tools/typerip/vendor/jszip.min.js"></script>
 <script src="/shared/chrome.js"></script>
 <script>
@@ -484,60 +483,47 @@
     }
   }
 
-  /* ── Fetching + repairing + zipping ── */
-  function loadOpentypeFont(url) {
+  /* ── Fetching + repairing + zipping ──
+     Fetching + parsing + glyph-rebuild all happen in worker.js, off the UI
+     thread: repairing a font is synchronous, CPU-heavy work (it walks every
+     glyph's path), and running it here froze the whole page for the
+     duration on anything but a tiny font. */
+  let fontWorker = null;
+  let workerMsgId = 0;
+  function getFontWorker() {
+    if (!fontWorker) fontWorker = new Worker("/tools/typerip/worker.js");
+    return fontWorker;
+  }
+
+  function getFontBytes(font, raw) {
     return new Promise((resolve, reject) => {
-      window.opentype.load(url, (err, font) => { if (err) reject(err); else resolve(font); });
-    });
-  }
-
-  function repairFont(fontData, font) {
-    const glyphFields = ["name", "unicode", "unicodes", "path", "index", "advanceWidth", "leftSideBearing"];
-    const rebuiltGlyphs = [];
-    for (let i = 0; i < fontData.glyphs.length; i++) {
-      const raw = fontData.glyphs.glyphs[i];
-      const glyphData = {};
-      glyphFields.forEach((field) => { if (raw[field] != null) glyphData[field] = raw[field]; });
-
-      // Hotfix: a NaN/zero advance width crashes opentype's writer.
-      if (glyphData.advanceWidth == null || isNaN(glyphData.advanceWidth)) {
-        let newAdvanceWidth = Math.floor(raw.getBoundingBox().x2);
-        if (newAdvanceWidth === 0) newAdvanceWidth = fontData.glyphs.glyphs[0].getBoundingBox().x2;
-        glyphData.advanceWidth = newAdvanceWidth;
+      const id = ++workerMsgId;
+      const worker = getFontWorker();
+      function onMessage(e) {
+        if (e.data.id !== id) return;
+        worker.removeEventListener("message", onMessage);
+        if (e.data.ok) resolve(e.data.buffer);
+        else reject(new Error(e.data.error || ("Failed to download " + font.name)));
       }
-
-      const rebuiltGlyph = new window.opentype.Glyph(glyphData);
-      // Hotfix: the Glyph constructor silently drops fields whose value is 0.
-      glyphFields.forEach((field) => { if (glyphData[field] != null && glyphData[field] === 0) rebuiltGlyph[field] = 0; });
-      rebuiltGlyphs.push(rebuiltGlyph);
-    }
-
-    const newFontData = { familyName: font.familyName, styleName: font.style, glyphs: rebuiltGlyphs };
-    ["defaultWidthX", "nominalWidthX", "unitsPerEm", "ascender", "descender"].forEach((field) => {
-      if (fontData[field] != null) newFontData[field] = fontData[field];
+      worker.addEventListener("message", onMessage);
+      worker.postMessage({ id, url: font.url, raw, familyName: font.familyName, style: font.style });
     });
-    return new window.opentype.Font(newFontData).toArrayBuffer();
-  }
-
-  async function getFontBytes(font, raw) {
-    if (raw) {
-      const res = await fetch(font.url);
-      if (!res.ok) throw new Error("Failed to download " + font.name);
-      return await res.arrayBuffer();
-    }
-    const fontData = await loadOpentypeFont(font.url);
-    return repairFont(fontData, font);
   }
 
   async function downloadFonts(fonts, zipFileName, raw, triggerBtn) {
     const originalHtml = triggerBtn ? triggerBtn.innerHTML : null;
-    if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.innerHTML = '<span class="spinner"></span>'; }
     hideError();
     try {
       const zip = new window.JSZip();
+      let done = 0;
       for (const font of fonts) {
+        if (triggerBtn) {
+          triggerBtn.disabled = true;
+          triggerBtn.innerHTML = '<span class="spinner"></span>' + (fonts.length > 1 ? (done + 1) + "/" + fonts.length : "");
+        }
         const bytes = await getFontBytes(font, raw);
         zip.file(sanitizeFilename(font.name + " " + (font.style || "")) + ".ttf", bytes);
+        done++;
       }
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
