@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Reverse Image Search</title>
+  <title>Reverse image search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Find the source of an image with SauceNAO — paste an image, give an image URL, or point it at a Reddit post to pick from its images." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
@@ -247,6 +247,12 @@
     .settings input[type=text], .settings select { width: 100%; border: 1px solid var(--md-outline); border-radius: 10px; padding: 0.55rem 0.7rem; font-size: 0.86rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
     .settings input[type=text]:focus, .settings select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
     .settings__actions { display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap; }
+
+    /* ── Footer note ── */
+    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
+    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
+    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
   </style>
 </head>
 <body>
@@ -268,8 +274,8 @@
   <main class="app-main">
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">image_search</span></div>
-      <h1 class="hero__title">Reverse Image Search</h1>
-      <p class="hero__sub">Find where an image came from using <a href="https://saucenao.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;">SauceNAO</a>. Paste an image, drop one, give an image URL, or hand it a Reddit post to pick an image from. The image (or its URL) is sent to SauceNAO to run the search — nothing is stored by this page.</p>
+      <h1 class="hero__title">Reverse image search</h1>
+      <p class="hero__sub">Find where an image came from using <a href="https://saucenao.com/" target="_blank" rel="noopener noreferrer" style="color:inherit;">SauceNAO</a>.</p>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Search by">
@@ -288,7 +294,7 @@
       <label class="dropzone" id="dropzone" for="fileInput">
         <span class="material-icons">add_photo_alternate</span>
         <span class="dropzone__title">Drop an image, or tap to choose one</span>
-        <span class="dropzone__sub">Sent to SauceNAO to search — nothing else is uploaded</span>
+        <span class="dropzone__sub">Sent to SauceNAO to search.</span>
         <input id="fileInput" type="file" accept="image/*" aria-label="Choose an image" />
       </label>
       <button type="button" class="btn btn--ghost btn--block" id="pasteImageBtn">
@@ -304,7 +310,7 @@
             <span class="material-icons">content_paste</span>
           </button>
         </div>
-        <p class="search-card__hint">Direct link to an image file, passed straight to SauceNAO's <code>url</code> lookup — searches automatically once pasted or typed.</p>
+        <p class="search-card__hint">Direct link to an image file.</p>
       </form>
     </div>
 
@@ -316,7 +322,7 @@
             <span class="material-icons">content_paste</span>
           </button>
         </div>
-        <p class="search-card__hint">Loads every image in the post (including galleries) — searches automatically once pasted or typed. Video posts aren't supported.</p>
+        <p class="search-card__hint">Loads every image in the post, including galleries.</p>
         <p class="reddit-post-title hidden" id="redditPostTitle"></p>
         <div class="gallery-grid hidden" id="redditGallery"></div>
       </form>
@@ -327,6 +333,13 @@
     <div id="errorArea"></div>
     <div class="quota-note" id="quotaArea"></div>
     <div class="result-list" id="resultsArea"></div>
+
+    <div class="card note-card">
+      <span class="material-icons">shield</span>
+      <div>
+        <p>Searches SauceNAO directly where it allows it, and through a CORS proxy where it doesn't. Reddit lookups authenticate via OAuth — the same technique official Reddit apps use — since Reddit blocks unauthenticated scraping. Nothing is stored by this page; the image or URL only goes to SauceNAO.</p>
+      </div>
+    </div>
   </main>
 
   <div class="bottom-dock">
@@ -702,7 +715,7 @@
   }
 
   function showEmptyState() {
-    $("resultsArea").innerHTML = `<div class="state-panel"><span class="material-icons">image_search</span><p>Paste an image, drop one, or search by URL or Reddit post above.</p></div>`;
+    $("resultsArea").innerHTML = `<div class="state-panel"><span class="material-icons">image_search</span><p>Nothing searched yet.</p></div>`;
   }
 
   /* ═══════════════ Search orchestration ═══════════════ */
