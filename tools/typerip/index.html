@@ -306,6 +306,10 @@
   function sanitizeFilename(s) {
     return String(s).replace(/[\\/:*?"<>|]+/g, "_").trim() || "font";
   }
+  function debounce(fn, delay) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+  }
 
   const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url=";
   // Long-lived preview token embedded in the original typerip client — grants
@@ -446,7 +450,7 @@
   }
 
   submitBtn.addEventListener("click", runSearch);
-  urlInput.addEventListener("keyup", (e) => { if (e.key === "Enter") runSearch(); });
+  urlInput.addEventListener("input", debounce(runSearch, 600));
 
   pasteBtn.addEventListener("click", async () => {
     try {
@@ -454,6 +458,7 @@
       if (text) {
         urlInput.value = text.trim();
         urlInput.focus();
+        runSearch();
       }
     } catch (e) {
       showError("Couldn't read the clipboard — your browser may need permission, or paste manually.");
