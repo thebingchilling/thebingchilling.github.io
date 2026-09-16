@@ -365,15 +365,6 @@
       </select>
     </div>
 
-    <div class="settings__section">
-      <div class="settings__section-label">CORS proxy fallback</div>
-      <p class="settings__hint">SauceNAO's API (and Reddit's) don't allow direct browser requests from another site, so a request that fails direct is retried through one of these — each fetches it server-side and hands the response back with CORS allowed. Comma-separated, tried in order; use <code>{url}</code> for where the target goes. Leave blank to only ever try direct requests.</p>
-      <input type="text" id="corsProxyInput" autocomplete="off" spellcheck="false" />
-      <div class="settings__actions">
-        <button id="corsProxyReset" class="btn btn--ghost btn--sm" type="button">Restore default</button>
-      </div>
-    </div>
-
     <div class="settings__actions">
       <button id="settingsSave" class="btn btn--primary btn--sm" type="button">Save</button>
     </div>
@@ -405,14 +396,11 @@
   };
 
   /* ═══════════════ Settings ═══════════════ */
-  const DEFAULT_CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}";
-  function loadCorsProxy() {
-    const raw = Store.get("bq_saucenao_cors_proxy");
-    return raw === null ? DEFAULT_CORS_PROXY : raw;
-  }
-  function saveCorsProxy(v) { Store.set("bq_saucenao_cors_proxy", v); }
-  let CORS_PROXY = loadCorsProxy();
-  function proxyList() { return CORS_PROXY.split(",").map(s => s.trim()).filter(Boolean); }
+  /* Fixed — not user-configurable. A request that fails direct is retried
+     through this proxy automatically; there is no way to override it from
+     the UI. */
+  const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}";
+  function proxyList() { return [CORS_PROXY]; }
 
   function loadApiKey() { return Store.get("bq_saucenao_api_key") || ""; }
   function saveApiKey(v) { Store.set("bq_saucenao_api_key", v); }
@@ -440,7 +428,7 @@
     } catch (directErr) {
       const proxies = proxyList();
       if (!proxies.length) {
-        throw new Error(`Couldn't reach it directly (${directErr.message}). Add a CORS proxy in Settings to retry through one automatically.`);
+        throw new Error(`Couldn't reach it directly (${directErr.message}).`);
       }
       const proxyErrors = [];
       for (const proxy of proxies) {
@@ -808,7 +796,6 @@
   function openSettings() {
     $("apiKeyInput").value = API_KEY;
     $("numResSelect").value = String(NUM_RES);
-    $("corsProxyInput").value = CORS_PROXY;
     settingsSheet.classList.remove("hidden");
     settingsSheet.setAttribute("aria-hidden", "false");
   }
@@ -819,12 +806,10 @@
   $("settingsBtn").addEventListener("click", openSettings);
   $("settingsClose").addEventListener("click", closeSettings);
   settingsBackdrop.addEventListener("click", closeSettings);
-  $("corsProxyReset").addEventListener("click", () => { $("corsProxyInput").value = DEFAULT_CORS_PROXY; });
   $("settingsSave").addEventListener("click", () => {
     API_KEY = $("apiKeyInput").value.trim(); saveApiKey(API_KEY);
     const n = parseInt($("numResSelect").value, 10);
     NUM_RES = (n >= 1 && n <= 40) ? n : 6; saveNumRes(NUM_RES);
-    CORS_PROXY = $("corsProxyInput").value.trim(); saveCorsProxy(CORS_PROXY);
     closeSettings();
   });
 
