@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Font ripper</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Download font files from a public Adobe Fonts family or collection page." />
+  <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Font ripper" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <script src="/shared/theme-init.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/chrome.css" />
+  <style>
+    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
+       token set to the rest of the toolbox. ── */
+    :root {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+
+      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
+      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
+      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+
+      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
+      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
+      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
+      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
+      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
+      --radius: 12px;
+      --t: 0.2s cubic-bezier(0.2,0,0,1);
+    }
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-primary: #ffb77c; --md-on-primary: #4a2800;
+        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+        --md-error: #ffb4ab; --md-on-error: #690005;
+        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+        --md-surface: #17120d;
+        --md-surface-container-lowest: #100c08;
+        --md-surface-container-low: #201a14;
+        --md-surface-container: #241e18;
+        --md-surface-container-high: #2f2822;
+        --md-surface-container-highest: #3a332c;
+        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+        --primary-dark: #ffcda0;
+        --text-faint: #a89686;
+      }
+    }
+    :root[data-theme="dark"] {
+      --md-primary: #ffb77c; --md-on-primary: #4a2800;
+      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
+      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
+      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
+      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
+      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
+      --md-error: #ffb4ab; --md-on-error: #690005;
+      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
+      --md-surface: #17120d;
+      --md-surface-container-lowest: #100c08;
+      --md-surface-container-low: #201a14;
+      --md-surface-container: #241e18;
+      --md-surface-container-high: #2f2822;
+      --md-surface-container-highest: #3a332c;
+      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
+      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
+      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
+      --primary-dark: #ffcda0;
+      --text-faint: #a89686;
+    }
+    :root[data-theme="light"] {
+      --md-primary: #8a4a16; --md-on-primary: #ffffff;
+      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
+      --md-secondary: #77584a; --md-on-secondary: #ffffff;
+      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
+      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
+      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
+      --md-error: #ba1a1a; --md-on-error: #ffffff;
+      --md-error-container: #ffdad6; --md-on-error-container: #410002;
+      --md-surface: #ffffff;
+      --md-surface-container-lowest: #ffffff;
+      --md-surface-container-low: #fdf1e6;
+      --md-surface-container: #f7ebdd;
+      --md-surface-container-high: #f1e5d6;
+      --md-surface-container-highest: #ebdfd0;
+      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
+      --md-outline: #837366; --md-outline-variant: #d6c5b5;
+      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+      --primary-dark: #632f00;
+      --text-faint: #8a7a6d;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body { -webkit-tap-highlight-color: transparent; }
+    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button, .btn { -webkit-touch-callout: none; user-select: none; }
+    .btn { position: relative; overflow: hidden; }
+
+    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    body { scrollbar-width: none; }
+    body::-webkit-scrollbar { display: none; }
+
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
+    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
+    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
+    .btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
+    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .btn--block { width: 100%; }
+    .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
+
+    .icon-btn { border: none; background: none; color: var(--text-muted); cursor: pointer; padding: 0.4rem; border-radius: 999px; display: inline-flex; }
+    .icon-btn:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); color: var(--primary); }
+    .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Page content ── */
+    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem max(1rem, calc((100% - 720px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
+    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
+    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
+    .hero__icon .material-icons { font-size: 30px; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+
+    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; gap: 0.5rem; }
+    .section-title h2 { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
+    .section-hint { margin: -0.5rem 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+    .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 0 0 0.4rem; }
+    .input-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
+    .input-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
+    .input-row input::placeholder { color: var(--text-faint); }
+    .input-row .icon-btn { flex-shrink: 0; }
+
+    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
+    .error-banner .material-icons { flex-shrink: 0; }
+    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
+    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
+
+    .caveat-text { margin: 0; font-size: 0.8rem; color: var(--text-faint); text-align: center; padding: 0.5rem 0; }
+
+    /* ── Family result ── */
+    .family-name { margin: 0 0 0.2rem; font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 600; color: var(--text); }
+    .family-by { margin: 0 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); }
+    .family-by a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
+    .checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.9rem; }
+    .checkbox-row input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+    .checkbox-row label { cursor: pointer; }
+
+    /* ── Font grid ── */
+    .font-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+    .font-card { position: relative; background: var(--bg2); border-radius: 16px; padding: 0.9rem 0.9rem 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+    .font-card__sample { font-size: 1.4rem; line-height: 1.25; color: var(--text); min-height: 2.5em; max-height: 2.5em; overflow: hidden; word-break: break-word; padding-right: 1.8rem; }
+    .font-card__name { font-size: 0.8rem; font-weight: 600; color: var(--text); word-break: break-word; }
+    .font-card__style { font-size: 0.7rem; color: var(--text-faint); }
+    .font-card__dl { position: absolute; top: 0.35rem; right: 0.35rem; }
+    .font-card__dl .material-icons { font-size: 20px; }
+
+    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
+    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
+    .note-card p { margin: 0 0 0.6rem; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
+    .note-card p:last-child { margin-bottom: 0; }
+    .note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
+
+    /* Last so it wins the cascade over any other single-class rule
+       (.error-banner, .card, .family-by) an element combines it with. */
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <div class="top-bar__brand">
+      <span class="top-bar__name">🍦 Bingqilin</span>
+    </div>
+    <div class="top-bar__actions">
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="hero">
+      <div class="hero__icon"><span class="material-icons">font_download</span></div>
+      <h1 class="hero__title">Font ripper</h1>
+      <p class="hero__sub">Fetch every style from an Adobe Fonts family or collection page and repackage it as downloadable font files.</p>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2><span class="material-icons">search</span>Find a family</h2></div>
+      <label class="field-label" for="urlInput">Adobe Fonts URL</label>
+      <div class="input-row">
+        <input id="urlInput" type="text" placeholder="https://fonts.adobe.com/fonts/..." autocomplete="off" autocapitalize="off" spellcheck="false" />
+        <button type="button" class="icon-btn" id="submitBtn" aria-label="Look up font family">
+          <span class="material-icons">arrow_forward</span>
+        </button>
+      </div>
+
+      <div class="error-banner hidden" id="errorBanner" role="alert">
+        <span class="material-icons">error_outline</span>
+        <div>
+          <p class="error-banner__title">Couldn't load that URL</p>
+          <p class="error-banner__body" id="errorBody"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="statusCard">
+      <p class="caveat-text">Enter a font family URL from <a href="https://fonts.adobe.com/" target="_blank" rel="noopener">Adobe Fonts</a> to begin.</p>
+    </div>
+
+    <div class="card hidden" id="familyCard">
+      <h2 class="family-name" id="familyName"></h2>
+      <p class="family-by hidden" id="familyBy"></p>
+      <div class="checkbox-row">
+        <input type="checkbox" id="rawDownload" />
+        <label for="rawDownload">Download without repair processing</label>
+      </div>
+      <button type="button" class="btn btn--primary btn--block" id="downloadAllBtn">
+        <span class="material-icons" style="font-size:18px;">download</span>Download all
+      </button>
+    </div>
+
+    <div class="font-grid" id="fontGrid"></div>
+
+    <div class="card note-card">
+      <span class="material-icons">shield</span>
+      <div>
+        <p>Everything happens in your browser: the family page is read through a public CORS proxy (allorigins.win) to pull out its font list, then each font file is fetched, its glyph data rebuilt to fix encoding issues (via OpenType.js), and zipped for download.</p>
+        <p>Only fetches font families/collections that are already publicly listed on Adobe Fonts. By using this tool you agree not to use downloaded fonts beyond what the font owner's license, and Adobe's own terms, allow — treat anything you download here as for testing only, not for publication.</p>
+        <p>Based on <a href="https://github.com/beemilkz/typerip" target="_blank" rel="noopener">beemilkz/typerip</a> (originally by Jeremy Clark), using <a href="https://opentype.js.org/" target="_blank" rel="noopener">OpenType.js</a>.</p>
+      </div>
+    </div>
+  </main>
+
+  <div class="bottom-dock">
+    <nav class="bottom-nav" aria-label="Primary">
+      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+        <span class="bottom-nav__label">Media</span>
+      </a>
+      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+        <span class="bottom-nav__label">Live</span>
+      </a>
+      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+        <span class="bottom-nav__label">Tools</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<script src="/tools/typerip/vendor/opentype.js"></script>
+<script src="/tools/typerip/vendor/jszip.min.js"></script>
+<script src="/shared/chrome.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item");
+  BQChrome.initTheme();
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function sanitizeFilename(s) {
+    return String(s).replace(/[\\/:*?"<>|]+/g, "_").trim() || "font";
+  }
+
+  const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+  // Long-lived preview token embedded in the original typerip client — grants
+  // access to the same "render this family's fonts for preview" endpoint the
+  // Adobe Fonts website itself uses, for every style in a public family.
+  const EC_TOKEN = "3bb2a6e53c9684ffdc9a9bf71d5b2a620e68abb153386c46ebe547292f11a96176a59ec4f0c7aacfef2663c08018dc100eedf850c284fb72392ba910777487b32ba21c08cc8c33d00bda49e7e2cc90baff01835518dde43e2e8d5ebf7b76545fc2687ab10bc2b0911a141f3cf7f04f3cac438a135f";
+
+  function typekitUrl(webId, fvd) {
+    return "https://use.typekit.net/pf/tk/" + webId + "/" + fvd + "/a?unicode=AAAAAQAAAAEAAAAB&features=ALL&v=3&ec_token=" + EC_TOKEN;
+  }
+
+  async function fetchViaProxy(url) {
+    const res = await fetch(CORS_PROXY + encodeURIComponent(url), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status + " fetching that page.");
+    return await res.text();
+  }
+
+  function extractEmbeddedJson(html, marker) {
+    const start = html.indexOf(marker);
+    if (start === -1) return null;
+    const tail = html.slice(start);
+    const end = tail.indexOf("<" + "/script>");
+    if (end === -1) return null;
+    try { return JSON.parse(tail.slice(0, end)); } catch (e) { return null; }
+  }
+
+  async function getFontFamily(url) {
+    const html = await fetchViaProxy(url);
+    const json = extractEmbeddedJson(html, '{"family":{"slug":"');
+    if (!json) throw new Error("Unexpected response — check the URL, or the CORS proxy may be down.");
+    const fam = json.family;
+    const defaultLanguage = fam.display_font.default_language;
+    const sampleText = json.textSampleData.textSamples[defaultLanguage].list;
+    const designers = (fam.designers || []).map((d) => ({
+      name: d.name,
+      url: json.designer_info && json.designer_info[d.slug] ? "https://fonts.adobe.com" + json.designer_info[d.slug].url : null,
+    }));
+    const fonts = fam.fonts.map((f) => ({
+      url: typekitUrl(f.family.web_id, f.font.web.fvd),
+      name: f.name,
+      style: f.variation_name,
+      familyName: fam.name,
+      familyUrl: "https://fonts.adobe.com/fonts/" + fam.slug,
+    }));
+    return { name: fam.name, foundryName: fam.foundry ? fam.foundry.name : "", designers, fonts, sampleText };
+  }
+
+  async function getFontCollection(url) {
+    const html = await fetchViaProxy(url);
+    const json = extractEmbeddedJson(html, '{"fontpack":{"all_valid_slugs":');
+    if (!json) throw new Error("Unexpected response — check the URL, or the CORS proxy may be down.");
+    const pack = json.fontpack;
+    const defaultLanguage = pack.font_variations[0].default_language;
+    const sampleText = json.textSampleData.textSamples[defaultLanguage].list;
+    const designers = [{ name: pack.contributor_credit, url: url }];
+    const fonts = pack.font_variations.map((v) => ({
+      url: typekitUrl(v.opaque_id, v.fvd),
+      name: v.full_display_name,
+      style: v.variation_name,
+      familyName: v.family.name,
+      familyUrl: "https://fonts.adobe.com/fonts/" + v.family.slug,
+    }));
+    return { name: pack.name, foundryName: "", designers, fonts, sampleText };
+  }
+
+  function normalizeUrl(raw) {
+    let u = raw.trim();
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    return u;
+  }
+
+  async function handleRequest(rawUrl) {
+    const url = normalizeUrl(rawUrl);
+    if (url.indexOf("fonts.adobe.com/collections") !== -1) return await getFontCollection(url);
+    return await getFontFamily(url);
+  }
+
+  /* ── Rendering ── */
+  const urlInput = $("urlInput"), submitBtn = $("submitBtn");
+  const errorBanner = $("errorBanner"), errorBody = $("errorBody");
+  const statusCard = $("statusCard");
+  const familyCard = $("familyCard"), familyName = $("familyName"), familyBy = $("familyBy");
+  const fontGrid = $("fontGrid");
+  const rawDownload = $("rawDownload");
+  const downloadAllBtn = $("downloadAllBtn");
+
+  let currentFamily = null;
+  let fontFaceStyleEl = null;
+
+  function hideError() { errorBanner.classList.add("hidden"); }
+  function showError(message) { errorBody.textContent = message; errorBanner.classList.remove("hidden"); }
+
+  function renderFamily(family) {
+    currentFamily = family;
+    family.fonts.forEach((f, i) => { f.cssFamily = "tr-font-" + i; });
+
+    if (fontFaceStyleEl) fontFaceStyleEl.remove();
+    fontFaceStyleEl = document.createElement("style");
+    fontFaceStyleEl.textContent = family.fonts.map((f) =>
+      "@font-face { font-family: '" + f.cssFamily + "'; src: url('" + f.url + "'); }"
+    ).join("\n");
+    document.head.appendChild(fontFaceStyleEl);
+
+    familyName.textContent = family.name;
+    const designers = (family.designers || []).filter((d) => d && d.name);
+    if (designers.length) {
+      familyBy.innerHTML = "by " + designers.map((d) =>
+        d.url ? '<a href="' + escapeHtml(d.url) + '" target="_blank" rel="noopener">' + escapeHtml(d.name) + "</a>" : escapeHtml(d.name)
+      ).join(", ");
+      familyBy.classList.remove("hidden");
+    } else {
+      familyBy.classList.add("hidden");
+    }
+    familyCard.classList.remove("hidden");
+    statusCard.classList.add("hidden");
+
+    fontGrid.innerHTML = family.fonts.map((f, i) =>
+      '<div class="font-card">' +
+        '<div class="font-card__sample" style="font-family:\'' + f.cssFamily + '\';">' + escapeHtml(family.sampleText || f.name) + "</div>" +
+        '<div><div class="font-card__name">' + escapeHtml(f.name) + '</div><div class="font-card__style">' + escapeHtml(f.style || "") + "</div></div>" +
+        '<button type="button" class="icon-btn font-card__dl" data-index="' + i + '" aria-label="Download ' + escapeHtml(f.name) + '"><span class="material-icons">download</span></button>' +
+      "</div>"
+    ).join("");
+  }
+
+  submitBtn.addEventListener("click", runSearch);
+  urlInput.addEventListener("keyup", (e) => { if (e.key === "Enter") runSearch(); });
+
+  async function runSearch() {
+    const raw = urlInput.value.trim();
+    if (!raw) return;
+    hideError();
+    familyCard.classList.add("hidden");
+    fontGrid.innerHTML = "";
+    statusCard.classList.remove("hidden");
+    statusCard.innerHTML = '<p class="caveat-text">Loading…</p>';
+    submitBtn.disabled = true;
+    try {
+      const family = await handleRequest(raw);
+      renderFamily(family);
+    } catch (err) {
+      statusCard.innerHTML = '<p class="caveat-text">Enter a font family URL from <a href="https://fonts.adobe.com/" target="_blank" rel="noopener">Adobe Fonts</a> to begin.</p>';
+      showError((err && err.message) || String(err));
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  /* ── Fetching + repairing + zipping ── */
+  function loadOpentypeFont(url) {
+    return new Promise((resolve, reject) => {
+      window.opentype.load(url, (err, font) => { if (err) reject(err); else resolve(font); });
+    });
+  }
+
+  function repairFont(fontData, font) {
+    const glyphFields = ["name", "unicode", "unicodes", "path", "index", "advanceWidth", "leftSideBearing"];
+    const rebuiltGlyphs = [];
+    for (let i = 0; i < fontData.glyphs.length; i++) {
+      const raw = fontData.glyphs.glyphs[i];
+      const glyphData = {};
+      glyphFields.forEach((field) => { if (raw[field] != null) glyphData[field] = raw[field]; });
+
+      // Hotfix: a NaN/zero advance width crashes opentype's writer.
+      if (glyphData.advanceWidth == null || isNaN(glyphData.advanceWidth)) {
+        let newAdvanceWidth = Math.floor(raw.getBoundingBox().x2);
+        if (newAdvanceWidth === 0) newAdvanceWidth = fontData.glyphs.glyphs[0].getBoundingBox().x2;
+        glyphData.advanceWidth = newAdvanceWidth;
+      }
+
+      const rebuiltGlyph = new window.opentype.Glyph(glyphData);
+      // Hotfix: the Glyph constructor silently drops fields whose value is 0.
+      glyphFields.forEach((field) => { if (glyphData[field] != null && glyphData[field] === 0) rebuiltGlyph[field] = 0; });
+      rebuiltGlyphs.push(rebuiltGlyph);
+    }
+
+    const newFontData = { familyName: font.familyName, styleName: font.style, glyphs: rebuiltGlyphs };
+    ["defaultWidthX", "nominalWidthX", "unitsPerEm", "ascender", "descender"].forEach((field) => {
+      if (fontData[field] != null) newFontData[field] = fontData[field];
+    });
+    return new window.opentype.Font(newFontData).toArrayBuffer();
+  }
+
+  async function getFontBytes(font, raw) {
+    if (raw) {
+      const res = await fetch(font.url);
+      if (!res.ok) throw new Error("Failed to download " + font.name);
+      return await res.arrayBuffer();
+    }
+    const fontData = await loadOpentypeFont(font.url);
+    return repairFont(fontData, font);
+  }
+
+  async function downloadFonts(fonts, zipFileName, raw, triggerBtn) {
+    const originalHtml = triggerBtn ? triggerBtn.innerHTML : null;
+    if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.innerHTML = '<span class="spinner"></span>'; }
+    hideError();
+    try {
+      const zip = new window.JSZip();
+      for (const font of fonts) {
+        const bytes = await getFontBytes(font, raw);
+        zip.file(sanitizeFilename(font.name + " " + (font.style || "")) + ".ttf", bytes);
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = sanitizeFilename(zipFileName) + ".zip";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showError((err && err.message) || String(err));
+    } finally {
+      if (triggerBtn) { triggerBtn.disabled = false; triggerBtn.innerHTML = originalHtml; }
+    }
+  }
+
+  downloadAllBtn.addEventListener("click", () => {
+    if (!currentFamily) return;
+    downloadFonts(currentFamily.fonts, currentFamily.name, rawDownload.checked, downloadAllBtn);
+  });
+
+  fontGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest(".font-card__dl");
+    if (!btn || !currentFamily) return;
+    const font = currentFamily.fonts[Number(btn.dataset.index)];
+    if (!font) return;
+    downloadFonts([font], font.name + " " + (font.style || ""), rawDownload.checked, btn);
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+  }
+})();
+</script>
+</body>
+</html>
