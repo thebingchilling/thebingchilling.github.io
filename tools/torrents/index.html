@@ -170,7 +170,7 @@
     /* ── Results ── */
     .result-list { display: flex; flex-direction: column; gap: 0.6rem; }
     .result-card { background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem 1rem; box-shadow: var(--el1); }
-    .result-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0 0 0.3rem; line-height: 1.35; word-break: break-word; }
+    .result-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0 0 0.3rem; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
     .result-card__meta { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.6rem; }
     .result-card__meta span { display: inline-flex; align-items: center; gap: 0.25rem; }
     .result-card__meta .material-icons { font-size: 14px; }
@@ -592,7 +592,6 @@
 
   searchScope.textContent = "Searching: " + SOURCES.map(s => s.name).join(", ");
   sortSelect.value = SORT_BY;
-  resultsArea.innerHTML = `<div class="state-panel"><p>Nothing searched yet.</p></div>`;
 
   BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item");
   BQChrome.initTheme();
