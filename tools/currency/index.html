@@ -303,7 +303,7 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>A single USD-based rate table is fetched once per session (open.er-api.com, falling back to frankfurter.app if that's unreachable) and every displayed pair is then derived by cross-division client-side, rather than a network round trip per conversion. "Feels like to locals" comes from the World Bank's PPP conversion-factor indicator (local currency units per international dollar) — the ratio of two countries' factors gives a purchasing-power rate independent of the market exchange rate, which is why an undervalued currency can show a higher "feels like" price than its plain converted one. Both APIs are called directly from your browser with no intermediary; your main-currency choice is the only thing saved, in this browser's local storage.</p>
+        <p>A USD rate table is fetched once (open.er-api.com, falling back to frankfurter.app) and cross-divided client-side per pair. "Feels like to locals" uses the World Bank's PPP conversion factor — local currency per international dollar — so it reflects purchasing power, not the market rate. Only your main-currency choice is saved, locally.</p>
       </div>
     </div>
   </main>

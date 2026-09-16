@@ -402,7 +402,7 @@
 
     <div class="card note-card">
       <span class="material-icons">shield</span>
-      <p>Codes are standard TOTP (RFC 6238): an HMAC of the shared secret and the current 30-second time step, computed with the browser's own Web Crypto API (SHA-1/256/512, matching whichever algorithm the account specifies). Scanning a QR image decodes it locally with <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a> and parses the resulting otpauth:// URI for its secret and parameters — the image itself is never uploaded anywhere. This tool makes no network requests at all; accounts are kept in this browser's localStorage, unencrypted, so anyone with access to this browser profile can read them.</p>
+      <p>Codes are standard TOTP (RFC 6238) — an HMAC of your secret and the time, via the browser's Web Crypto API. QR setup codes are decoded locally with <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a>. No network requests happen at all, but accounts sit unencrypted in localStorage.</p>
     </div>
   </main>
 
