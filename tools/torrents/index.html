@@ -236,7 +236,7 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>Searches Internet Archive and The Pirate Bay (via apibay.org), fetched directly from your browser and retried through a fixed CORS proxy when direct access is blocked. Nothing is downloaded by this page — results just give you a magnet or .torrent link to open in your own client.</p>
+        <p>Searches Internet Archive and The Pirate Bay (via apibay.org), fetched directly from your browser and retried through a fixed set of CORS proxies when direct access is blocked. Nothing is downloaded by this page — results just give you a magnet or .torrent link to open in your own client.</p>
       </div>
     </div>
   </main>
@@ -297,10 +297,17 @@
   ];
 
   /* Fixed — not user-configurable. Every source request that fails direct
-     (CORS block) is retried through this proxy; there is no way to
-     override it from the UI. */
-  const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}";
-  function corsProxyList() { return [CORS_PROXY]; }
+     (CORS block) is retried through these, in order, until one works; there
+     is no way to override this from the UI. The Cloudflare Worker goes
+     first; the Vercel Edge Function is a fallback for when a source (e.g.
+     apibay.org) has rate-limited the Worker's shared Cloudflare egress IP
+     specifically — see workers/cors-proxy-vercel/README.md for why that's
+     a real second path rather than just another copy of the same thing. */
+  const CORS_PROXIES = [
+    "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}",
+    "https://thebingchilling-github-io.vercel.app/api/proxy?url={url}",
+  ];
+  function corsProxyList() { return CORS_PROXIES; }
 
   function loadSortBy() {
     const raw = Store.get("bq_torrent_sort");
