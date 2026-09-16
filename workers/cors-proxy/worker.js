@@ -43,7 +43,13 @@ function corsHeaders(origin) {
     // the gallery fetch) both depend on this header reaching the Worker,
     // so without this the forwarded-Authorization fix downstream never
     // gets a chance to run.
-    "Access-Control-Allow-Headers": "*, Authorization",
+    //
+    // Spelled out as a plain list rather than mixed with "*" — some
+    // WebKit/Safari versions (notably iOS, where this broke while working
+    // fine in desktop Chrome) parse a combined "*, Authorization" value
+    // more strictly and don't treat it as covering Authorization at all.
+    // An explicit list has no such ambiguity in any browser.
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
