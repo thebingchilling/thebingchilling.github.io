@@ -195,11 +195,15 @@
     .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 0.65rem; margin-top: 0.75rem; }
     .gallery-item { aspect-ratio: 1; border-radius: 16px; padding: 0; border: 3px solid transparent; background: var(--surface2); cursor: pointer; box-shadow: var(--el1); transition: transform var(--t), box-shadow var(--t), border-color var(--t); }
     .gallery-item:hover { transform: translateY(-2px); box-shadow: var(--el2); }
-    .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 13px; }
     .gallery-item--selected { border-color: var(--primary); box-shadow: var(--el2); }
     .gallery-item__check { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: none; align-items: center; justify-content: center; box-shadow: var(--el1); }
     .gallery-item--selected .gallery-item__check { display: flex; }
     .gallery-item__check .material-icons { font-size: 15px; }
+    .gallery-item__select { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: none; background: none; cursor: pointer; overflow: hidden; border-radius: 13px; }
+    .gallery-item__select img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 13px; }
+    .gallery-item__download { position: absolute; bottom: 6px; left: 6px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; overflow: hidden; transition: background var(--t); }
+    .gallery-item__download:hover { background: rgba(0,0,0,0.75); }
+    .gallery-item__download svg { width: 14px; height: 14px; }
 
     /* ── State / error / quota ── */
     .state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
@@ -211,9 +215,9 @@
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 0.5rem; }
 
     /* ── Results ── */
-    .result-list { display: flex; flex-direction: column; gap: 0.6rem; }
-    .sauce-card { display: flex; gap: 0.75rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem; box-shadow: var(--el1); }
-    .sauce-card__thumb { width: 140px; height: 140px; border-radius: 14px; object-fit: contain; flex-shrink: 0; background: var(--surface2); box-shadow: var(--el1); }
+    .result-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+    .sauce-card { display: flex; flex-direction: column; gap: 0.6rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem; box-shadow: var(--el1); }
+    .sauce-card__thumb { width: 100%; aspect-ratio: 1; height: auto; border-radius: 14px; object-fit: contain; background: var(--surface2); box-shadow: var(--el1); }
     .sauce-card__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
     .sauce-card__top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .sauce-card__sim { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
@@ -331,7 +335,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
 
-  BQChrome.initRipple(".icon-btn, .btn, .tab, .dropzone, .gallery-item, .bottom-nav__item");
+  BQChrome.initRipple(".icon-btn, .btn, .tab, .dropzone, .gallery-item__select, .gallery-item__download, .bottom-nav__item");
   BQChrome.initTheme();
 
   if ("serviceWorker" in navigator) {
@@ -368,7 +372,8 @@
     } catch (directErr) {
       const proxies = proxyList();
       if (!proxies.length) {
-        throw new Error(`Couldn't reach it directly (${directErr.message}).`);
+        console.error("Direct request failed:", directErr);
+        throw new Error("Couldn't reach it.");
       }
       const proxyErrors = [];
       for (const proxy of proxies) {
@@ -383,7 +388,8 @@
           proxyErrors.push(`${host} → ${proxyErr.message}`);
         }
       }
-      throw new Error(`Direct request failed (${directErr.message}). Every CORS proxy also failed: ${proxyErrors.join("; ")}.`);
+      console.error(`Direct request failed (${directErr.message}). Every CORS proxy also failed: ${proxyErrors.join("; ")}.`);
+      throw new Error("Couldn't reach it — direct and proxied requests both failed.");
     }
   }
 
@@ -617,11 +623,8 @@
   function clearError() { $("errorArea").innerHTML = ""; }
 
   function renderQuota(q) {
-    if (!q || (q.short == null && q.long == null)) { $("quotaArea").textContent = ""; return; }
-    const parts = [];
-    if (q.short != null) parts.push(`${q.short} left this 30s`);
-    if (q.long != null) parts.push(`${q.long} left today`);
-    $("quotaArea").textContent = parts.length ? `SauceNAO quota: ${parts.join(" · ")}` : "";
+    if (!q || q.long == null) { $("quotaArea").textContent = ""; return; }
+    $("quotaArea").textContent = `SauceNAO quota: ${q.long} left today`;
   }
 
   function simClass(sim) { return sim >= 80 ? "high" : sim >= 60 ? "mid" : "low"; }
@@ -819,24 +822,65 @@
 
   /* ═══════════════ Reddit panel: paste button, auto-search on input ═══════════════ */
   let currentRedditImages = [];
+
+  function filenameFromUrl(url, idx) {
+    try {
+      const last = new URL(url).pathname.split("/").filter(Boolean).pop();
+      if (last && /\.\w{2,5}$/.test(last)) return decodeURIComponent(last);
+    } catch (e) {}
+    return `reddit-image-${idx + 1}.jpg`;
+  }
+
+  async function downloadImage(url, filename, btn) {
+    const original = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px;margin:0;"></span>`;
+    try {
+      const res = await fetchDirectOrProxied(url, { method: "GET" });
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch (e) {
+      showError("Couldn't download that image: " + ((e && e.message) || e));
+    } finally {
+      btn.innerHTML = original;
+    }
+  }
+
+  const DOWNLOAD_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>`;
+
   function renderGallery(images) {
     currentRedditImages = images;
     const grid = $("redditGallery");
     grid.innerHTML = images.map((img, i) => `
-      <button class="gallery-item" type="button" data-idx="${i}" aria-label="Select image ${i + 1} of ${images.length}">
-        <img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'" />
+      <div class="gallery-item" data-idx="${i}">
+        <button class="gallery-item__select" type="button" aria-label="Select image ${i + 1} of ${images.length}">
+          <img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'" />
+        </button>
         <span class="gallery-item__check"><span class="material-icons">check</span></span>
-      </button>`).join("");
+        <button class="gallery-item__download" type="button" aria-label="Download image ${i + 1}" title="Download">${DOWNLOAD_ICON}</button>
+      </div>`).join("");
     grid.classList.toggle("hidden", images.length === 0);
-    grid.querySelectorAll(".gallery-item").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        grid.querySelectorAll(".gallery-item").forEach((b) => b.classList.remove("gallery-item--selected"));
-        btn.classList.add("gallery-item--selected");
-        const img = currentRedditImages[parseInt(btn.dataset.idx, 10)];
+    grid.querySelectorAll(".gallery-item").forEach((item) => {
+      const idx = parseInt(item.dataset.idx, 10);
+      item.querySelector(".gallery-item__select").addEventListener("click", () => {
+        grid.querySelectorAll(".gallery-item").forEach((el) => el.classList.remove("gallery-item--selected"));
+        item.classList.add("gallery-item--selected");
+        const img = currentRedditImages[idx];
         if (img) runUrlSearch(img.url);
       });
+      item.querySelector(".gallery-item__download").addEventListener("click", (e) => {
+        e.stopPropagation();
+        const img = currentRedditImages[idx];
+        if (img) downloadImage(img.url, filenameFromUrl(img.url, idx), e.currentTarget);
+      });
     });
-    if (images.length === 1) grid.querySelector(".gallery-item").click();
+    if (images.length === 1) grid.querySelector(".gallery-item__select").click();
   }
 
   async function loadRedditGallery(postUrl) {
