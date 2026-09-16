@@ -461,11 +461,28 @@
   const REDDIT_TOKEN_ENDPOINT = "https://www.reddit.com/api/v1/access_token";
   let redditToken = null; // { value, expiresAt }
 
+  /* A real installed_client device sends a stable-but-unique per-install
+     ID. Every visitor sharing one hardcoded device_id string looks like
+     the same "device" hammering the token endpoint from thousands of
+     different IPs at once — an easy pattern for Reddit to bulk-block.
+     Generate one at random and keep it in localStorage instead, falling
+     back to an in-memory value when storage isn't available. */
+  function getDeviceId() {
+    let stored = null;
+    try { stored = localStorage.getItem("bq_reddit_device_id"); } catch (e) {}
+    if (stored) return stored;
+    if (!getDeviceId._mem) {
+      getDeviceId._mem = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      try { localStorage.setItem("bq_reddit_device_id", getDeviceId._mem); } catch (e) {}
+    }
+    return getDeviceId._mem;
+  }
+
   async function getRedditToken() {
     if (redditToken && redditToken.expiresAt > Date.now() + 30000) return redditToken.value;
     const body = new URLSearchParams();
     body.set("grant_type", "https://oauth.reddit.com/grants/installed_client");
-    body.set("device_id", "DO_NOT_TRACK_THIS_DEVICE");
+    body.set("device_id", getDeviceId());
     const res = await fetchDirectOrProxied(REDDIT_TOKEN_ENDPOINT, {
       method: "POST",
       headers: {
@@ -614,6 +631,43 @@
 
   function simClass(sim) { return sim >= 80 ? "high" : sim >= 60 ? "mid" : "low"; }
 
+  /* Simple colored-badge SVGs for SauceNAO's major indexed sources — no
+     favicon service, no external image fetch. Unrecognized hosts fall
+     back to a generic link icon. */
+  const SOURCE_ICONS = {
+    "pixiv.net": { l: "P", bg: "#0096fa" },
+    "fanbox.cc": { l: "P", bg: "#0096fa" },
+    "danbooru.donmai.us": { l: "D", bg: "#0073ff" },
+    "gelbooru.com": { l: "G", bg: "#ee8fb0" },
+    "yande.re": { l: "Y", bg: "#42576b" },
+    "konachan.com": { l: "K", bg: "#6fa0c9" },
+    "konachan.net": { l: "K", bg: "#6fa0c9" },
+    "e621.net": { l: "e", bg: "#1b2a33" },
+    "e926.net": { l: "e", bg: "#1b2a33" },
+    "sankakucomplex.com": { l: "S", bg: "#3d3d3d" },
+    "chan.sankakucomplex.com": { l: "S", bg: "#3d3d3d" },
+    "anime-pictures.net": { l: "A", bg: "#5b8ac0" },
+    "nijie.info": { l: "N", bg: "#f39800" },
+    "deviantart.com": { l: "dA", bg: "#05cc47" },
+    "twitter.com": { l: "X", bg: "#000000" },
+    "x.com": { l: "X", bg: "#000000" },
+    "artstation.com": { l: "AS", bg: "#13aff0" },
+    "tumblr.com": { l: "t", bg: "#34526f" },
+    "instagram.com": { l: "IG", bg: "#c1367e" },
+    "weibo.com": { l: "W", bg: "#e6162d" },
+    "fantia.jp": { l: "F", bg: "#3399ff" },
+    "bcy.net": { l: "B", bg: "#3ca4f0" },
+    "seiga.nicovideo.jp": { l: "N", bg: "#231815" },
+    "nicovideo.jp": { l: "N", bg: "#231815" },
+    "mangadex.org": { l: "M", bg: "#ff6740" }
+  };
+  function sourceIcon(host) {
+    const meta = SOURCE_ICONS[host];
+    if (!meta) return `<span class="material-icons" style="font-size:14px;">open_in_new</span>`;
+    const fontSize = meta.l.length > 1 ? 6.5 : 8.5;
+    return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><text x="8" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="'DM Sans', sans-serif" font-size="${fontSize}" font-weight="700" fill="#fff">${escapeHtml(meta.l)}</text></svg>`;
+  }
+
   function renderResults(results) {
     const area = $("resultsArea");
     if (!results.length) {
@@ -625,8 +679,7 @@
       const links = r.links.slice(0, 4).map((l) => {
         let host = l;
         try { host = new URL(l).hostname.replace(/^www\./, ""); } catch (e) {}
-        const favicon = `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(host)}`;
-        return `<a class="btn btn--ghost btn--sm" href="${escapeHtml(l)}" target="_blank" rel="noopener noreferrer"><img class="sauce-card__favicon" src="${favicon}" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />${escapeHtml(host)}</a>`;
+        return `<a class="btn btn--ghost btn--sm" href="${escapeHtml(l)}" target="_blank" rel="noopener noreferrer">${sourceIcon(host)}${escapeHtml(host)}</a>`;
       }).join("");
       return `
         <div class="sauce-card">
