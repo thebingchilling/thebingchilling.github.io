@@ -810,7 +810,7 @@
       downloadLabel: "Download unlocked PDF",
       errorTitle: "Couldn't unlock this PDF",
       suffix: "-unlocked.pdf",
-      note: 'Runs entirely in this tab via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly — nothing is uploaded anywhere. "Owner password protected" means the file already opens with no prompt; it\'s just flagged with restrictions (no printing, copying, editing) that compliant readers enforce. This rewrites the encryption dictionary to drop that flag and the owner password with it — it doesn\'t crack real content encryption (a PDF that needs a password just to open). Only unlock files you have the right to modify.',
+      note: 'Runs entirely in this tab via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly — nothing is uploaded anywhere. "Owner password protected" means the file already opens with no prompt; it\'s just flagged with restrictions (no printing, copying, editing) that compliant readers enforce. This rewrites the encryption dictionary to drop that flag and the owner password with it — it doesn\'t crack real content encryption (a PDF that needs a password just to open).',
     },
     unsign: {
       heroIcon: "remove_moderator",
@@ -824,7 +824,7 @@
       downloadLabel: "Download unsigned PDF",
       errorTitle: "Couldn't remove the signature",
       suffix: "-unsigned.pdf",
-      note: 'Also runs entirely in this tab via QPDF/WebAssembly. DocMDP ("certification") is a digital signature a PDF\'s author can add to lock it against further changes — some viewers refuse edits outright once it\'s present. This strips that signature and its certification metadata, the same way the owner-password mode strips permission flags; it doesn\'t touch a PDF that\'s genuinely encrypted with a real open password. Only remove signatures from files you have the right to modify.',
+      note: 'Also runs entirely in this tab via QPDF/WebAssembly. DocMDP ("certification") is a digital signature a PDF\'s author can add to lock it against further changes — some viewers refuse edits outright once it\'s present. This strips that signature and its certification metadata, the same way the owner-password mode strips permission flags; it doesn\'t touch a PDF that\'s genuinely encrypted with a real open password.',
     },
   };
 
