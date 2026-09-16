@@ -601,6 +601,19 @@
     return result.path || (await resolveShareLink(result.shareUrl));
   }
 
+  /* reddit.com/media?url=<image url> is what you get from sharing straight
+     out of the image lightbox/viewer rather than the post itself — it's
+     not a post link at all, just a wrapper around an already-resolved
+     image URL sitting right there in the query string. No reddit API
+     call needed; the image URL can be searched directly. */
+  function extractMediaViewerUrl(raw) {
+    let u;
+    try { u = new URL(raw.trim()); } catch (e) { return null; }
+    if (!/(^|\.)reddit\.com$/.test(u.hostname.toLowerCase())) return null;
+    if (u.pathname.replace(/\/+$/, "") !== "/media") return null;
+    return u.searchParams.get("url") || null;
+  }
+
   function decodeEntities(s) {
     if (!s) return s;
     return s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'");
@@ -990,6 +1003,8 @@
     $("redditGallery").classList.add("hidden");
     $("redditPostTitle").classList.add("hidden");
     $("redditPostTitle").textContent = "";
+    const mediaUrl = extractMediaViewerUrl(postUrl);
+    if (mediaUrl) { runUrlSearch(mediaUrl); return; }
     setBusy(true, "Loading reddit post…");
     try {
       const { title, images } = await fetchRedditImages(postUrl);
