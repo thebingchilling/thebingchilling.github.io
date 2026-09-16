@@ -224,7 +224,7 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">font_download</span></div>
       <h1 class="hero__title">Font ripper</h1>
-      <p class="hero__sub">Fetch every style from an Adobe Fonts family or collection page and repackage it as downloadable font files.</p>
+      <p class="hero__sub">Download every style from an Adobe Fonts family or collection page.</p>
     </div>
 
     <div class="card">
@@ -266,8 +266,8 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>Everything happens in your browser: the family page is read through a self-hosted CORS proxy to pull out its font list, then each font file is fetched as-is and zipped for download.</p>
-        <p>Only fetches font families/collections that are already publicly listed on Adobe Fonts. By using this tool you agree not to use downloaded fonts beyond what the font owner's license, and Adobe's own terms, allow — treat anything you download here as for testing only, not for publication.</p>
+        <p>A family or collection page embeds a JSON blob describing every style, read through a self-hosted CORS proxy since fonts.adobe.com doesn't send the headers a browser needs to fetch it directly. Each font's actual file then comes from a Typekit preview endpoint (<code>use.typekit.net/pf/tk/...</code>) — the same one fonts.adobe.com itself loads to render live specimens with <code>@font-face</code>, and unlike a normal embedded Typekit kit, it isn't restricted to an allow-listed domain.</p>
+        <p>Only fetches families/collections already publicly listed on Adobe Fonts, and this is still whatever license Adobe/the foundry attached, not a grant of one — treat anything downloaded here as for testing only, not publication.</p>
         <p>Based on <a href="https://github.com/beemilkz/typerip" target="_blank" rel="noopener">beemilkz/typerip</a> (originally by Jeremy Clark).</p>
       </div>
     </div>

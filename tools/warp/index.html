@@ -226,12 +226,12 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">vpn_key</span></div>
       <h1 class="hero__title">WARP config generator</h1>
-      <p class="hero__sub">Generate a free WireGuard configuration for Cloudflare WARP. Your keypair is generated locally and never leaves this device.</p>
+      <p class="hero__sub">Generate a free WireGuard configuration for Cloudflare WARP.</p>
     </div>
 
     <div class="card">
       <div class="section-title"><h2><span class="material-icons">bolt</span>Generate</h2></div>
-      <p class="section-hint">Creates a new WireGuard keypair in your browser, then registers the public key for a free Cloudflare WARP device.</p>
+      <p class="section-hint">Creates a WireGuard keypair in your browser, then registers the public key for a free WARP device.</p>
 
       <button type="button" class="btn btn--primary btn--block" id="generateBtn">
         <span class="material-icons" style="font-size:18px;">autorenew</span>Generate WARP config
@@ -308,7 +308,7 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>The keypair is generated locally with WireGuard's own Curve25519 code; the private key is never transmitted. Registration is a plain HTTPS call to Cloudflare's own (undocumented) WARP client API, routed through a self-hosted CORS proxy since that API doesn't allow direct browser requests. This creates a free WARP device — not WARP+ — with the same client agreement you accept using the official 1.1.1.1 app.</p>
+        <p>WARP is Cloudflare's free consumer VPN — ordinary WireGuard under the hood, routing traffic through Cloudflare's edge and pairing it with the 1.1.1.1 resolver. WireGuard's key exchange is Curve25519 (X25519): only a public key ever needs to be shared, so the private key generated here has no reason to go anywhere and stays in this tab, computed with the same reference code WireGuard's own web configurator uses. Registration hits <code>api.cloudflareclient.com</code> — the same undocumented endpoint the official 1.1.1.1 app itself calls — through a self-hosted CORS proxy, since that endpoint is built for native app clients and doesn't send the headers a browser needs to call it directly. This yields a normal free device (not WARP+) under the same client agreement the official app uses.</p>
         <p>Based on <a href="https://github.com/lanrat/wireguard-warp-generator" target="_blank" rel="noopener">lanrat/wireguard-warp-generator</a>.</p>
       </div>
     </div>

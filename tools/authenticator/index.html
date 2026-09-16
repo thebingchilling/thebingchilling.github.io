@@ -278,7 +278,7 @@
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">verified_user</span></div>
       <h1 class="hero__title">Authenticator</h1>
-      <p class="hero__sub">Generate two-factor TOTP codes entirely on your device. Secrets are stored only on this browser.</p>
+      <p class="hero__sub">Generate two-factor authentication codes for your accounts.</p>
     </div>
 
     <div class="card">
@@ -402,7 +402,7 @@
 
     <div class="card note-card">
       <span class="material-icons">shield</span>
-      <p>Everything runs locally — QR decoding via <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a> and codes via your browser's built-in cryptography.</p>
+      <p>Codes are standard TOTP (RFC 6238): an HMAC of the shared secret and the current 30-second time step, computed with the browser's own Web Crypto API (SHA-1/256/512, matching whichever algorithm the account specifies). Scanning a QR image decodes it locally with <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a> and parses the resulting otpauth:// URI for its secret and parameters — the image itself is never uploaded anywhere. This tool makes no network requests at all; accounts are kept in this browser's localStorage, unencrypted, so anyone with access to this browser profile can read them.</p>
     </div>
   </main>
 
