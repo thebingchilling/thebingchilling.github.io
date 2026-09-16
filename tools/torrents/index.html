@@ -142,7 +142,7 @@
     .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
 
     /* ── Buttons ── */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: box-shadow var(--t), filter var(--t), background var(--t); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: box-shadow var(--t), filter var(--t), background var(--t); }
     .btn--sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
     .btn--primary { background: var(--primary); color: var(--on-primary); }
     .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
@@ -174,6 +174,10 @@
     .result-card__meta .material-icons { font-size: 14px; }
     .result-card__meta .seed { color: #146c2e; }
     .result-card__meta .leech { color: var(--md-error); }
+    /* Seeders, leechers and the source tag move as one unit — the source
+       tag never wraps off onto its own line separately from the stats it
+       identifies. */
+    .result-card__stats { display: inline-flex; align-items: center; gap: 0.5rem 0.8rem; flex-wrap: nowrap; }
     .result-card__actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .result-card__source { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--md-on-primary-container); background: var(--md-primary-container); padding: 0.15rem 0.5rem; border-radius: 999px; }
 
@@ -266,9 +270,6 @@
     <div class="search-card">
       <div class="search-row">
         <input type="text" id="queryInput" placeholder="Search…" autocomplete="off" aria-label="Search query" />
-        <button id="searchBtn" class="btn btn--primary" type="button">
-          <span class="material-icons" style="font-size:18px;">search</span>Search
-        </button>
       </div>
       <div class="search-scope" id="searchScope"></div>
       <div class="sort-row">
@@ -583,7 +584,6 @@
   /* ═══════════════ UI wiring ═══════════════ */
   const $ = (id) => document.getElementById(id);
   const queryInput = $("queryInput");
-  const searchBtn = $("searchBtn");
   const searchScope = $("searchScope");
   const sortSelect = $("sortSelect");
   const resultsArea = $("resultsArea");
@@ -762,12 +762,15 @@
   /* ═══════════════ Search + render results ═══════════════ */
   function resultCardHtml(r) {
     const size = formatSize(r.size);
+    const stats = [];
+    if (r.seeders !== undefined && r.seeders !== null && r.seeders !== "") stats.push(`<span class="seed"><span class="material-icons">arrow_upward</span>${r.seeders}</span>`);
+    if (r.leechers !== undefined && r.leechers !== null && r.leechers !== "") stats.push(`<span class="leech"><span class="material-icons">arrow_downward</span>${r.leechers}</span>`);
+    stats.push(`<span class="result-card__source">${escapeHtml(r.sourceName)}</span>`);
+
     const meta = [];
     if (size) meta.push(`<span><span class="material-icons">save</span>${size}</span>`);
-    if (r.seeders !== undefined && r.seeders !== null && r.seeders !== "") meta.push(`<span class="seed"><span class="material-icons">arrow_upward</span>${r.seeders}</span>`);
-    if (r.leechers !== undefined && r.leechers !== null && r.leechers !== "") meta.push(`<span class="leech"><span class="material-icons">arrow_downward</span>${r.leechers}</span>`);
+    meta.push(`<span class="result-card__stats">${stats.join("")}</span>`);
     if (r.added) meta.push(`<span><span class="material-icons">event</span>${escapeHtml(String(r.added).slice(0, 10))}</span>`);
-    meta.push(`<span class="result-card__source">${escapeHtml(r.sourceName)}</span>`);
 
     const actions = [];
     if (r.magnet) {
@@ -805,6 +808,7 @@
   let lastErrors = [];
   let lastQuery = "";
   let hasSearched = false;
+  let searching = false;
 
   function renderResultsArea() {
     let html = "";
@@ -823,12 +827,11 @@
   async function doSearch() {
     const query = queryInput.value.trim();
     const enabled = SOURCES.filter(s => s.enabled);
-    if (!query) { queryInput.focus(); return; }
+    if (!query || searching) return;
     if (!enabled.length) { openSettings(); return; }
 
-    searchBtn.disabled = true;
-    searchBtn.innerHTML = `<span class="spinner"></span>Searching…`;
-    resultsArea.innerHTML = "";
+    searching = true;
+    resultsArea.innerHTML = `<div class="state-panel"><span class="spinner"></span><p>Searching…</p></div>`;
 
     const errors = [];
     const settled = await Promise.all(enabled.map(s => runSource(s, query).catch(e => { errors.push({ source: s, error: e }); return []; })));
@@ -836,18 +839,26 @@
     lastErrors = errors;
     lastQuery = query;
     hasSearched = true;
+    searching = false;
     renderResultsArea();
-
-    searchBtn.disabled = false;
-    searchBtn.innerHTML = `<span class="material-icons" style="font-size:18px;">search</span>Search`;
   }
 
-  searchBtn.addEventListener("click", doSearch);
+  /* ═══════════════ Auto-search: typing (debounced) or an Enter press
+     triggers a search directly — there's no separate Search button to
+     click. Changing the sort re-runs the same search so it always
+     reflects the current order. ═══════════════ */
+  function debounce(fn, delay) {
+    let t;
+    return () => { clearTimeout(t); t = setTimeout(fn, delay); };
+  }
+  const debouncedSearch = debounce(doSearch, 550);
+
+  queryInput.addEventListener("input", debouncedSearch);
   queryInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
   sortSelect.addEventListener("change", () => {
     SORT_BY = sortSelect.value;
     saveSortBy(SORT_BY);
-    if (hasSearched) renderResultsArea();
+    if (queryInput.value.trim()) doSearch();
   });
 
   renderScope();
