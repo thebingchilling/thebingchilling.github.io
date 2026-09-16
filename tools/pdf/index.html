@@ -15,10 +15,6 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="/shared/chrome.css" />
   <style>
     /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
@@ -132,12 +128,12 @@
 
     .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
     html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
     .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     body { scrollbar-width: none; }
     body::-webkit-scrollbar { display: none; }
 
-    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
     .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
     .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
     .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
@@ -162,7 +158,7 @@
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
-    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
     .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
 
     .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
@@ -170,7 +166,7 @@
     /* ── Mode switch (M3 SegmentedButton-ish) — picks which qpdf operation
        the shared dropzone/file below acts on. ── */
     .mode-tabs { display: flex; gap: 0.4rem; background: var(--bg2); border-radius: 999px; padding: 0.3rem; margin-bottom: 1rem; }
-    .mode-tab { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: none; background: transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; border-radius: 999px; padding: 0.55rem 0.6rem; cursor: pointer; transition: background var(--t), color var(--t); }
+    .mode-tab { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: none; background: transparent; color: var(--text-muted); font-family: 'Google Sans', sans-serif; font-size: 0.82rem; font-weight: 500; border-radius: 999px; padding: 0.55rem 0.6rem; cursor: pointer; transition: background var(--t), color var(--t); }
     .mode-tab .material-icons { font-size: 19px; }
     .mode-tab:hover { color: var(--text); }
     .mode-tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -199,7 +195,7 @@
     .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 1rem 0 0.4rem; }
     .field-hint { font-size: 0.72rem; color: var(--text-faint); margin: 0.3rem 0 0; }
     .password-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
-    .password-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
+    .password-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
     .password-row input::placeholder { color: var(--text-faint); }
 
     .action-row { margin-top: 1.1rem; }
@@ -212,7 +208,7 @@
     :root[data-theme="dark"] .result-card__icon { background: color-mix(in srgb, #6fdb8f 18%, transparent); color: #6fdb8f; }
     @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .result-card__icon { background: color-mix(in srgb, #6fdb8f 18%, transparent); color: #6fdb8f; } }
     .result-card__icon .material-icons { font-size: 28px; }
-    .result-card__title { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 0.3rem; }
+    .result-card__title { font-family: 'Google Sans', sans-serif; font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 0.3rem; }
     .result-card__sub { font-size: 0.84rem; color: var(--text-muted); margin: 0 0 1.1rem; }
     .result-card__actions { display: flex; flex-direction: column; gap: 0.55rem; }
 

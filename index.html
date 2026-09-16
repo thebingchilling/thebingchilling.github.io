@@ -22,10 +22,6 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="/shared/chrome.css" />
   <style>
     :root {
@@ -183,14 +179,12 @@
        automatically), separate from the root fade-through above. */
     ::view-transition-group(hero-poster) { animation-duration: 0.32s; animation-timing-function: cubic-bezier(0.2,0,0,1); }
     @media (prefers-reduced-motion: reduce) { ::view-transition-group(hero-poster) { animation: none !important; } }
-    /* Baseline box-model for icon spans, defined locally rather than relying
-       solely on the external Google Fonts stylesheet — if that request fails
-       (offline, blocked, slow network) icons still lay out sanely instead of
-       appearing as oversized/misaligned raw text. The webfont + actual glyph
-       mapping still comes from the Google stylesheet when it does load. */
+    /* Baseline box-model for icon spans; the font-family/ligature rules
+       live in /shared/chrome.css alongside the vendored Material Icons
+       @font-face so every page shares one definition. */
     .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
     html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
     .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     body, .view { scrollbar-width: none; }
     body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
@@ -199,7 +193,7 @@
     .source-menu-wrap { position: relative; }
     .source-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 180px; max-width: 260px; max-height: 60vh; overflow-y: auto; background: var(--md-surface-container-low); border-radius: 14px; box-shadow: var(--el3); padding: 0.35rem; z-index: 40; display: flex; flex-direction: column; gap: 0.1rem; }
     .source-menu.hidden { display: none; }
-    .source-menu__item { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem; border-radius: 10px; border: none; background: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; cursor: pointer; text-align: left; width: 100%; position: relative; overflow: hidden; }
+    .source-menu__item { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem; border-radius: 10px; border: none; background: none; color: var(--text); font-family: 'Google Sans', sans-serif; font-size: 0.85rem; cursor: pointer; text-align: left; width: 100%; position: relative; overflow: hidden; }
     .source-menu__item:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
     .source-menu__item--active { color: var(--primary-dark); font-weight: 600; }
     .source-menu__item .material-icons { font-size: 16px; flex-shrink: 0; visibility: hidden; }
@@ -208,7 +202,7 @@
 
     /* ── Shared buttons (M3 filled / outlined / danger — .icon-btn lives in
        /shared/chrome.css) ── */
-    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
     .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
     .btn--primary:hover { box-shadow: var(--el1); filter: brightness(1.06); }
     .btn--primary:active { box-shadow: none; filter: brightness(0.94); }
@@ -228,14 +222,14 @@
        its content never sits underneath the fixed bar. */
     #viewSearch { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
     .view--active { display: block; }
-    .view-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .view-title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* ── Header rows ── */
     .player-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
     .player-header-right { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
 
     /* ── Back button ── */
-    .player-back { display: flex; align-items: center; gap: 0.35rem; min-width: 0; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
+    .player-back { display: flex; align-items: center; gap: 0.35rem; min-width: 0; background: none; border: none; cursor: pointer; font-family: 'Google Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
     /* playerTitle can be a full movie/show name — let it wrap instead of
        truncating to one ellipsized line and hiding most of it. */
     #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
@@ -244,7 +238,7 @@
     .player-back .material-icons { font-size: 18px; }
 
     /* ── Share button (M3 tonal) ── */
-    .share-btn { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--md-secondary-container); color: var(--md-on-secondary-container); border: none; border-radius: 999px; padding: 0.32rem 0.75rem; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: filter var(--t), background var(--t); flex-shrink: 0; }
+    .share-btn { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--md-secondary-container); color: var(--md-on-secondary-container); border: none; border-radius: 999px; padding: 0.32rem 0.75rem; font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: filter var(--t), background var(--t); flex-shrink: 0; }
     .share-btn:hover { filter: brightness(0.97); }
     .share-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .share-btn .material-icons { font-size: 15px; }
@@ -254,14 +248,14 @@
     .search-bar { display: flex; align-items: center; gap: 0.7rem; background: var(--md-surface-container-high); border-radius: 28px; padding: 0.65rem 1rem; box-shadow: none; border: 1px solid transparent; margin-bottom: 0.65rem; transition: background var(--t), box-shadow var(--t); }
     .search-bar:focus-within { box-shadow: var(--el1); background: var(--md-surface-container-highest); }
     .search-bar__icon { color: var(--md-on-surface-variant); font-size: 22px; flex-shrink: 0; }
-    .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--text); }
+    .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 1rem; color: var(--text); }
     .search-bar__input::placeholder { color: var(--text-faint); }
     .search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
     .search-status { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem; min-height: 1.2em; display: flex; align-items: center; gap: 0.5rem; }
     .search-status--error { color: var(--md-error); }
     .empty-state { text-align: center; padding: 3.5rem 1rem 2rem; color: var(--text-faint); user-select: none; }
     .empty-state__icon { font-size: 3.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
-    .empty-state__title { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .empty-state__title { font-family: 'Google Sans', sans-serif; font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.4rem; }
     .empty-state__sub { font-size: 0.82rem; }
 
     /* ── Results grid (M3 elevated cards) ── */
@@ -301,7 +295,7 @@
     .detail-poster__frame { width: 190px; max-width: 62%; aspect-ratio: 2/3; border-radius: 20px; overflow: hidden; box-shadow: var(--el3); background: var(--bg2); }
     .detail-poster__frame img { width: 100%; height: 100%; display: block; object-fit: cover; }
     .detail-poster__frame--ph { display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 2.6rem; }
-    .detail-poster__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 600; color: var(--text); line-height: 1.25; max-width: 22rem; }
+    .detail-poster__title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.35rem; font-weight: 600; color: var(--text); line-height: 1.25; max-width: 22rem; }
     .meta-tag { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 500; padding: 0.18rem 0.6rem; border-radius: 6px; background: var(--md-surface-container-high); color: var(--text-muted); white-space: nowrap; }
 
     /* ── Series panel: tagline + overview under the poster (no Play button
@@ -322,7 +316,7 @@
     /* ── Play button: full-width by default (mobile), auto-width in the
        desktop row above. Icon is inline SVG (not the Material Icons
        webfont) so it still renders correctly even if that font fails. ── */
-    .play-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; background: var(--primary); color: var(--on-primary); border: none; border-radius: 14px; padding: 0.9rem 1rem; font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: var(--el2); transition: filter 0.18s, box-shadow 0.18s, transform 0.05s; }
+    .play-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; background: var(--primary); color: var(--on-primary); border: none; border-radius: 14px; padding: 0.9rem 1rem; font-family: 'Google Sans', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: var(--el2); transition: filter 0.18s, box-shadow 0.18s, transform 0.05s; }
     .play-btn:hover { filter: brightness(1.06); box-shadow: var(--el3); }
     .play-btn:active { transform: scale(0.99); filter: brightness(0.94); }
     .play-btn:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
@@ -355,7 +349,7 @@
 
     /* ── Season chips (M3 filter chips) ── */
     .chip-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .chip { border-radius: 8px; padding: 0.35rem 0.9rem; font-size: 0.83rem; border: 1px solid var(--md-outline); cursor: pointer; background: transparent; color: var(--text-muted); font-weight: 500; font-family: 'DM Sans', sans-serif; transition: background var(--t), box-shadow var(--t), border-color var(--t); }
+    .chip { border-radius: 8px; padding: 0.35rem 0.9rem; font-size: 0.83rem; border: 1px solid var(--md-outline); cursor: pointer; background: transparent; color: var(--text-muted); font-weight: 500; font-family: 'Google Sans', sans-serif; transition: background var(--t), box-shadow var(--t), border-color var(--t); }
     .chip:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); box-shadow: none; }
     .chip--selected { background: var(--md-secondary-container); color: var(--md-on-secondary-container); border-color: transparent; box-shadow: none; }
     .chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -380,7 +374,7 @@
     .ep-card__title { margin: 0; font-size: 0.88rem; font-weight: 500; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
     .ep-card__date { margin: 0; font-size: 0.75rem; color: var(--text-faint); }
     .ep-card__summary { margin: 0; font-size: 0.79rem; line-height: 1.45; color: var(--text-muted); }
-    .ep-more-btn { border: none; background: none; color: var(--primary); font-size: 0.76rem; font-weight: 500; cursor: pointer; padding: 0; margin-left: 0.2rem; font-family: 'DM Sans', sans-serif; }
+    .ep-more-btn { border: none; background: none; color: var(--primary); font-size: 0.76rem; font-weight: 500; cursor: pointer; padding: 0; margin-left: 0.2rem; font-family: 'Google Sans', sans-serif; }
     .ep-more-btn:hover { text-decoration: underline; }
     /* ── Player ── */
     .player-wrap { margin-top: 0.35rem; border-radius: 14px; overflow: hidden; background: #000; position: relative; padding-top: 56.25%; box-shadow: var(--el2); }
@@ -411,13 +405,13 @@
     .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
     @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
-    .settings__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 500; color: var(--text); }
+    .settings__title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1rem; font-weight: 500; color: var(--text); }
     .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
     .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
 
     /* ── Segmented button group (M3) — used for the Appearance picker ── */
     .segmented { display: flex; border: 1px solid var(--md-outline-variant); border-radius: 999px; padding: 3px; gap: 3px; background: var(--md-surface-container-high); }
-    .segmented__item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: none; background: none; border-radius: 999px; padding: 0.45rem 0.4rem; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
+    .segmented__item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: none; background: none; border-radius: 999px; padding: 0.45rem 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
     .segmented__item .material-icons { font-size: 17px; }
     .segmented__item--active { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
     .segmented__item:hover:not(.segmented__item--active) { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
@@ -450,7 +444,7 @@
     /* source form */
     .source-form { border: 1px solid var(--md-outline-variant); border-radius: 16px; padding: 0.75rem; background: var(--surface2); display: flex; flex-direction: column; gap: 0.5rem; }
     .source-form__title { font-size: 0.82rem; font-weight: 600; color: var(--text); margin: 0 0 0.1rem; }
-    .source-form input[type=text] { width: 100%; border: 1px solid var(--md-outline); border-radius: 8px; padding: 0.4rem 0.65rem; font-size: 0.84rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
+    .source-form input[type=text] { width: 100%; border: 1px solid var(--md-outline); border-radius: 8px; padding: 0.4rem 0.65rem; font-size: 0.84rem; font-family: 'Google Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
     .source-form input[type=text]:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
     .source-form__label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.1rem; display: block; }
     .source-form__hint { font-size: 0.7rem; color: var(--text-faint); }
@@ -459,7 +453,7 @@
     /* ── Config import/export ── */
     .config-area { display: flex; flex-direction: column; gap: 0.5rem; }
     .config-textarea-wrap { position: relative; }
-    .config-textarea { width: 100%; min-height: 130px; border: 1px solid var(--md-outline); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.78rem; font-family: 'DM Sans', monospace, sans-serif; background: var(--bg); color: var(--text); outline: none; resize: vertical; line-height: 1.55; transition: border-color var(--t), box-shadow var(--t); }
+    .config-textarea { width: 100%; min-height: 130px; border: 1px solid var(--md-outline); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.78rem; font-family: 'Google Sans', monospace, sans-serif; background: var(--bg); color: var(--text); outline: none; resize: vertical; line-height: 1.55; transition: border-color var(--t), box-shadow var(--t); }
     .config-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
     .config-textarea::placeholder { color: var(--text-faint); }
     .config-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }

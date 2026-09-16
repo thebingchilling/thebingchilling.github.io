@@ -7,6 +7,21 @@
    the chrome's structural/visual rules live here, not the palette.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* Vendored (not Google Fonts CDN) — Google Sans is the site's only font,
+   used for both body text and display/heading text everywhere; Material
+   Icons is the icon font used by every .material-icons span. Files live
+   in shared/fonts/; paths below are relative to this stylesheet, so they
+   resolve the same regardless of which page depth includes it. */
+@font-face { font-family: 'Google Sans'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/GoogleSans-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Google Sans'; font-style: normal; font-weight: 500; font-display: swap; src: url('fonts/GoogleSans-Medium.woff2') format('woff2'); }
+@font-face { font-family: 'Google Sans'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/GoogleSans-SemiBold.woff2') format('woff2'); }
+@font-face { font-family: 'Material Icons'; font-style: normal; font-weight: 400; font-display: block; src: url('fonts/MaterialIcons-Regular.woff2') format('woff2'); }
+/* Each page's own .material-icons rule only sets fallback layout (size,
+   line-height, etc.); the actual glyph font used to come from the Google
+   stylesheet loaded alongside it. Now that stylesheet is gone, so this is
+   the one place setting font-family/ligatures for every .material-icons. */
+.material-icons { font-family: 'Material Icons'; font-weight: normal; font-style: normal; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+
 /* Cross-document view transitions: Media/Live/Tools/Authenticator/PDF are
    all separate pages, so switching between them is a full navigation —
    without this it's a hard flash-to-white. Naming .top-bar/.bottom-dock
@@ -22,7 +37,7 @@
 .top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: calc(0.55rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) 0.55rem calc(1rem + env(safe-area-inset-left)); background: color-mix(in srgb, var(--md-surface-container) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
 /* Not interactive — just the app's wordmark, same on every page. */
 .top-bar__brand { display: flex; align-items: baseline; gap: 0.45rem; user-select: none; }
-.top-bar__name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
+.top-bar__name { font-family: 'Google Sans', sans-serif; font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); letter-spacing: -0.01em; }
 .top-bar__actions { display: flex; align-items: center; gap: 0.2rem; }
 
 .icon-btn { border: none; outline: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); flex-shrink: 0; }
@@ -53,7 +68,7 @@
 .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; flex-direction: column; transition: transform var(--t), opacity var(--t); }
 .bottom-dock--hidden { transform: translateY(100%); opacity: 0; pointer-events: none; }
 .bottom-nav { display: flex; align-items: stretch; justify-content: space-around; background: color-mix(in srgb, var(--md-surface-container) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 0.35rem calc(0.5rem + env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left)); }
-.bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px 2px; border: none; background: none; color: var(--text-muted); text-decoration: none; cursor: pointer; font-family: 'Google Sans', sans-serif; }
 .bottom-nav__item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 12px; }
 .bottom-nav__icon-wrap { display: flex; align-items: center; justify-content: center; width: 58px; height: 30px; border-radius: 16px; transition: background var(--t), color var(--t); }
 .bottom-nav__icon-wrap .material-icons { font-size: 22px; }

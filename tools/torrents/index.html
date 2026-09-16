@@ -15,10 +15,6 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="/shared/chrome.css" />
   <style>
     /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
@@ -129,7 +125,7 @@
 
     .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
     html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
     .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     body { scrollbar-width: none; }
     body::-webkit-scrollbar { display: none; }
@@ -144,11 +140,11 @@
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.25rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
-    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
     .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
 
     /* ── Buttons ── */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: box-shadow var(--t), filter var(--t), background var(--t); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'Google Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: box-shadow var(--t), filter var(--t), background var(--t); }
     .btn--sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
     .btn--primary { background: var(--primary); color: var(--on-primary); }
     .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
@@ -159,12 +155,12 @@
     /* ── Search card ── */
     .search-card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1rem; box-shadow: var(--el1); margin-bottom: 1rem; }
     .search-row { display: flex; gap: 0.5rem; }
-    .search-row input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.65rem 1rem; font-size: 0.92rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
+    .search-row input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.65rem 1rem; font-size: 0.92rem; font-family: 'Google Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
     .search-row input[type=text]:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
     .search-row .btn { flex-shrink: 0; }
     .search-scope { margin-top: 0.65rem; font-size: 0.78rem; color: var(--text-faint); }
     .sort-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.65rem; font-size: 0.78rem; color: var(--text-faint); }
-    .sort-row select { border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.3rem 0.6rem; font-size: 0.78rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
+    .sort-row select { border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.3rem 0.6rem; font-size: 0.78rem; font-family: 'Google Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
     .sort-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
 
     /* ── Results ── */

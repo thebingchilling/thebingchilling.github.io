@@ -15,10 +15,6 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="/shared/chrome.css" />
   <style>
     /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
@@ -138,7 +134,7 @@
     .hidden { display: none !important; }
     .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
     html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
     .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     body { scrollbar-width: none; }
     body::-webkit-scrollbar { display: none; }
@@ -152,11 +148,11 @@
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.25rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
-    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
     .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
 
     /* ── Buttons ── */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: box-shadow var(--t), filter var(--t), background var(--t); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'Google Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: box-shadow var(--t), filter var(--t), background var(--t); }
     .btn--sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
     .btn--primary { background: var(--primary); color: var(--on-primary); }
     .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
@@ -166,14 +162,14 @@
 
     /* ── Mode tabs ── */
     .tabs { display: flex; gap: 0.25rem; background: var(--md-surface-container); border-radius: 999px; padding: 0.25rem; margin-bottom: 1rem; }
-    .tab { flex: 1; border: none; background: transparent; border-radius: 999px; padding: 0.55rem 0.5rem; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; transition: background var(--t), color var(--t), box-shadow var(--t); }
+    .tab { flex: 1; border: none; background: transparent; border-radius: 999px; padding: 0.55rem 0.5rem; font-family: 'Google Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; transition: background var(--t), color var(--t), box-shadow var(--t); }
     .tab .material-icons { font-size: 16px; }
     .tab--active { background: var(--md-surface-container-low); color: var(--primary); box-shadow: var(--el1); font-weight: 600; }
 
     /* ── Search card / inputs (shared shape across panels) ── */
     .search-card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1rem; box-shadow: var(--el1); margin-bottom: 1rem; }
     .search-row { display: flex; gap: 0.5rem; }
-    .search-row input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.65rem 1rem; font-size: 0.92rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
+    .search-row input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.65rem 1rem; font-size: 0.92rem; font-family: 'Google Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
     .search-row input[type=text]:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
     .search-row .btn, .search-row .icon-btn { flex-shrink: 0; }
     .search-card__hint { margin: 0.6rem 0 0; font-size: 0.76rem; color: var(--text-faint); line-height: 1.4; }
@@ -788,7 +784,7 @@
       return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><g transform="translate(3,3) scale(0.417)"><path d="${BRAND_PATHS[meta.brand]}" fill="#fff"/></g></svg>`;
     }
     const fontSize = meta.l.length > 1 ? 6.5 : 8.5;
-    return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><text x="8" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="'DM Sans', sans-serif" font-size="${fontSize}" font-weight="700" fill="#fff">${escapeHtml(meta.l)}</text></svg>`;
+    return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><text x="8" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="'Google Sans', sans-serif" font-size="${fontSize}" font-weight="700" fill="#fff">${escapeHtml(meta.l)}</text></svg>`;
   }
 
   function renderResults(results) {

@@ -15,10 +15,6 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="/shared/chrome.css" />
   <style>
     /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
@@ -131,12 +127,12 @@
 
     .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
     html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
     .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     body { scrollbar-width: none; }
     body::-webkit-scrollbar { display: none; }
 
-    .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+    .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
     .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
     .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
     .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
@@ -162,12 +158,12 @@
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
-    .hero__title { margin: 0 0 0.4rem; font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .hero__title { margin: 0 0 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
     .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
 
     .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
     .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; }
-    .section-title h2 { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
+    .section-title h2 { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
     /* Collapsed-by-default "Add an account" toggle — same idea as .adv-toggle,
        just styled to sit as a card's clickable header row instead of a plain
        button, so "Your accounts" reads as the primary content of the page. */
@@ -180,7 +176,7 @@
 
     /* ── Add-account entry points ── */
     .add-tabs { display: flex; gap: 0.4rem; background: var(--bg2); border-radius: 999px; padding: 0.25rem; margin-bottom: 1rem; }
-    .add-tab { flex: 1; border: none; background: none; border-radius: 999px; padding: 0.5rem 0.5rem; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
+    .add-tab { flex: 1; border: none; background: none; border-radius: 999px; padding: 0.5rem 0.5rem; font-family: 'Google Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
     .add-tab--active { background: var(--md-surface-container-low); color: var(--primary-dark); box-shadow: var(--el1); }
     .add-panel { display: none; }
     .add-panel--active { display: block; }
@@ -198,11 +194,11 @@
     .field-label:first-child { margin-top: 0; }
     .field-hint { font-size: 0.72rem; color: var(--text-faint); margin: 0.3rem 0 0; }
     .input-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
-    .input-row input, .input-row select { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
+    .input-row input, .input-row select { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
     .input-row input::placeholder { color: var(--text-faint); }
     .input-row select { padding-right: 0.5rem; cursor: pointer; }
 
-    .adv-toggle { display: flex; align-items: center; gap: 0.3rem; border: none; background: none; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; padding: 0.6rem 0.1rem 0; }
+    .adv-toggle { display: flex; align-items: center; gap: 0.3rem; border: none; background: none; color: var(--text-muted); font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; padding: 0.6rem 0.1rem 0; }
     .adv-toggle .material-icons { font-size: 18px; transition: transform var(--t); }
     .adv-toggle--open .material-icons { transform: rotate(180deg); }
     .adv-grid { display: none; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 0.7rem; }

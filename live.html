@@ -21,10 +21,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
 <script src="/shared/theme-init.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 <link rel="stylesheet" href="/shared/chrome.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.16.3/shaka-player.compiled.js"></script>
@@ -158,11 +154,12 @@
   @keyframes bq-view-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
   @keyframes bq-view-in { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
   @media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; } }
-  /* Baseline box-model for icon spans, defined locally rather than relying
-     solely on the external Google Fonts stylesheet — see index.html for why. */
+  /* Baseline box-model for icon spans; the font-family/ligature rules
+     live in /shared/chrome.css alongside the vendored Material Icons
+     @font-face so every page shares one definition. */
   .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
   html, body { margin: 0; padding: 0; height: 100%; }
-  body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+  body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
   .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   body, .view { scrollbar-width: none; }
   body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
@@ -170,7 +167,7 @@
   /* ── Mini-player: a native music/radio app's now-playing bar. Lets a
      channel keep playing while browsing instead of always killing it on
      Back — tap the bar to return to the full player, ✕ to actually stop. ── */
-  .mini-player { display: flex; align-items: center; gap: 0.6rem; width: 100%; border: none; border-top: 1px solid var(--border); background: var(--md-surface-container-high); padding: 0.4rem calc(0.6rem + env(safe-area-inset-right)) 0.4rem calc(0.6rem + env(safe-area-inset-left)); cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif; }
+  .mini-player { display: flex; align-items: center; gap: 0.6rem; width: 100%; border: none; border-top: 1px solid var(--border); background: var(--md-surface-container-high); padding: 0.4rem calc(0.6rem + env(safe-area-inset-right)) 0.4rem calc(0.6rem + env(safe-area-inset-left)); cursor: pointer; text-align: left; font-family: 'Google Sans', sans-serif; }
   .mini-player.hidden { display: none; }
   .mini-player__art { position: relative; width: 40px; height: 40px; border-radius: 10px; overflow: hidden; background: var(--bg2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
   .mini-player__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -194,7 +191,7 @@
   /* Extra room when the mini-player bar is also stacked above the nav. */
   body.has-mini-player #viewBrowse { padding-bottom: calc(4.6rem + 3.6rem + env(safe-area-inset-bottom)); }
   .view--active { display: block; }
-  .view-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .view-title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .view-meta { margin: 0; min-width: 0; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* playerTitle can be a full channel name — let it wrap on its own line
@@ -202,7 +199,7 @@
      by default. */
   #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
   .player-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
-  .player-back { display: flex; align-items: center; gap: 0.35rem; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
+  .player-back { display: flex; align-items: center; gap: 0.35rem; background: none; border: none; cursor: pointer; font-family: 'Google Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
   .player-back:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
   .player-back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .player-back .material-icons { font-size: 18px; }
@@ -215,7 +212,7 @@
   .epg-time { font-size: 0.72rem; color: var(--text-faint); }
   .epg-progress { height: 4px; border-radius: 999px; background: var(--md-surface-container-high); overflow: hidden; }
   .epg-progress-fill { height: 100%; background: var(--md-error); border-radius: 999px; }
-  .epg-guide-btn { align-self: flex-start; display: flex; align-items: center; gap: 0.35rem; border: none; background: var(--md-primary-container); color: var(--md-on-primary-container); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; padding: 0.4rem 0.75rem; border-radius: 999px; cursor: pointer; transition: filter var(--t); }
+  .epg-guide-btn { align-self: flex-start; display: flex; align-items: center; gap: 0.35rem; border: none; background: var(--md-primary-container); color: var(--md-on-primary-container); font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; padding: 0.4rem 0.75rem; border-radius: 999px; cursor: pointer; transition: filter var(--t); }
   .epg-guide-btn:hover { filter: brightness(0.96); }
   .epg-guide-btn .material-icons { font-size: 16px; }
 
@@ -224,7 +221,7 @@
   .modal-overlay.hidden { display: none; }
   .modal-panel { background: var(--md-surface-container-lowest); border-radius: 18px; width: 100%; max-width: 480px; max-height: 82vh; display: flex; flex-direction: column; box-shadow: var(--el3); overflow: hidden; }
   .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; padding: 0.9rem 0.8rem 0.7rem 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .modal-title { margin: 0; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
+  .modal-title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
   .modal-sub { margin: 0.15rem 0 0; font-size: 0.75rem; color: var(--text-faint); }
   .modal-body { overflow-y: auto; padding: 0.3rem 0.7rem 1rem; }
 
@@ -247,7 +244,7 @@
 
   /* ── Tab bar (M3 segmented buttons) ── */
   .tab-bar { display: flex; background: var(--md-surface-container-high); border-radius: 999px; padding: 4px; gap: 4px; margin-bottom: 0.7rem; }
-  .tab-btn { flex: 1; border: none; background: transparent; padding: 0.55rem 1rem; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: background var(--t), color var(--t), box-shadow var(--t); }
+  .tab-btn { flex: 1; border: none; background: transparent; padding: 0.55rem 1rem; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: background var(--t), color var(--t), box-shadow var(--t); }
   .tab-btn .material-icons { font-size: 18px; }
   .tab-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
   .tab-btn--active { background: var(--md-surface-container-lowest); color: var(--primary-dark); box-shadow: var(--el1); }
@@ -259,7 +256,7 @@
   .search-bar { display: flex; align-items: center; gap: 0.7rem; background: var(--md-surface-container-high); border-radius: 28px; padding: 0.6rem 1rem; border: 1px solid transparent; margin-bottom: 0.55rem; transition: background var(--t), box-shadow var(--t); }
   .search-bar:focus-within { box-shadow: var(--el1); background: var(--md-surface-container-highest); }
   .search-bar__icon { color: var(--md-on-surface-variant); font-size: 20px; flex-shrink: 0; }
-  .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--text); min-width: 0; }
+  .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 0.95rem; color: var(--text); min-width: 0; }
   .search-bar__input::placeholder { color: var(--text-faint); }
   .search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
@@ -269,7 +266,7 @@
 
   .empty-state { text-align: center; padding: 3.5rem 1rem 2rem; color: var(--text-faint); user-select: none; }
   .empty-state__icon { font-size: 3.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
-  .empty-state__title { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .empty-state__title { font-family: 'Google Sans', sans-serif; font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.4rem; }
   .empty-state__sub { font-size: 0.82rem; }
 
   /* ── Results grid (square logo tiles) ── */
@@ -345,7 +342,7 @@
   .card__drm-guide-hint .material-icons { font-size: 12px; }
 
   /* ── Shared buttons (M3 filled / outlined / danger) ── */
-  .btn { border: none; outline: none; border-radius: 999px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
+  .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
   .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
   .btn--primary:hover { box-shadow: var(--el1); filter: brightness(1.06); }
   .btn--primary:active { box-shadow: none; filter: brightness(0.94); }
@@ -366,13 +363,13 @@
   .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
   @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
-  .settings__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 500; color: var(--text); }
+  .settings__title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1rem; font-weight: 500; color: var(--text); }
   .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
   .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
 
   /* ── Segmented button group (M3) — used for the Appearance picker ── */
   .segmented { display: flex; border: 1px solid var(--md-outline-variant); border-radius: 999px; padding: 3px; gap: 3px; background: var(--md-surface-container-high); }
-  .segmented__item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: none; background: none; border-radius: 999px; padding: 0.45rem 0.4rem; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
+  .segmented__item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: none; background: none; border-radius: 999px; padding: 0.45rem 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
   .segmented__item .material-icons { font-size: 17px; }
   .segmented__item--active { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
   .segmented__item:hover:not(.segmented__item--active) { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
@@ -382,7 +379,7 @@
   /* ── Config import/export ── */
   .config-area { display: flex; flex-direction: column; gap: 0.5rem; }
   .config-textarea-wrap { position: relative; }
-  .config-textarea { width: 100%; min-height: 130px; border: 1px solid var(--md-outline); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.78rem; font-family: 'DM Sans', monospace, sans-serif; background: var(--bg); color: var(--text); outline: none; resize: vertical; line-height: 1.55; transition: border-color var(--t), box-shadow var(--t); }
+  .config-textarea { width: 100%; min-height: 130px; border: 1px solid var(--md-outline); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.78rem; font-family: 'Google Sans', monospace, sans-serif; background: var(--bg); color: var(--text); outline: none; resize: vertical; line-height: 1.55; transition: border-color var(--t), box-shadow var(--t); }
   .config-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
   .config-textarea::placeholder { color: var(--text-faint); }
   .config-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
