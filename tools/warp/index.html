@@ -374,6 +374,19 @@
   function hideError() { errorBanner.classList.add("hidden"); }
   function showError(message) { errorBody.textContent = message; errorBanner.classList.remove("hidden"); }
 
+  // Turns a non-JSON proxy/API response (most often Cloudflare's own edge
+  // returning a plain-text "error code: NNNN" page) into a readable message
+  // instead of letting JSON.parse's cryptic "Unexpected token" surface.
+  function friendlyProxyError(status, text) {
+    const cfMatch = /error code:\s*(\d+)/i.exec(text);
+    if (cfMatch) {
+      const code = cfMatch[1];
+      if (code === "1015") return "Rate limited by Cloudflare (error 1015) — the proxy is sending requests too quickly. Wait a minute and try again.";
+      return "Cloudflare edge error " + code + " from the proxy or API.";
+    }
+    return "Unexpected response (HTTP " + status + "): " + text.slice(0, 200);
+  }
+
   function formatDate(isoString) {
     if (!isoString) return "–";
     const d = new Date(isoString);
@@ -420,7 +433,13 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      throw new Error(friendlyProxyError(response.status, text));
+    }
     if (!response.ok || data.success === false) {
       const errorMsg = (data.errors && data.errors[0] && data.errors[0].message) || (data.error && data.error.message) || "Unknown error";
       throw new Error("API error: " + errorMsg);

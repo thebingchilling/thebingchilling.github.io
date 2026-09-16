@@ -231,6 +231,9 @@
       <label class="field-label" for="urlInput">Adobe Fonts URL</label>
       <div class="input-row">
         <input id="urlInput" type="text" placeholder="https://fonts.adobe.com/fonts/..." autocomplete="off" autocapitalize="off" spellcheck="false" />
+        <button type="button" class="icon-btn" id="pasteBtn" aria-label="Paste from clipboard">
+          <span class="material-icons">content_paste</span>
+        </button>
         <button type="button" class="icon-btn" id="submitBtn" aria-label="Look up font family">
           <span class="material-icons">arrow_forward</span>
         </button>
@@ -321,8 +324,9 @@
 
   async function fetchViaProxy(url) {
     const res = await fetch(CORS_PROXY + encodeURIComponent(url), { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status + " fetching that page.");
-    return await res.text();
+    const text = await res.text();
+    if (!res.ok) throw new Error(cloudflareErrorMessage(text) || ("HTTP " + res.status + " fetching that page."));
+    return text;
   }
 
   function extractEmbeddedJson(html, marker) {
@@ -334,10 +338,20 @@
     try { return JSON.parse(tail.slice(0, end)); } catch (e) { return null; }
   }
 
+  // Recognizes Cloudflare's own plain-text edge error pages (most often
+  // "error code: 1015", a rate limit) so a failed lookup says what actually
+  // went wrong instead of a generic "unexpected response".
+  function cloudflareErrorMessage(text) {
+    const m = /error code:\s*(\d+)/i.exec(text);
+    if (!m) return null;
+    if (m[1] === "1015") return "Rate limited by Cloudflare (error 1015) — the proxy is sending requests too quickly. Wait a minute and try again.";
+    return "Cloudflare edge error " + m[1] + " from the proxy.";
+  }
+
   async function getFontFamily(url) {
     const html = await fetchViaProxy(url);
     const json = extractEmbeddedJson(html, '{"family":{"slug":"');
-    if (!json) throw new Error("Unexpected response — check the URL, or the CORS proxy may be down.");
+    if (!json) throw new Error(cloudflareErrorMessage(html) || "Unexpected response — check the URL, or the CORS proxy may be down.");
     const fam = json.family;
     const defaultLanguage = fam.display_font.default_language;
     const sampleText = json.textSampleData.textSamples[defaultLanguage].list;
@@ -358,7 +372,7 @@
   async function getFontCollection(url) {
     const html = await fetchViaProxy(url);
     const json = extractEmbeddedJson(html, '{"fontpack":{"all_valid_slugs":');
-    if (!json) throw new Error("Unexpected response — check the URL, or the CORS proxy may be down.");
+    if (!json) throw new Error(cloudflareErrorMessage(html) || "Unexpected response — check the URL, or the CORS proxy may be down.");
     const pack = json.fontpack;
     const defaultLanguage = pack.font_variations[0].default_language;
     const sampleText = json.textSampleData.textSamples[defaultLanguage].list;
@@ -388,7 +402,7 @@
   }
 
   /* ── Rendering ── */
-  const urlInput = $("urlInput"), submitBtn = $("submitBtn");
+  const urlInput = $("urlInput"), submitBtn = $("submitBtn"), pasteBtn = $("pasteBtn");
   const errorBanner = $("errorBanner"), errorBody = $("errorBody");
   const statusCard = $("statusCard");
   const familyCard = $("familyCard"), familyName = $("familyName"), familyBy = $("familyBy");
@@ -437,6 +451,18 @@
 
   submitBtn.addEventListener("click", runSearch);
   urlInput.addEventListener("keyup", (e) => { if (e.key === "Enter") runSearch(); });
+
+  pasteBtn.addEventListener("click", async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        urlInput.value = text.trim();
+        urlInput.focus();
+      }
+    } catch (e) {
+      showError("Couldn't read the clipboard — your browser may need permission, or paste manually.");
+    }
+  });
 
   async function runSearch() {
     const raw = urlInput.value.trim();
