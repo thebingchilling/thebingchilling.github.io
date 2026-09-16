@@ -339,7 +339,16 @@
   BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item, .adv-toggle");
   BQChrome.initTheme();
 
-  const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url=";
+  /* Cloudflare Worker first, Vercel Edge Function as a backup — see
+     workers/cors-proxy-vercel/README.md for why a second, differently-
+     hosted proxy matters (a source rate-limiting the Worker's shared
+     Cloudflare egress IP has nothing to do with this site's own usage;
+     Cloudflare's own WARP registration API is exactly the kind of source
+     that could plausibly do that to a Cloudflare-Worker-shaped IP). */
+  const CORS_PROXIES = [
+    "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url=",
+    "https://thebingchilling-github-io.vercel.app/api/proxy?url=",
+  ];
   const WARP_API = "https://api.cloudflareclient.com/v0a737/reg";
 
   const generateBtn = $("generateBtn");
@@ -415,6 +424,10 @@
     }
   }
 
+  function apiErrorMessage(data) {
+    return (data.errors && data.errors[0] && data.errors[0].message) || (data.error && data.error.message) || "Unknown error";
+  }
+
   async function registerWithWarp(publicKey, options) {
     const payload = {
       key: publicKey,
@@ -424,23 +437,36 @@
       type: options.deviceType,
       locale: options.locale,
     };
-    const response = await fetch(CORS_PROXY + encodeURIComponent(WARP_API), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const text = await response.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      throw new Error(friendlyProxyError(response.status, text));
+    // A non-2xx here (as opposed to a well-formed { success: false } body)
+    // most often means the proxy or Cloudflare's own WARP API rate-limited
+    // *that* egress IP specifically — worth retrying through the next
+    // proxy rather than failing outright, same as a network/parse error.
+    let lastErr;
+    for (const proxy of CORS_PROXIES) {
+      let response, text;
+      try {
+        response = await fetch(proxy + encodeURIComponent(WARP_API), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        text = await response.text();
+      } catch (e) { lastErr = e; continue; }
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        lastErr = new Error(friendlyProxyError(response.status, text));
+        continue;
+      }
+      if (!response.ok) {
+        lastErr = new Error("API error: " + apiErrorMessage(data) + (data.errors || data.error ? "" : ` (HTTP ${response.status})`));
+        continue;
+      }
+      if (data.success === false) throw new Error("API error: " + apiErrorMessage(data));
+      return data;
     }
-    if (!response.ok || data.success === false) {
-      const errorMsg = (data.errors && data.errors[0] && data.errors[0].message) || (data.error && data.error.message) || "Unknown error";
-      throw new Error("API error: " + errorMsg);
-    }
-    return data;
+    throw lastErr;
   }
 
   function generateConfig(privateKey, warpResponse, options) {

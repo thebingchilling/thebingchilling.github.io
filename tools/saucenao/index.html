@@ -348,9 +348,16 @@
     return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
   }
 
-  /* Fixed — not user-configurable, no settings sheet. */
-  const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}";
-  function proxyList() { return [CORS_PROXY]; }
+  /* Fixed — not user-configurable, no settings sheet. Cloudflare Worker
+     first, Vercel Edge Function as a backup — see
+     workers/cors-proxy-vercel/README.md for why a second, differently-
+     hosted proxy matters (a source rate-limiting the Worker's shared
+     Cloudflare egress IP has nothing to do with this site's own usage). */
+  const CORS_PROXIES = [
+    "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}",
+    "https://thebingchilling-github-io.vercel.app/api/proxy?url={url}",
+  ];
+  function proxyList() { return CORS_PROXIES; }
 
   // Hardcoded to this site owner's account — visible in page source to
   // anyone, by design (the account owner's explicit choice over keeping it

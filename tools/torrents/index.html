@@ -177,7 +177,6 @@
        identifies. */
     .result-card__stats { display: inline-flex; align-items: center; gap: 0.5rem 0.8rem; flex-wrap: nowrap; }
     .result-card__actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-    .result-card__source { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--md-on-primary-container); background: var(--md-primary-container); padding: 0.15rem 0.5rem; border-radius: 999px; }
     .muted-hint { font-size: 0.72rem; color: var(--text-faint); }
 
     .state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
@@ -298,14 +297,16 @@
 
   /* Fixed — not user-configurable. Every source request that fails direct
      (CORS block) is retried through these, in order, until one works; there
-     is no way to override this from the UI. The Cloudflare Worker goes
-     first; the Vercel Edge Function is a fallback for when a source (e.g.
-     apibay.org) has rate-limited the Worker's shared Cloudflare egress IP
-     specifically — see workers/cors-proxy-vercel/README.md for why that's
-     a real second path rather than just another copy of the same thing. */
+     is no way to override this from the UI. The Vercel Edge Function goes
+     first here — apibay.org has specifically rate-limited the Cloudflare
+     Worker's shared egress IP (confirmed live, HTTP 429), so trying the
+     Worker first on this tool would mean eating that failure on every
+     search before falling through. The Worker is still a real fallback
+     for when it's Vercel's turn to be having a bad day instead. See
+     workers/cors-proxy-vercel/README.md for the full story. */
   const CORS_PROXIES = [
-    "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}",
     "https://thebingchilling-github-io.vercel.app/api/proxy?url={url}",
+    "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}",
   ];
   function corsProxyList() { return CORS_PROXIES; }
 
@@ -410,8 +411,7 @@
       size: get("size"),
       seeders: get("seeders"),
       leechers: get("leechers"),
-      added: get("added"),
-      sourceName: source.name
+      added: get("added")
     };
   }
   function formatSize(v) {
@@ -499,7 +499,6 @@
     const stats = [];
     if (r.seeders !== undefined && r.seeders !== null && r.seeders !== "") stats.push(`<span class="seed"><span class="material-icons">arrow_upward</span>${r.seeders}</span>`);
     if (r.leechers !== undefined && r.leechers !== null && r.leechers !== "") stats.push(`<span class="leech"><span class="material-icons">arrow_downward</span>${r.leechers}</span>`);
-    stats.push(`<span class="result-card__source">${escapeHtml(r.sourceName)}</span>`);
 
     const meta = [];
     if (size) meta.push(`<span><span class="material-icons">save</span>${size}</span>`);

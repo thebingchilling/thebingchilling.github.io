@@ -308,7 +308,14 @@
     return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
   }
 
-  const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url=";
+  /* Cloudflare Worker first, Vercel Edge Function as a backup — see
+     workers/cors-proxy-vercel/README.md for why a second, differently-
+     hosted proxy matters (a source rate-limiting the Worker's shared
+     Cloudflare egress IP has nothing to do with this site's own usage). */
+  const CORS_PROXIES = [
+    "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url=",
+    "https://thebingchilling-github-io.vercel.app/api/proxy?url=",
+  ];
   // Long-lived preview token embedded in the original typerip client — grants
   // access to the same "render this family's fonts for preview" endpoint the
   // Adobe Fonts website itself uses, for every style in a public family.
@@ -319,10 +326,16 @@
   }
 
   async function fetchViaProxy(url) {
-    const res = await fetch(CORS_PROXY + encodeURIComponent(url), { cache: "no-store" });
-    const text = await res.text();
-    if (!res.ok) throw new Error(cloudflareErrorMessage(text) || ("HTTP " + res.status + " fetching that page."));
-    return text;
+    let lastErr;
+    for (const proxy of CORS_PROXIES) {
+      try {
+        const res = await fetch(proxy + encodeURIComponent(url), { cache: "no-store" });
+        const text = await res.text();
+        if (!res.ok) throw new Error(cloudflareErrorMessage(text) || ("HTTP " + res.status + " fetching that page."));
+        return text;
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr;
   }
 
   function extractEmbeddedJson(html, marker) {
