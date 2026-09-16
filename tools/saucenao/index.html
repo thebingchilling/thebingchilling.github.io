@@ -210,6 +210,9 @@
     .state-panel p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
     .source-error { background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.8rem; line-height: 1.45; margin-bottom: 0.85rem; }
     .source-error strong { font-weight: 600; }
+    .source-error__detail { margin-top: 0.4rem; }
+    .source-error__detail summary { cursor: pointer; font-size: 0.74rem; font-weight: 600; text-decoration: underline; }
+    .source-error__detail pre { margin: 0.4rem 0 0; font-size: 0.7rem; line-height: 1.4; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, monospace; }
     .quota-note { font-size: 0.72rem; font-weight: 700; color: var(--text-faint); text-align: center; margin: -0.3rem 0 0.75rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 0.5rem; }
@@ -375,8 +378,10 @@
     } catch (directErr) {
       const proxies = proxyList();
       if (!proxies.length) {
-        console.error("Direct request failed:", directErr);
-        throw new Error("Couldn't reach it.");
+        const err = new Error("Couldn't reach it.");
+        err.detail = `Direct request failed: ${directErr.message}`;
+        console.error(err.detail);
+        throw err;
       }
       const proxyErrors = [];
       for (const proxy of proxies) {
@@ -391,8 +396,11 @@
           proxyErrors.push(`${host} → ${proxyErr.message}`);
         }
       }
-      console.error(`Direct request failed (${directErr.message}). Every CORS proxy also failed: ${proxyErrors.join("; ")}.`);
-      throw new Error("Couldn't reach it — direct and proxied requests both failed.");
+      const detail = `Direct request failed (${directErr.message}). Every CORS proxy also failed: ${proxyErrors.join("; ")}.`;
+      console.error(detail);
+      const err = new Error("Couldn't reach it — direct and proxied requests both failed.");
+      err.detail = detail;
+      throw err;
     }
   }
 
@@ -536,7 +544,7 @@
 
   function toRedditApiPath(raw) {
     let u;
-    try { u = new URL(raw.trim()); } catch (e) { throw new Error("Enter a full reddit.com (or redd.it) link."); }
+    try { u = new URL(raw.trim()); } catch (e) { throw new Error("That's not a valid URL — enter a full reddit.com or redd.it link."); }
     const host = u.hostname.toLowerCase();
     if (host === "redd.it" || host === "www.redd.it") {
       const id = u.pathname.split("/").filter(Boolean)[0];
@@ -651,8 +659,11 @@
       ? `<div class="state-panel"><span class="spinner"></span><p>${escapeHtml(msg || "Working…")}</p></div>`
       : "";
   }
-  function showError(msg) {
-    $("errorArea").innerHTML = `<div class="source-error"><strong>Couldn't finish that search.</strong> ${escapeHtml(msg)}</div>`;
+  function showError(msg, detail) {
+    const detailHtml = detail
+      ? `<details class="source-error__detail"><summary>Show details</summary><pre>${escapeHtml(detail)}</pre></details>`
+      : "";
+    $("errorArea").innerHTML = `<div class="source-error"><strong>Couldn't finish that search.</strong> ${escapeHtml(msg)}${detailHtml}</div>`;
   }
   function clearError() { $("errorArea").innerHTML = ""; }
 
@@ -769,7 +780,7 @@
       renderResults(outcome.results);
     } catch (err) {
       setBusy(false);
-      showError((err && err.message) || String(err));
+      showError((err && err.message) || String(err), err && err.detail);
     }
   }
 
@@ -829,9 +840,19 @@
 
   /* ═══════════════ Image URL panel: paste (image or text), auto-search on input ═══════════════ */
   const urlInput = $("urlInput");
+  function isValidHttpUrl(val) {
+    try {
+      const u = new URL(val);
+      return u.protocol === "http:" || u.protocol === "https:";
+    } catch (e) {
+      return false;
+    }
+  }
   function submitUrlSearch() {
     const val = urlInput.value.trim();
-    if (val) runUrlSearch(val);
+    if (!val) return;
+    if (!isValidHttpUrl(val)) { showError("That's not a valid URL — enter a full link to an image."); return; }
+    runUrlSearch(val);
   }
   urlInput.addEventListener("input", debounce(submitUrlSearch, 600));
   $("urlForm").addEventListener("submit", (e) => { e.preventDefault(); submitUrlSearch(); });
@@ -936,7 +957,7 @@
       }
     } catch (err) {
       setBusy(false);
-      showError((err && err.message) || String(err));
+      showError((err && err.message) || String(err), err && err.detail);
     }
   }
 
