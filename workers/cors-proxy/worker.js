@@ -50,6 +50,10 @@ function corsHeaders(origin) {
     // more strictly and don't treat it as covering Authorization at all.
     // An explicit list has no such ambiguity in any browser.
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+    // Response headers are invisible to cross-origin JS unless listed
+    // here explicitly — X-Final-Url carries the post-redirect URL (see
+    // its use below) and would otherwise silently read back empty.
+    "Access-Control-Expose-Headers": "X-Final-Url",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
@@ -128,6 +132,12 @@ export default {
     const outHeaders = new Headers(corsHeaders(origin));
     const upstreamContentType = upstream.headers.get("Content-Type");
     if (upstreamContentType) outHeaders.set("Content-Type", upstreamContentType);
+    // upstream.url is the final URL after following any redirects (e.g.
+    // Reddit's mobile-app share links, …/s/<token>, redirect to the real
+    // post) — exposed so callers that need to resolve a redirect rather
+    // than just read its body (see saucenao's resolveShareLink) can do so
+    // without a second request.
+    outHeaders.set("X-Final-Url", upstream.url);
 
     return new Response(upstream.body, { status: upstream.status, headers: outHeaders });
   },

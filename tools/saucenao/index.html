@@ -542,6 +542,18 @@
     return redditToken.value;
   }
 
+  /* Reddit hands out several different link shapes depending on where you
+     copied it from, and only some of them are directly usable as an API
+     path:
+       - redd.it/<id>                          → straightforward
+       - reddit.com/r/x/comments/<id>/slug/...  → the id is right there,
+         even with extra trailing segments (a media/gallery viewer suffix,
+         query params, etc.) that would otherwise turn into an invalid
+         API path if passed through unchanged.
+       - reddit.com/gallery/<id>                → same id, different word
+       - reddit.com/r/x/s/<token>                → the mobile app's native
+         "Share" link. This is a redirect the id isn't recoverable from
+         client-side; it has to be resolved by actually following it. */
   function toRedditApiPath(raw) {
     let u;
     try { u = new URL(raw.trim()); } catch (e) { throw new Error("That's not a valid URL — enter a full reddit.com or redd.it link."); }
@@ -549,12 +561,44 @@
     if (host === "redd.it" || host === "www.redd.it") {
       const id = u.pathname.split("/").filter(Boolean)[0];
       if (!id) throw new Error("Couldn't find a post ID in that link.");
-      return `/comments/${id}`;
+      return { path: `/comments/${id}` };
     }
     if (!/(^|\.)reddit\.com$/.test(host)) throw new Error("That's not a reddit.com link.");
-    const path = u.pathname.replace(/\/+$/, "");
-    if (!path) throw new Error("That reddit link doesn't point to a post.");
-    return path;
+    const segments = u.pathname.split("/").filter(Boolean);
+    const commentsIdx = segments.indexOf("comments");
+    if (commentsIdx !== -1 && segments[commentsIdx + 1]) {
+      return { path: `/comments/${segments[commentsIdx + 1]}` };
+    }
+    const galleryIdx = segments.indexOf("gallery");
+    if (galleryIdx !== -1 && segments[galleryIdx + 1]) {
+      return { path: `/comments/${segments[galleryIdx + 1]}` };
+    }
+    const shareIdx = segments.indexOf("s");
+    if (shareIdx !== -1 && segments[shareIdx + 1]) {
+      return { shareUrl: u.toString() };
+    }
+    if (!segments.length) throw new Error("That reddit link doesn't point to a post.");
+    throw new Error("Couldn't find a post in that link.");
+  }
+
+  /* Resolves a mobile-app share link (…/s/<token>) to a real /comments/<id>
+     API path. Share links are a redirect reddit.com itself serves — the
+     same bot wall that blocks scraping blocks a direct browser fetch of
+     it too, so this goes through the CORS proxy, which follows the
+     redirect server-side and reports back the final URL it landed on via
+     the X-Final-Url response header. */
+  async function resolveShareLink(shareUrl) {
+    const res = await fetchDirectOrProxied(shareUrl, { method: "GET" });
+    const finalUrl = res.headers.get("X-Final-Url") || res.url;
+    if (!finalUrl) throw new Error("Couldn't resolve that share link.");
+    const match = finalUrl.match(/\/comments\/(\w+)/);
+    if (!match) throw new Error("Couldn't find a post in that share link.");
+    return `/comments/${match[1]}`;
+  }
+
+  async function resolveRedditPath(raw) {
+    const result = toRedditApiPath(raw);
+    return result.path || (await resolveShareLink(result.shareUrl));
   }
 
   function decodeEntities(s) {
@@ -606,7 +650,7 @@
   }
 
   async function fetchRedditImages(postUrl) {
-    const path = toRedditApiPath(postUrl);
+    const path = await resolveRedditPath(postUrl);
     const token = await getRedditToken();
     const res = await fetchDirectOrProxied(`https://oauth.reddit.com${path}`, {
       method: "GET",
