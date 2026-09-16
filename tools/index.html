@@ -168,6 +168,12 @@
     .tool-card__desc { display: block; font-size: 0.8rem; line-height: 1.45; color: var(--text-muted); margin: 0; }
     .tool-card__chevron { margin-left: auto; flex-shrink: 0; color: var(--text-faint); align-self: center; }
 
+    /* ── Subcategory heading (e.g. "External") — sits between two
+       .tool-grids, so it needs its own top margin rather than relying on
+       the grid's gap. ── */
+    .tool-section-heading { display: flex; align-items: center; gap: 0.4rem; margin: 1.75rem 0.1rem 0.85rem; font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
+    .tool-section-heading .material-icons { font-size: 20px; color: var(--text-faint); }
+
     /* Reserve room so content never sits underneath the fixed bottom bar
        (see /shared/chrome.css for the bar itself). */
     main.app-main { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
@@ -218,19 +224,23 @@
         </span>
         <span class="material-icons tool-card__chevron">chevron_right</span>
       </a>
-      <a class="tool-card" href="/tools/warp/">
-        <span class="tool-card__icon"><span class="material-icons">vpn_key</span></span>
-        <span class="tool-card__body">
-          <span class="tool-card__title">WARP config generator</span>
-          <span class="tool-card__desc">Generate a free WireGuard configuration for Cloudflare WARP, keypair included.</span>
-        </span>
-        <span class="material-icons tool-card__chevron">chevron_right</span>
-      </a>
+    </div>
+
+    <h2 class="tool-section-heading"><span class="material-icons">open_in_new</span>External</h2>
+    <div class="tool-grid">
       <a class="tool-card" href="/tools/typerip/">
         <span class="tool-card__icon"><span class="material-icons">font_download</span></span>
         <span class="tool-card__body">
           <span class="tool-card__title">Font ripper</span>
           <span class="tool-card__desc">Download every style from an Adobe Fonts family or collection page.</span>
+        </span>
+        <span class="material-icons tool-card__chevron">chevron_right</span>
+      </a>
+      <a class="tool-card" href="/tools/warp/">
+        <span class="tool-card__icon"><span class="material-icons">vpn_key</span></span>
+        <span class="tool-card__body">
+          <span class="tool-card__title">WARP config generator</span>
+          <span class="tool-card__desc">Generate a free WireGuard configuration for Cloudflare WARP, keypair included.</span>
         </span>
         <span class="material-icons tool-card__chevron">chevron_right</span>
       </a>
