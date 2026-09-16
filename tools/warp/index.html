@@ -504,7 +504,12 @@
   });
 
   downloadBtn.addEventListener("click", () => {
-    const blob = new Blob([configOutput.value], { type: "text/plain" });
+    // application/octet-stream, not text/plain: some browsers (notably
+    // Android Chrome) rewrite the saved filename's extension to match what
+    // they think the MIME type implies (text/plain -> .txt), clobbering the
+    // .conf extension. A generic binary type has no "correct" extension to
+    // enforce, so the requested filename is kept as-is.
+    const blob = new Blob([configOutput.value], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
