@@ -187,12 +187,13 @@
     .checkbox-row label { cursor: pointer; }
 
     /* ── Font grid ── */
-    .font-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
-    .font-card { position: relative; background: var(--bg2); border-radius: 16px; padding: 0.9rem 0.9rem 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
-    .font-card__sample { font-size: 1.4rem; line-height: 1.25; color: var(--text); min-height: 2.5em; max-height: 2.5em; overflow: hidden; word-break: break-word; padding-right: 1.8rem; }
-    .font-card__name { font-size: 0.8rem; font-weight: 600; color: var(--text); word-break: break-word; }
-    .font-card__style { font-size: 0.7rem; color: var(--text-faint); }
-    .font-card__dl { position: absolute; top: 0.35rem; right: 0.35rem; }
+    .font-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+    .font-card { background: var(--bg2); border-radius: 16px; padding: 1rem 1rem 0.9rem; display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
+    .font-card__sample { font-size: 1.9rem; line-height: 1.3; color: var(--text); word-break: break-word; }
+    .font-card__footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.6rem; }
+    .font-card__name { font-size: 0.82rem; font-weight: 600; color: var(--text); word-break: break-word; }
+    .font-card__style { font-size: 0.72rem; color: var(--text-faint); }
+    .font-card__dl { flex-shrink: 0; }
     .font-card__dl .material-icons { font-size: 20px; }
 
     .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
@@ -437,8 +438,10 @@
     fontGrid.innerHTML = family.fonts.map((f, i) =>
       '<div class="font-card">' +
         '<div class="font-card__sample" style="font-family:\'' + f.cssFamily + '\';">' + escapeHtml(family.sampleText || f.name) + "</div>" +
-        '<div><div class="font-card__name">' + escapeHtml(f.name) + '</div><div class="font-card__style">' + escapeHtml(f.style || "") + "</div></div>" +
-        '<button type="button" class="icon-btn font-card__dl" data-index="' + i + '" aria-label="Download ' + escapeHtml(f.name) + '"><span class="material-icons">download</span></button>' +
+        '<div class="font-card__footer">' +
+          '<div><div class="font-card__name">' + escapeHtml(f.name) + '</div><div class="font-card__style">' + escapeHtml(f.style || "") + "</div></div>" +
+          '<button type="button" class="icon-btn font-card__dl" data-index="' + i + '" aria-label="Download ' + escapeHtml(f.name) + '"><span class="material-icons">download</span></button>' +
+        "</div>" +
       "</div>"
     ).join("");
   }
