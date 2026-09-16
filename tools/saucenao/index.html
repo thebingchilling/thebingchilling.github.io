@@ -504,20 +504,52 @@
     return parseSaucenaoResponse(await res.json());
   }
 
-  /* ═══════════════ Reddit post → image list ═══════════════ */
-  function toRedditJsonUrl(raw) {
+  /* ═══════════════ Reddit OAuth ═══════════════
+     reddit.com/*.json is scraping, and Cloudflare's bot wall in front of
+     it blocks that outright — no proxy or header spoofing gets past it
+     (confirmed: it blocks even direct, real-browser requests). Real
+     Reddit clients don't hit this wall because they authenticate, so
+     this does the same: it's Reddit's "installed_client" OAuth grant
+     (device-scoped, no login required) using the public client ID
+     Reddit's own official Android app ships with — the same technique
+     third-party tools like redlib use since Reddit locked down free API
+     access in 2023. Calls then go to oauth.reddit.com instead. */
+  const REDDIT_OAUTH_CLIENT_ID = "ohXpoqrZYub1kg";
+  const REDDIT_TOKEN_ENDPOINT = "https://www.reddit.com/api/v1/access_token";
+  let redditToken = null; // { value, expiresAt }
+
+  async function getRedditToken() {
+    if (redditToken && redditToken.expiresAt > Date.now() + 30000) return redditToken.value;
+    const body = new URLSearchParams();
+    body.set("grant_type", "https://oauth.reddit.com/grants/installed_client");
+    body.set("device_id", "DO_NOT_TRACK_THIS_DEVICE");
+    const res = await fetchDirectOrProxied(REDDIT_TOKEN_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Authorization": "Basic " + btoa(REDDIT_OAUTH_CLIENT_ID + ":"),
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: body.toString()
+    });
+    const json = await res.json();
+    if (!json.access_token) throw new Error("Couldn't get a Reddit access token.");
+    redditToken = { value: json.access_token, expiresAt: Date.now() + (json.expires_in || 3600) * 1000 };
+    return redditToken.value;
+  }
+
+  function toRedditApiPath(raw) {
     let u;
     try { u = new URL(raw.trim()); } catch (e) { throw new Error("Enter a full reddit.com (or redd.it) link."); }
     const host = u.hostname.toLowerCase();
     if (host === "redd.it" || host === "www.redd.it") {
       const id = u.pathname.split("/").filter(Boolean)[0];
       if (!id) throw new Error("Couldn't find a post ID in that link.");
-      return `https://www.reddit.com/comments/${id}.json`;
+      return `/comments/${id}`;
     }
     if (!/(^|\.)reddit\.com$/.test(host)) throw new Error("That's not a reddit.com link.");
     const path = u.pathname.replace(/\/+$/, "");
     if (!path) throw new Error("That reddit link doesn't point to a post.");
-    return `https://www.reddit.com${path}.json`;
+    return path;
   }
 
   function decodeEntities(s) {
@@ -569,8 +601,12 @@
   }
 
   async function fetchRedditImages(postUrl) {
-    const jsonUrl = toRedditJsonUrl(postUrl);
-    const res = await fetchDirectOrProxied(jsonUrl, { method: "GET" });
+    const path = toRedditApiPath(postUrl);
+    const token = await getRedditToken();
+    const res = await fetchDirectOrProxied(`https://oauth.reddit.com${path}`, {
+      method: "GET",
+      headers: { "Authorization": "Bearer " + token }
+    });
     const data = await res.json();
     const listing = Array.isArray(data) ? data[0] : null;
     const child = listing && listing.data && listing.data.children && listing.data.children[0];
