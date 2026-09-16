@@ -161,6 +161,9 @@
     .search-row .btn { flex-shrink: 0; }
     .search-scope { margin-top: 0.65rem; font-size: 0.78rem; color: var(--text-faint); display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
     .search-scope a, .search-scope button.link-btn { background: none; border: none; padding: 0; color: var(--primary); font: inherit; cursor: pointer; text-decoration: underline; }
+    .sort-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.65rem; font-size: 0.78rem; color: var(--text-faint); }
+    .sort-row select { border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.3rem 0.6rem; font-size: 0.78rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
+    .sort-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
 
     /* ── Results ── */
     .result-list { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -268,6 +271,14 @@
         </button>
       </div>
       <div class="search-scope" id="searchScope"></div>
+      <div class="sort-row">
+        <label for="sortSelect">Sort by</label>
+        <select id="sortSelect" aria-label="Sort results by">
+          <option value="seeders">Seeders</option>
+          <option value="size">File size</option>
+          <option value="ratio">Seed/leech ratio</option>
+        </select>
+      </div>
     </div>
 
     <div id="resultsArea"></div>
@@ -303,7 +314,7 @@
     </div>
 
     <div class="settings__section">
-      <p class="settings__hint">Every source here is a search API URL you (or this tool) supplied — this page fetches it directly from your browser. Many such APIs block cross-origin requests (CORS); when a direct request fails, the CORS proxy below is tried automatically. Nothing is fetched unless a source's toggle is on.</p>
+      <p class="settings__hint">Every source here is a search API URL you (or this tool) supplied — this page fetches it directly from your browser. Many such APIs block cross-origin requests (CORS); when a direct request fails, it's retried automatically through a fixed CORS proxy. Nothing is fetched unless a source's toggle is on.</p>
       <div id="sourceList" class="source-list"></div>
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.2rem;">
         <button id="addSourceBtn" class="btn btn--ghost btn--sm" type="button">
@@ -313,12 +324,6 @@
           <span class="material-icons" style="font-size:16px;">restore</span>Restore default
         </button>
       </div>
-    </div>
-
-    <div class="settings__section">
-      <div class="settings__section-label">CORS proxy fallback</div>
-      <p class="settings__hint">Used automatically when a source's direct request fails (typically a CORS block). Each one fetches the URL server-side and hands the response back with CORS allowed — free public proxies are flaky and some indexers actively block known proxy IPs, so list a few, <strong>comma-separated</strong>; they're tried in order until one works, and a failed search shows exactly which proxies were tried and why each one failed. Use <code>{url}</code> for where the target URL goes — it's URL-encoded automatically; with no <code>{url}</code> the URL is appended to the end. Leave blank to disable.</p>
-      <input type="text" id="corsProxyInput" placeholder="https://corsproxy.io/?url={url}, https://api.codetabs.com/v1/proxy?quest={url}, https://api.allorigins.win/raw?url={url}" autocomplete="off" spellcheck="false" />
     </div>
 
     <div class="settings__section">
@@ -408,16 +413,18 @@
 
   let SOURCES = loadSources();
 
-  const DEFAULT_CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}";
-  function loadCorsProxy() {
-    const raw = Store.get("bq_torrent_cors_proxy");
-    return raw === null ? DEFAULT_CORS_PROXY : raw;
+  /* Fixed — not user-configurable. Every source request that fails direct
+     (CORS block) is retried through this proxy; there is no way to
+     override it from the UI. */
+  const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}";
+  function corsProxyList() { return [CORS_PROXY]; }
+
+  function loadSortBy() {
+    const raw = Store.get("bq_torrent_sort");
+    return raw === "size" || raw === "ratio" ? raw : "seeders";
   }
-  function saveCorsProxy(value) { Store.set("bq_torrent_cors_proxy", value); }
-  let CORS_PROXY = loadCorsProxy();
-  function corsProxyList() {
-    return CORS_PROXY.split(",").map(s => s.trim()).filter(Boolean);
-  }
+  function saveSortBy(v) { Store.set("bq_torrent_sort", v); }
+  let SORT_BY = loadSortBy();
 
   /* ═══════════════ Generic result normalization ═══════════════
      Every source is just "a JSON URL" — none of this code knows or cares
@@ -578,6 +585,7 @@
   const queryInput = $("queryInput");
   const searchBtn = $("searchBtn");
   const searchScope = $("searchScope");
+  const sortSelect = $("sortSelect");
   const resultsArea = $("resultsArea");
 
   const settingsBtn = $("settingsBtn");
@@ -587,7 +595,6 @@
   const sourceList = $("sourceList");
   const addSourceBtn = $("addSourceBtn");
   const restoreDefaultsBtn = $("restoreDefaultsBtn");
-  const corsProxyInput = $("corsProxyInput");
   const sourceForm = $("sourceForm");
   const sourceFormTitle = $("sourceFormTitle");
   const sfName = $("sfName"), sfUrl = $("sfUrl"), sfResultsPath = $("sfResultsPath");
@@ -721,14 +728,8 @@
     renderSourceList(); renderScope();
   });
 
-  corsProxyInput.addEventListener("change", () => {
-    CORS_PROXY = corsProxyInput.value.trim();
-    saveCorsProxy(CORS_PROXY);
-  });
-
   function openSettings() {
     renderSourceList();
-    corsProxyInput.value = CORS_PROXY;
     settingsSheet.classList.remove("hidden");
     settingsSheet.setAttribute("aria-hidden", "false");
   }
@@ -742,6 +743,21 @@
   settingsClose.addEventListener("click", closeSettings);
   settingsBackdrop.addEventListener("click", closeSettings);
   settingsSheet.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSettings(); });
+
+  /* ═══════════════ Sorting ═══════════════ */
+  function ratioOf(r) {
+    const seeders = Number(r.seeders) || 0;
+    const leechers = Number(r.leechers) || 0;
+    if (leechers <= 0) return seeders > 0 ? Infinity : 0;
+    return seeders / leechers;
+  }
+  function sortResults(results) {
+    const arr = results.slice();
+    if (SORT_BY === "size") arr.sort((a, b) => (Number(b.size) || 0) - (Number(a.size) || 0));
+    else if (SORT_BY === "ratio") arr.sort((a, b) => ratioOf(b) - ratioOf(a));
+    else arr.sort((a, b) => (Number(b.seeders) || 0) - (Number(a.seeders) || 0));
+    return arr;
+  }
 
   /* ═══════════════ Search + render results ═══════════════ */
   function resultCardHtml(r) {
@@ -785,6 +801,25 @@
     });
   }
 
+  let lastResults = [];
+  let lastErrors = [];
+  let lastQuery = "";
+  let hasSearched = false;
+
+  function renderResultsArea() {
+    let html = "";
+    lastErrors.forEach(({ source, error }) => {
+      html += `<div class="source-error"><strong>${escapeHtml(source.name)}</strong> — ${escapeHtml(error.message)}</div>`;
+    });
+    if (lastResults.length) {
+      html += `<div class="result-list">${sortResults(lastResults).map(resultCardHtml).join("")}</div>`;
+    } else if (!lastErrors.length && hasSearched) {
+      html += `<div class="state-panel"><span class="material-icons">search_off</span><p>No results for "${escapeHtml(lastQuery)}".</p></div>`;
+    }
+    resultsArea.innerHTML = html;
+    wireCopyButtons(resultsArea);
+  }
+
   async function doSearch() {
     const query = queryInput.value.trim();
     const enabled = SOURCES.filter(s => s.enabled);
@@ -797,20 +832,11 @@
 
     const errors = [];
     const settled = await Promise.all(enabled.map(s => runSource(s, query).catch(e => { errors.push({ source: s, error: e }); return []; })));
-    const allResults = settled.flat();
-
-    let html = "";
-    errors.forEach(({ source, error }) => {
-      html += `<div class="source-error"><strong>${escapeHtml(source.name)}</strong> — ${escapeHtml(error.message)}</div>`;
-    });
-    if (allResults.length) {
-      allResults.sort((a, b) => (Number(b.seeders) || 0) - (Number(a.seeders) || 0));
-      html += `<div class="result-list">${allResults.map(resultCardHtml).join("")}</div>`;
-    } else if (!errors.length) {
-      html += `<div class="state-panel"><span class="material-icons">search_off</span><p>No results for "${escapeHtml(query)}".</p></div>`;
-    }
-    resultsArea.innerHTML = html;
-    wireCopyButtons(resultsArea);
+    lastResults = settled.flat();
+    lastErrors = errors;
+    lastQuery = query;
+    hasSearched = true;
+    renderResultsArea();
 
     searchBtn.disabled = false;
     searchBtn.innerHTML = `<span class="material-icons" style="font-size:18px;">search</span>Search`;
@@ -818,8 +844,14 @@
 
   searchBtn.addEventListener("click", doSearch);
   queryInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+  sortSelect.addEventListener("change", () => {
+    SORT_BY = sortSelect.value;
+    saveSortBy(SORT_BY);
+    if (hasSearched) renderResultsArea();
+  });
 
   renderScope();
+  sortSelect.value = SORT_BY;
   resultsArea.innerHTML = `<div class="state-panel"><span class="material-icons">travel_explore</span><p>Type a search above. Tap the tune icon to add or manage sources.</p></div>`;
 
   BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item, .source-card__check, .source-card__btn");
