@@ -425,12 +425,17 @@
     const links = Array.isArray(d && d.ext_urls) ? d.ext_urls : [];
     let creator = d && (d.member_name || d.author_name || d.creator || d.artist || d.company);
     if (Array.isArray(creator)) creator = creator.filter(Boolean).join(", ");
-    const title = (d && (d.title || d.material || d.source || d.eng_name || d.jp_name)) || null;
+    // index_name often embeds the matched file's own name after the
+    // database name (e.g. "Index #5: Pixiv Images - 78460216_p17.jpg") —
+    // strip that trailing "- filename.ext" part, keeping just the
+    // database name.
+    const indexName = (h.index_name || "")
+      .replace(/^Index #\d+:\s*/, "")
+      .replace(/\s-\s\S+\.\w{2,5}$/, "");
     return {
       similarity: parseFloat(h.similarity) || 0,
       thumbnail: h.thumbnail || "",
-      indexName: (h.index_name || "").replace(/^Index #\d+:\s*/, ""),
-      title,
+      indexName,
       creator: creator || null,
       links
     };
