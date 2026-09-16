@@ -255,10 +255,6 @@
     <div class="card hidden" id="familyCard">
       <h2 class="family-name" id="familyName"></h2>
       <p class="family-by hidden" id="familyBy"></p>
-      <div class="checkbox-row">
-        <input type="checkbox" id="rawDownload" />
-        <label for="rawDownload">Download without repair processing</label>
-      </div>
       <button type="button" class="btn btn--primary btn--block" id="downloadAllBtn">
         <span class="material-icons" style="font-size:18px;">download</span>Download all
       </button>
@@ -269,9 +265,9 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>Everything happens in your browser: the family page is read through a self-hosted CORS proxy to pull out its font list, then each font file is fetched, its glyph data rebuilt to fix encoding issues (via OpenType.js), and zipped for download.</p>
+        <p>Everything happens in your browser: the family page is read through a self-hosted CORS proxy to pull out its font list, then each font file is fetched as-is and zipped for download.</p>
         <p>Only fetches font families/collections that are already publicly listed on Adobe Fonts. By using this tool you agree not to use downloaded fonts beyond what the font owner's license, and Adobe's own terms, allow — treat anything you download here as for testing only, not for publication.</p>
-        <p>Based on <a href="https://github.com/beemilkz/typerip" target="_blank" rel="noopener">beemilkz/typerip</a> (originally by Jeremy Clark), using <a href="https://opentype.js.org/" target="_blank" rel="noopener">OpenType.js</a>.</p>
+        <p>Based on <a href="https://github.com/beemilkz/typerip" target="_blank" rel="noopener">beemilkz/typerip</a> (originally by Jeremy Clark).</p>
       </div>
     </div>
   </main>
@@ -406,7 +402,6 @@
   const statusCard = $("statusCard");
   const familyCard = $("familyCard"), familyName = $("familyName"), familyBy = $("familyBy");
   const fontGrid = $("fontGrid");
-  const rawDownload = $("rawDownload");
   const downloadAllBtn = $("downloadAllBtn");
 
   let currentFamily = null;
@@ -483,47 +478,27 @@
     }
   }
 
-  /* ── Fetching + repairing + zipping ──
-     Fetching + parsing + glyph-rebuild all happen in worker.js, off the UI
-     thread: repairing a font is synchronous, CPU-heavy work (it walks every
-     glyph's path), and running it here froze the whole page for the
-     duration on anything but a tiny font. */
-  let fontWorker = null;
-  let workerMsgId = 0;
-  function getFontWorker() {
-    if (!fontWorker) fontWorker = new Worker("/tools/typerip/worker.js");
-    return fontWorker;
+  /* ── Fetching + zipping ──
+     Fonts are downloaded exactly as Adobe serves them — no parsing or
+     glyph rebuilding. That processing step used opentype.js to fix
+     encoding issues in some fonts, but it's synchronous, CPU-heavy work
+     that could take long enough on some fonts' outline data to freeze
+     the page; fetching the bytes as-is is simple and fast instead. */
+  async function getFontBytes(font) {
+    const res = await fetch(font.url);
+    if (!res.ok) throw new Error("Failed to download " + font.name);
+    return await res.arrayBuffer();
   }
 
-  function getFontBytes(font, raw) {
-    return new Promise((resolve, reject) => {
-      const id = ++workerMsgId;
-      const worker = getFontWorker();
-      function onMessage(e) {
-        if (e.data.id !== id) return;
-        worker.removeEventListener("message", onMessage);
-        if (e.data.ok) resolve(e.data.buffer);
-        else reject(new Error(e.data.error || ("Failed to download " + font.name)));
-      }
-      worker.addEventListener("message", onMessage);
-      worker.postMessage({ id, url: font.url, raw, familyName: font.familyName, style: font.style });
-    });
-  }
-
-  async function downloadFonts(fonts, zipFileName, raw, triggerBtn) {
+  async function downloadFonts(fonts, zipFileName, triggerBtn) {
     const originalHtml = triggerBtn ? triggerBtn.innerHTML : null;
     hideError();
+    if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.innerHTML = '<span class="spinner"></span>'; }
     try {
       const zip = new window.JSZip();
-      let done = 0;
       for (const font of fonts) {
-        if (triggerBtn) {
-          triggerBtn.disabled = true;
-          triggerBtn.innerHTML = '<span class="spinner"></span>' + (fonts.length > 1 ? (done + 1) + "/" + fonts.length : "");
-        }
-        const bytes = await getFontBytes(font, raw);
+        const bytes = await getFontBytes(font);
         zip.file(sanitizeFilename(font.name + " " + (font.style || "")) + ".ttf", bytes);
-        done++;
       }
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
@@ -543,7 +518,7 @@
 
   downloadAllBtn.addEventListener("click", () => {
     if (!currentFamily) return;
-    downloadFonts(currentFamily.fonts, currentFamily.name, rawDownload.checked, downloadAllBtn);
+    downloadFonts(currentFamily.fonts, currentFamily.name, downloadAllBtn);
   });
 
   fontGrid.addEventListener("click", (e) => {
@@ -551,7 +526,7 @@
     if (!btn || !currentFamily) return;
     const font = currentFamily.fonts[Number(btn.dataset.index)];
     if (!font) return;
-    downloadFonts([font], font.name + " " + (font.style || ""), rawDownload.checked, btn);
+    downloadFonts([font], font.name + " " + (font.style || ""), btn);
   });
 
   if ("serviceWorker" in navigator) {
