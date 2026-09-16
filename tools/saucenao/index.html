@@ -225,7 +225,10 @@
     .sauce-card__sim--mid { background: var(--warn-bg); color: var(--warn); }
     .sauce-card__sim--low { background: var(--md-surface-container-high); color: var(--text-faint); }
     .sauce-card__index { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--md-on-primary-container); background: var(--md-primary-container); padding: 0.15rem 0.5rem; border-radius: 999px; }
+    .sauce-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
     .sauce-card__creator { font-size: 0.78rem; color: var(--text-muted); }
+    .sauce-card__creator-name { font-weight: 700; color: var(--text); text-decoration: none; }
+    a.sauce-card__creator-name:hover { color: var(--primary); text-decoration: underline; }
     .sauce-card__links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.15rem; }
     .sauce-card__favicon { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
 
@@ -419,12 +422,37 @@
     };
   }
 
+  /* Resolves the poster/artist for whichever index this result came from.
+     SauceNAO's per-index fields vary a lot, so this checks them in
+     priority order and, where the platform's profile URL shape is known,
+     builds a link out of it — otherwise it's just a name with no link
+     (most booru-style indexes have no account concept at all, just an
+     artist tag). */
+  function resolveCreator(d) {
+    if (!d) return null;
+    if (d.member_id != null && d.member_name) {
+      return { name: d.member_name, url: `https://www.pixiv.net/users/${d.member_id}` };
+    }
+    if (d.twitter_user_handle) {
+      return { name: `@${d.twitter_user_handle}`, url: `https://twitter.com/${d.twitter_user_handle}` };
+    }
+    if (d.author_name && d.author_url) {
+      return { name: d.author_name, url: d.author_url };
+    }
+    if (d.pawoo_user_username) {
+      return { name: d.pawoo_user_display_name || d.pawoo_user_username, url: `https://pawoo.net/@${d.pawoo_user_username}` };
+    }
+    let name = d.author || d.author_name || d.member_name || d.creator || d.artist || d.company;
+    if (Array.isArray(name)) name = name.filter(Boolean).join(", ");
+    return name ? { name, url: null } : null;
+  }
+
   function normalizeResult(r) {
     const h = r && r.header, d = r && r.data;
     if (!h) return null;
     const links = Array.isArray(d && d.ext_urls) ? d.ext_urls : [];
-    let creator = d && (d.member_name || d.author_name || d.creator || d.artist || d.company);
-    if (Array.isArray(creator)) creator = creator.filter(Boolean).join(", ");
+    const title = (d && (d.title || d.material || d.source || d.eng_name || d.jp_name)) || null;
+    const creator = resolveCreator(d);
     // index_name often embeds the matched file's own name after the
     // database name (e.g. "Index #5: Pixiv Images - 78460216_p17.jpg") —
     // strip that trailing "- filename.ext" part, keeping just the
@@ -436,7 +464,8 @@
       similarity: parseFloat(h.similarity) || 0,
       thumbnail: h.thumbnail || "",
       indexName,
-      creator: creator || null,
+      title,
+      creator,
       links
     };
   }
@@ -714,7 +743,8 @@
               <span class="sauce-card__sim sauce-card__sim--${simClass(r.similarity)}">${r.similarity.toFixed(1)}%</span>
               <span class="sauce-card__index">${escapeHtml(r.indexName)}</span>
             </div>
-            ${r.creator ? `<span class="sauce-card__creator">by ${escapeHtml(r.creator)}</span>` : ""}
+            ${r.title ? `<p class="sauce-card__title">${escapeHtml(r.title)}</p>` : ""}
+            ${r.creator ? `<span class="sauce-card__creator">by ${r.creator.url ? `<a class="sauce-card__creator-name" href="${escapeHtml(r.creator.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.creator.name)}</a>` : `<span class="sauce-card__creator-name">${escapeHtml(r.creator.name)}</span>`}</span>` : ""}
             ${links ? `<div class="sauce-card__links">${links}</div>` : ""}
           </div>
         </div>`;
