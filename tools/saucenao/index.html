@@ -143,7 +143,12 @@
     body { scrollbar-width: none; }
     body::-webkit-scrollbar { display: none; }
 
-    main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem 1rem calc(4.6rem + env(safe-area-inset-bottom)); max-width: 640px; width: 100%; margin: 0 auto; }
+    /* Horizontal padding (not max-width + margin: 0 auto) does the
+       content-column centering: main.app-main is the scrolling element, so
+       a max-width on it would leave its scrollbar stranded at the edge of
+       the narrow column instead of the actual window edge on a wide
+       desktop viewport. */
+    main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem max(1rem, calc((100% - 640px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.25rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
@@ -151,8 +156,9 @@
     .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
 
     /* ── Buttons ── */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: box-shadow var(--t), filter var(--t), background var(--t); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: box-shadow var(--t), filter var(--t), background var(--t); }
     .btn--sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
+    .btn--block { width: 100%; }
     .btn--primary { background: var(--primary); color: var(--on-primary); }
     .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
     .btn--primary:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -170,11 +176,11 @@
     .search-row { display: flex; gap: 0.5rem; }
     .search-row input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.65rem 1rem; font-size: 0.92rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
     .search-row input[type=text]:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-    .search-row .btn { flex-shrink: 0; }
+    .search-row .btn, .search-row .icon-btn { flex-shrink: 0; }
     .search-card__hint { margin: 0.6rem 0 0; font-size: 0.76rem; color: var(--text-faint); line-height: 1.4; }
 
     /* ── Dropzone (image mode) ── */
-    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 20px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); margin-bottom: 1rem; }
+    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 20px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); margin-bottom: 0.75rem; }
     .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
     .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
@@ -182,6 +188,10 @@
     .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
     .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
     .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    /* Separate from the dropzone's own icon on purpose — a paste icon
+       layered inside the dropzone read as a duplicate of its existing
+       add_photo_alternate glyph, so this sits as its own control below it. */
+    #pasteImageBtn { margin-bottom: 1rem; }
 
     /* ── Reddit gallery ── */
     .reddit-post-title { font-size: 0.85rem; font-weight: 500; color: var(--text); margin: 0.7rem 0 0; line-height: 1.4; }
@@ -238,8 +248,6 @@
     .settings input[type=text], .settings select { width: 100%; border: 1px solid var(--md-outline); border-radius: 10px; padding: 0.55rem 0.7rem; font-size: 0.86rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
     .settings input[type=text]:focus, .settings select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
     .settings__actions { display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap; }
-
-    main.app-main { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
   </style>
 </head>
 <body>
@@ -280,21 +288,24 @@
     <div class="panel" id="panelImage">
       <label class="dropzone" id="dropzone" for="fileInput">
         <span class="material-icons">add_photo_alternate</span>
-        <span class="dropzone__title">Paste (Ctrl/Cmd+V), drop, or tap to choose an image</span>
+        <span class="dropzone__title">Drop an image, or tap to choose one</span>
         <span class="dropzone__sub">Sent to SauceNAO to search — nothing else is uploaded</span>
         <input id="fileInput" type="file" accept="image/*" aria-label="Choose an image" />
       </label>
+      <button type="button" class="btn btn--ghost btn--block" id="pasteImageBtn">
+        <span class="material-icons" style="font-size:18px;">content_paste</span>Paste image from clipboard
+      </button>
     </div>
 
     <div class="panel hidden" id="panelUrl">
       <form class="search-card" id="urlForm">
         <div class="search-row">
           <input type="text" id="urlInput" placeholder="https://example.com/image.jpg" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Image URL" />
-          <button class="btn btn--primary" type="submit">
-            <span class="material-icons" style="font-size:18px;">search</span>Search
+          <button type="button" class="icon-btn" id="urlPasteBtn" aria-label="Paste from clipboard">
+            <span class="material-icons">content_paste</span>
           </button>
         </div>
-        <p class="search-card__hint">Direct link to an image file — this is passed straight to SauceNAO's <code>url</code> lookup.</p>
+        <p class="search-card__hint">Direct link to an image file, passed straight to SauceNAO's <code>url</code> lookup — searches automatically once pasted or typed.</p>
       </form>
     </div>
 
@@ -302,11 +313,11 @@
       <form class="search-card" id="redditForm">
         <div class="search-row">
           <input type="text" id="redditInput" placeholder="https://www.reddit.com/r/.../comments/..." autocomplete="off" spellcheck="false" inputmode="url" aria-label="Reddit post URL" />
-          <button class="btn btn--primary" type="submit">
-            <span class="material-icons" style="font-size:18px;">travel_explore</span>Load
+          <button type="button" class="icon-btn" id="redditPasteBtn" aria-label="Paste from clipboard">
+            <span class="material-icons">content_paste</span>
           </button>
         </div>
-        <p class="search-card__hint">Loads every image in the post (including galleries) so you can pick which one to search. Video posts aren't supported.</p>
+        <p class="search-card__hint">Loads every image in the post (including galleries) — searches automatically once pasted or typed. Video posts aren't supported.</p>
         <p class="reddit-post-title hidden" id="redditPostTitle"></p>
         <div class="gallery-grid hidden" id="redditGallery"></div>
       </form>
@@ -382,6 +393,11 @@
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+  }
+
+  function debounce(fn, delay) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
   }
 
   /* ═══════════════ Storage (localStorage, in-memory fallback) ═══════════════ */
@@ -768,15 +784,42 @@
     }
   });
 
-  /* ═══════════════ Image URL panel ═══════════════ */
-  $("urlForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const val = $("urlInput").value.trim();
-    if (!val) return;
-    runUrlSearch(val);
+  $("pasteImageBtn").addEventListener("click", async () => {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.indexOf("image/") === 0);
+        if (type) {
+          const blob = await item.getType(type);
+          selectTab("image");
+          runFileSearch(blob);
+          return;
+        }
+      }
+      showError("No image found on the clipboard — copy an image first.");
+    } catch (e) {
+      showError("Couldn't read an image from the clipboard — your browser may need permission, or paste with Ctrl/Cmd+V instead.");
+    }
   });
 
-  /* ═══════════════ Reddit panel ═══════════════ */
+  /* ═══════════════ Image URL panel: paste button, auto-search on input ═══════════════ */
+  const urlInput = $("urlInput");
+  function submitUrlSearch() {
+    const val = urlInput.value.trim();
+    if (val) runUrlSearch(val);
+  }
+  urlInput.addEventListener("input", debounce(submitUrlSearch, 600));
+  $("urlForm").addEventListener("submit", (e) => { e.preventDefault(); submitUrlSearch(); });
+  $("urlPasteBtn").addEventListener("click", async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) { urlInput.value = text.trim(); runUrlSearch(text.trim()); }
+    } catch (e) {
+      showError("Couldn't read the clipboard — your browser may need permission, or paste with Ctrl/Cmd+V instead.");
+    }
+  });
+
+  /* ═══════════════ Reddit panel: paste button, auto-search on input ═══════════════ */
   let currentRedditImages = [];
   function renderGallery(images) {
     currentRedditImages = images;
@@ -820,11 +863,21 @@
       showError((err && err.message) || String(err));
     }
   }
-  $("redditForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const val = $("redditInput").value.trim();
-    if (!val) return;
-    loadRedditGallery(val);
+
+  const redditInput = $("redditInput");
+  function submitRedditSearch() {
+    const val = redditInput.value.trim();
+    if (val) loadRedditGallery(val);
+  }
+  redditInput.addEventListener("input", debounce(submitRedditSearch, 600));
+  $("redditForm").addEventListener("submit", (e) => { e.preventDefault(); submitRedditSearch(); });
+  $("redditPasteBtn").addEventListener("click", async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) { redditInput.value = text.trim(); loadRedditGallery(text.trim()); }
+    } catch (e) {
+      showError("Couldn't read the clipboard — your browser may need permission, or paste with Ctrl/Cmd+V instead.");
+    }
   });
 
   /* ═══════════════ Settings sheet ═══════════════ */
