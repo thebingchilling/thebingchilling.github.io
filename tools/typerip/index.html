@@ -266,7 +266,7 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>Everything happens in your browser: the family page is read through a public CORS proxy (allorigins.win) to pull out its font list, then each font file is fetched, its glyph data rebuilt to fix encoding issues (via OpenType.js), and zipped for download.</p>
+        <p>Everything happens in your browser: the family page is read through a self-hosted CORS proxy to pull out its font list, then each font file is fetched, its glyph data rebuilt to fix encoding issues (via OpenType.js), and zipped for download.</p>
         <p>Only fetches font families/collections that are already publicly listed on Adobe Fonts. By using this tool you agree not to use downloaded fonts beyond what the font owner's license, and Adobe's own terms, allow — treat anything you download here as for testing only, not for publication.</p>
         <p>Based on <a href="https://github.com/beemilkz/typerip" target="_blank" rel="noopener">beemilkz/typerip</a> (originally by Jeremy Clark), using <a href="https://opentype.js.org/" target="_blank" rel="noopener">OpenType.js</a>.</p>
       </div>
@@ -309,7 +309,7 @@
     return String(s).replace(/[\\/:*?"<>|]+/g, "_").trim() || "font";
   }
 
-  const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+  const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url=";
   // Long-lived preview token embedded in the original typerip client — grants
   // access to the same "render this family's fonts for preview" endpoint the
   // Adobe Fonts website itself uses, for every style in a public family.
@@ -320,9 +320,7 @@
   }
 
   async function fetchViaProxy(url) {
-    // Matches the source tool exactly: the target URL is appended raw, not
-    // URL-encoded — allorigins' /raw endpoint expects it that way.
-    const res = await fetch(CORS_PROXY + url, { cache: "no-store" });
+    const res = await fetch(CORS_PROXY + encodeURIComponent(url), { cache: "no-store" });
     if (!res.ok) throw new Error("HTTP " + res.status + " fetching that page.");
     return await res.text();
   }

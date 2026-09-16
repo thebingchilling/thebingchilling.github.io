@@ -308,8 +308,8 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>The keypair is generated locally with WireGuard's own Curve25519 code; the private key is never transmitted. Registration is a plain HTTPS call to Cloudflare's own (undocumented) WARP client API, routed through a public CORS proxy since that API doesn't allow direct browser requests. This creates a free WARP device — not WARP+ — with the same client agreement you accept using the official 1.1.1.1 app.</p>
-        <p>Based on <a href="https://github.com/lanrat/wireguard-warp-generator" target="_blank" rel="noopener">lanrat/wireguard-warp-generator</a>. CORS proxy by <a href="https://corsfix.com" target="_blank" rel="noopener">Corsfix</a>.</p>
+        <p>The keypair is generated locally with WireGuard's own Curve25519 code; the private key is never transmitted. Registration is a plain HTTPS call to Cloudflare's own (undocumented) WARP client API, routed through a self-hosted CORS proxy since that API doesn't allow direct browser requests. This creates a free WARP device — not WARP+ — with the same client agreement you accept using the official 1.1.1.1 app.</p>
+        <p>Based on <a href="https://github.com/lanrat/wireguard-warp-generator" target="_blank" rel="noopener">lanrat/wireguard-warp-generator</a>.</p>
       </div>
     </div>
   </main>
@@ -343,7 +343,7 @@
   BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item, .adv-toggle");
   BQChrome.initTheme();
 
-  const CORS_PROXY = "https://proxy.corsfix.com/?";
+  const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url=";
   const WARP_API = "https://api.cloudflareclient.com/v0a737/reg";
 
   const generateBtn = $("generateBtn");
@@ -415,7 +415,7 @@
       type: options.deviceType,
       locale: options.locale,
     };
-    const response = await fetch(CORS_PROXY + WARP_API, {
+    const response = await fetch(CORS_PROXY + encodeURIComponent(WARP_API), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
