@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Torrent Search</title>
+  <title>Torrent search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Search torrent indexes you configure yourself and grab the magnet or .torrent link. Nothing is downloaded here — this only finds links." />
   <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
@@ -248,6 +248,12 @@
     .source-form__test-result--err { color: var(--md-error); }
 
     main.app-main { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+
+    /* ── Footer note ── */
+    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
+    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
+    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
   </style>
 </head>
 <body>
@@ -269,8 +275,8 @@
   <main class="app-main">
     <div class="hero">
       <div class="hero__icon"><span class="material-icons">travel_explore</span></div>
-      <h1 class="hero__title">Torrent Search</h1>
-      <p class="hero__sub">Searches only the sources you enable below — nothing is bundled in that isn't shown in Sources, and nothing is downloaded by this page. Results just give you a magnet link or a .torrent file link to open in your own torrent client.</p>
+      <h1 class="hero__title">Torrent search</h1>
+      <p class="hero__sub">Search torrent sources you configure yourself.</p>
     </div>
 
     <div class="search-card">
@@ -289,6 +295,13 @@
     </div>
 
     <div id="resultsArea"></div>
+
+    <div class="card note-card">
+      <span class="material-icons">shield</span>
+      <div>
+        <p>Each source is a JSON search API you configure yourself, fetched directly from your browser and retried through a fixed CORS proxy when direct access is blocked. Nothing is bundled in beyond what's listed in Sources, and nothing is downloaded by this page — results just give you a magnet or .torrent link to open in your own client.</p>
+      </div>
+    </div>
   </main>
 
   <div class="bottom-dock" id="bottomDock">
@@ -869,7 +882,7 @@
 
   renderScope();
   sortSelect.value = SORT_BY;
-  resultsArea.innerHTML = `<div class="state-panel"><span class="material-icons">travel_explore</span><p>Type a search above. Tap the tune icon to add or manage sources.</p></div>`;
+  resultsArea.innerHTML = `<div class="state-panel"><span class="material-icons">travel_explore</span><p>Nothing searched yet.</p></div>`;
 
   BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item, .source-card__check, .source-card__btn");
   BQChrome.initTheme();
