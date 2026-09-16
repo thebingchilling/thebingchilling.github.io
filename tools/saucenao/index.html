@@ -203,10 +203,9 @@
     .gallery-item--selected .gallery-item__check { display: flex; }
     .gallery-item__check .material-icons { font-size: 13px; }
 
-    /* ── Preview strip (what's currently being searched) ── */
-    .preview-strip { display: flex; align-items: center; gap: 0.65rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.6rem 0.85rem; margin-bottom: 0.85rem; box-shadow: var(--el1); }
-    .preview-strip img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
-    .preview-strip__label { font-size: 0.8rem; color: var(--text-muted); }
+    /* ── Preview (the image currently being searched) ── */
+    .preview-card { display: flex; justify-content: center; margin-bottom: 0.85rem; }
+    .preview-card__img { display: block; max-width: 100%; max-height: 300px; border-radius: 18px; box-shadow: var(--el2); object-fit: contain; background: var(--surface2); }
 
     /* ── State / error / quota ── */
     .state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
@@ -221,7 +220,7 @@
     /* ── Results ── */
     .result-list { display: flex; flex-direction: column; gap: 0.6rem; }
     .sauce-card { display: flex; gap: 0.75rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem; box-shadow: var(--el1); }
-    .sauce-card__thumb { width: 88px; height: 88px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
+    .sauce-card__thumb { width: 128px; height: 128px; border-radius: 14px; object-fit: cover; flex-shrink: 0; background: var(--surface2); box-shadow: var(--el1); }
     .sauce-card__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
     .sauce-card__top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .sauce-card__sim { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
@@ -645,10 +644,9 @@
     const el = $("previewArea");
     el.textContent = "";
     if (!srcUrl) return;
-    const wrap = document.createElement("div"); wrap.className = "preview-strip";
-    const img = document.createElement("img"); img.src = srcUrl; img.alt = ""; img.referrerPolicy = "no-referrer";
-    const label = document.createElement("span"); label.className = "preview-strip__label"; label.textContent = "Searching this image…";
-    wrap.appendChild(img); wrap.appendChild(label);
+    const wrap = document.createElement("div"); wrap.className = "preview-card";
+    const img = document.createElement("img"); img.className = "preview-card__img"; img.src = srcUrl; img.alt = ""; img.referrerPolicy = "no-referrer";
+    wrap.appendChild(img);
     el.appendChild(wrap);
   }
 
