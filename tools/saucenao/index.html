@@ -193,14 +193,14 @@
     /* ── Reddit gallery ── */
     .reddit-post-title { font-size: 0.85rem; font-weight: 500; color: var(--text); margin: 0.7rem 0 0; line-height: 1.4; }
     .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 0.65rem; margin-top: 0.75rem; }
-    .gallery-item { aspect-ratio: 1; border-radius: 16px; padding: 0; border: 3px solid transparent; background: var(--surface2); cursor: pointer; box-shadow: var(--el1); transition: transform var(--t), box-shadow var(--t), border-color var(--t); }
+    .gallery-item { aspect-ratio: 1; border-radius: 16px; padding: 0; border: 3px solid transparent; cursor: pointer; box-shadow: var(--el1); transition: transform var(--t), box-shadow var(--t), border-color var(--t); }
     .gallery-item:hover { transform: translateY(-2px); box-shadow: var(--el2); }
     .gallery-item--selected { border-color: var(--primary); box-shadow: var(--el2); }
     .gallery-item__check { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: none; align-items: center; justify-content: center; box-shadow: var(--el1); }
     .gallery-item--selected .gallery-item__check { display: flex; }
     .gallery-item__check .material-icons { font-size: 15px; }
     .gallery-item__select { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: none; background: none; cursor: pointer; overflow: hidden; border-radius: 13px; }
-    .gallery-item__select img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 13px; }
+    .gallery-item__select img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 13px; }
     .gallery-item__download { position: absolute; bottom: 6px; left: 6px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; overflow: hidden; transition: background var(--t); }
     .gallery-item__download:hover { background: rgba(0,0,0,0.75); }
     .gallery-item__download svg { width: 14px; height: 14px; }
@@ -217,7 +217,7 @@
     /* ── Results ── */
     .result-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
     .sauce-card { display: flex; flex-direction: column; gap: 0.6rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem; box-shadow: var(--el1); }
-    .sauce-card__thumb { width: 100%; aspect-ratio: 1; height: auto; border-radius: 14px; object-fit: contain; background: var(--surface2); box-shadow: var(--el1); }
+    .sauce-card__thumb { width: 100%; aspect-ratio: 1; height: auto; border-radius: 14px; object-fit: contain; box-shadow: var(--el1); }
     .sauce-card__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
     .sauce-card__top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .sauce-card__sim { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
