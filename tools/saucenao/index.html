@@ -206,9 +206,7 @@
     .state-panel p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
     .source-error { background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.8rem; line-height: 1.45; margin-bottom: 0.85rem; }
     .source-error strong { font-weight: 600; }
-    .quota-note { display: none; align-items: center; justify-content: center; gap: 0.4rem; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); font-size: 0.82rem; font-weight: 600; text-align: center; border-radius: 999px; padding: 0.5rem 1rem; margin: 0 0 0.85rem; }
-    .quota-note:not(:empty) { display: flex; }
-    .quota-note .material-icons { font-size: 17px; }
+    .quota-note { font-size: 0.72rem; font-weight: 700; color: var(--text-faint); text-align: center; margin: -0.3rem 0 0.75rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 0.5rem; }
 
@@ -620,13 +618,11 @@
   function clearError() { $("errorArea").innerHTML = ""; }
 
   function renderQuota(q) {
-    if (!q || (q.short == null && q.long == null)) { $("quotaArea").innerHTML = ""; return; }
+    if (!q || (q.short == null && q.long == null)) { $("quotaArea").textContent = ""; return; }
     const parts = [];
     if (q.short != null) parts.push(`${q.short} left this 30s`);
     if (q.long != null) parts.push(`${q.long} left today`);
-    $("quotaArea").innerHTML = parts.length
-      ? `<span class="material-icons">insights</span><span>SauceNAO quota: ${escapeHtml(parts.join(" · "))}</span>`
-      : "";
+    $("quotaArea").textContent = parts.length ? `SauceNAO quota: ${parts.join(" · ")}` : "";
   }
 
   function simClass(sim) { return sim >= 80 ? "high" : sim >= 60 ? "mid" : "low"; }
