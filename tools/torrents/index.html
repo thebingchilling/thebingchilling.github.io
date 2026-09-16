@@ -574,16 +574,24 @@
      reflects the current order. ═══════════════ */
   function debounce(fn, delay) {
     let t;
-    return () => { clearTimeout(t); t = setTimeout(fn, delay); };
+    const wrapped = () => { clearTimeout(t); t = setTimeout(fn, delay); };
+    wrapped.cancel = () => clearTimeout(t);
+    return wrapped;
   }
   const debouncedSearch = debounce(doSearch, 550);
 
   queryInput.addEventListener("input", debouncedSearch);
-  queryInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+  // Cancel any pending debounced search first — otherwise it still fires
+  // ~550ms later with the same query, doubling up on the live request an
+  // Enter press already made.
+  queryInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { debouncedSearch.cancel(); doSearch(); } });
   sortSelect.addEventListener("change", () => {
     SORT_BY = sortSelect.value;
     saveSortBy(SORT_BY);
-    if (queryInput.value.trim()) doSearch();
+    // Re-sorts the results already in hand — renderResultsArea() already
+    // calls sortResults(lastResults) itself, so this needs no network
+    // request at all, unlike the doSearch() call this used to make.
+    if (hasSearched) renderResultsArea();
   });
 
   searchScope.textContent = "Searching: " + SOURCES.map(s => s.name).join(", ");
