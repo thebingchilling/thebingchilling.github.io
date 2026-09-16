@@ -206,14 +206,16 @@
     .state-panel p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
     .source-error { background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.8rem; line-height: 1.45; margin-bottom: 0.85rem; }
     .source-error strong { font-weight: 600; }
-    .quota-note { font-size: 0.72rem; color: var(--text-faint); text-align: center; margin: -0.3rem 0 0.75rem; }
+    .quota-note { display: none; align-items: center; justify-content: center; gap: 0.4rem; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); font-size: 0.82rem; font-weight: 600; text-align: center; border-radius: 999px; padding: 0.5rem 1rem; margin: 0 0 0.85rem; }
+    .quota-note:not(:empty) { display: flex; }
+    .quota-note .material-icons { font-size: 17px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 0.5rem; }
 
     /* ── Results ── */
     .result-list { display: flex; flex-direction: column; gap: 0.6rem; }
     .sauce-card { display: flex; gap: 0.75rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem; box-shadow: var(--el1); }
-    .sauce-card__thumb { width: auto; height: auto; max-width: 140px; max-height: 180px; border-radius: 14px; object-fit: contain; flex-shrink: 0; background: var(--surface2); box-shadow: var(--el1); }
+    .sauce-card__thumb { width: 140px; height: 140px; border-radius: 14px; object-fit: contain; flex-shrink: 0; background: var(--surface2); box-shadow: var(--el1); }
     .sauce-card__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
     .sauce-card__top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .sauce-card__sim { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
@@ -224,6 +226,7 @@
     .sauce-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
     .sauce-card__creator { font-size: 0.78rem; color: var(--text-muted); }
     .sauce-card__links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.15rem; }
+    .sauce-card__favicon { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
 
     /* ── Footer note ── */
     .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
@@ -566,21 +569,23 @@
   }
 
   /* Shows what's currently selected/searched right inside the dropzone
-     itself, instead of a separate large preview image above the results. */
-  function setDropzoneSelection(opts) {
+     itself (just a thumbnail, no filename/URL text), instead of a
+     separate large preview image above the results. */
+  function setDropzoneSelection(thumbSrc) {
     const thumb = $("dropzoneThumb"), icon = $("dropzoneIcon"), title = $("dropzoneTitle"), sub = $("dropzoneSub"), dz = $("dropzone");
-    if (!opts) {
+    if (!thumbSrc) {
       thumb.classList.add("hidden"); thumb.removeAttribute("src");
       icon.classList.remove("hidden");
+      title.classList.remove("hidden");
       title.textContent = "Drop an image, or tap to choose one";
       sub.textContent = "Sent to SauceNAO to search.";
       dz.classList.remove("dropzone--filled");
       return;
     }
-    thumb.src = opts.thumbSrc;
+    thumb.src = thumbSrc;
     thumb.classList.remove("hidden");
     icon.classList.add("hidden");
-    title.textContent = opts.label;
+    title.classList.add("hidden");
     sub.textContent = "Tap to search a different image.";
     dz.classList.add("dropzone--filled");
   }
@@ -598,11 +603,13 @@
   function clearError() { $("errorArea").innerHTML = ""; }
 
   function renderQuota(q) {
-    if (!q || (q.short == null && q.long == null)) { $("quotaArea").textContent = ""; return; }
+    if (!q || (q.short == null && q.long == null)) { $("quotaArea").innerHTML = ""; return; }
     const parts = [];
     if (q.short != null) parts.push(`${q.short} left this 30s`);
     if (q.long != null) parts.push(`${q.long} left today`);
-    $("quotaArea").textContent = parts.length ? `SauceNAO quota: ${parts.join(" · ")}` : "";
+    $("quotaArea").innerHTML = parts.length
+      ? `<span class="material-icons">insights</span><span>SauceNAO quota: ${escapeHtml(parts.join(" · "))}</span>`
+      : "";
   }
 
   function simClass(sim) { return sim >= 80 ? "high" : sim >= 60 ? "mid" : "low"; }
@@ -618,7 +625,8 @@
       const links = r.links.slice(0, 4).map((l) => {
         let host = l;
         try { host = new URL(l).hostname.replace(/^www\./, ""); } catch (e) {}
-        return `<a class="btn btn--ghost btn--sm" href="${escapeHtml(l)}" target="_blank" rel="noopener noreferrer"><span class="material-icons" style="font-size:14px;">open_in_new</span>${escapeHtml(host)}</a>`;
+        const favicon = `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(host)}`;
+        return `<a class="btn btn--ghost btn--sm" href="${escapeHtml(l)}" target="_blank" rel="noopener noreferrer"><img class="sauce-card__favicon" src="${favicon}" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />${escapeHtml(host)}</a>`;
       }).join("");
       return `
         <div class="sauce-card">
@@ -660,11 +668,11 @@
 
   function runFileSearch(file) {
     if (!file.type || !file.type.startsWith("image/")) { showError("That file isn't an image."); return; }
-    setDropzoneSelection({ thumbSrc: URL.createObjectURL(file), label: file.name || "Pasted image" });
+    setDropzoneSelection(URL.createObjectURL(file));
     runSearch("file", file);
   }
   function runUrlSearch(url) {
-    setDropzoneSelection({ thumbSrc: url, label: url });
+    setDropzoneSelection(url);
     runSearch("url", url);
   }
 
