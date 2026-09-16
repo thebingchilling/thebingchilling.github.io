@@ -179,27 +179,28 @@
     .search-card__hint { margin: 0.6rem 0 0; font-size: 0.76rem; color: var(--text-faint); line-height: 1.4; }
 
     /* ── Dropzone (image mode) ── */
-    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 20px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); margin-bottom: 0.75rem; }
+    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 20px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
     .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
     .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
-    .dropzone--filled { padding: 1rem; }
     .dropzone .material-icons { font-size: 34px; color: var(--primary); }
-    .dropzone__thumb { width: 56px; height: 56px; border-radius: 14px; object-fit: cover; box-shadow: var(--el1); background: var(--surface2); }
-    .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
+    .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
     .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
     .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
     /* ── Reddit gallery ── */
     .reddit-post-title { font-size: 0.85rem; font-weight: 500; color: var(--text); margin: 0.7rem 0 0; line-height: 1.4; }
-    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 0.65rem; margin-top: 0.75rem; }
-    .gallery-item { aspect-ratio: 1; border-radius: 16px; padding: 0; border: 3px solid transparent; background: var(--surface2); cursor: pointer; box-shadow: var(--el1); transition: transform var(--t), box-shadow var(--t), border-color var(--t); }
-    .gallery-item:hover { transform: translateY(-2px); box-shadow: var(--el2); }
-    .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 13px; }
-    .gallery-item--selected { border-color: var(--primary); box-shadow: var(--el2); }
-    .gallery-item__check { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: none; align-items: center; justify-content: center; box-shadow: var(--el1); }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+    .gallery-item { aspect-ratio: 1; border-radius: 12px; padding: 0; border: 2px solid transparent; background: var(--surface2); cursor: pointer; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 9px; }
+    .gallery-item--selected { border-color: var(--primary); }
+    .gallery-item__check { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: none; align-items: center; justify-content: center; }
     .gallery-item--selected .gallery-item__check { display: flex; }
-    .gallery-item__check .material-icons { font-size: 15px; }
+    .gallery-item__check .material-icons { font-size: 13px; }
+
+    /* ── Preview (the image currently being searched) ── */
+    .preview-card { display: flex; justify-content: center; margin-bottom: 0.85rem; }
+    .preview-card__img { display: block; max-width: 100%; max-height: 300px; border-radius: 18px; box-shadow: var(--el2); object-fit: contain; background: var(--surface2); }
 
     /* ── State / error / quota ── */
     .state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
@@ -213,7 +214,7 @@
     /* ── Results ── */
     .result-list { display: flex; flex-direction: column; gap: 0.6rem; }
     .sauce-card { display: flex; gap: 0.75rem; background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem; box-shadow: var(--el1); }
-    .sauce-card__thumb { width: auto; height: auto; max-width: 140px; max-height: 180px; border-radius: 14px; object-fit: contain; flex-shrink: 0; background: var(--surface2); box-shadow: var(--el1); }
+    .sauce-card__thumb { width: 128px; height: 128px; border-radius: 14px; object-fit: cover; flex-shrink: 0; background: var(--surface2); box-shadow: var(--el1); }
     .sauce-card__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
     .sauce-card__top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .sauce-card__sim { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
@@ -221,7 +222,7 @@
     .sauce-card__sim--mid { background: var(--warn-bg); color: var(--warn); }
     .sauce-card__sim--low { background: var(--md-surface-container-high); color: var(--text-faint); }
     .sauce-card__index { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--md-on-primary-container); background: var(--md-primary-container); padding: 0.15rem 0.5rem; border-radius: 999px; }
-    .sauce-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
+    .sauce-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0; line-height: 1.35; word-break: break-word; }
     .sauce-card__creator { font-size: 0.78rem; color: var(--text-muted); }
     .sauce-card__links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.15rem; }
 
@@ -256,6 +257,9 @@
       <button class="tab tab--active" type="button" role="tab" aria-selected="true" data-mode="image">
         <span class="material-icons">add_photo_alternate</span>Image
       </button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-mode="url">
+        <span class="material-icons">link</span>Image URL
+      </button>
       <button class="tab" type="button" role="tab" aria-selected="false" data-mode="reddit">
         <span class="material-icons">forum</span>Reddit post
       </button>
@@ -263,20 +267,22 @@
 
     <div class="panel" id="panelImage">
       <label class="dropzone" id="dropzone" for="fileInput">
-        <span class="material-icons" id="dropzoneIcon">add_photo_alternate</span>
-        <img class="dropzone__thumb hidden" id="dropzoneThumb" alt="" referrerpolicy="no-referrer" />
-        <span class="dropzone__title" id="dropzoneTitle">Drop an image, or tap to choose one</span>
-        <span class="dropzone__sub" id="dropzoneSub">Sent to SauceNAO to search.</span>
+        <span class="material-icons">add_photo_alternate</span>
+        <span class="dropzone__title">Drop an image, or tap to choose one</span>
+        <span class="dropzone__sub">Sent to SauceNAO to search.</span>
         <input id="fileInput" type="file" accept="image/*" aria-label="Choose an image" />
       </label>
+    </div>
+
+    <div class="panel hidden" id="panelUrl">
       <form class="search-card" id="urlForm">
         <div class="search-row">
-          <input type="text" id="urlInput" placeholder="Paste an image URL…" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Image URL" />
+          <input type="text" id="urlInput" placeholder="https://example.com/image.jpg" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Image URL" />
           <button type="button" class="icon-btn" id="urlPasteBtn" aria-label="Paste an image or a URL from clipboard">
             <span class="material-icons">content_paste</span>
           </button>
         </div>
-        <p class="search-card__hint">Paste a copied image or an image link, or tap the button to paste from your clipboard.</p>
+        <p class="search-card__hint">A link to an image file, or paste an image directly.</p>
       </form>
     </div>
 
@@ -294,6 +300,7 @@
       </form>
     </div>
 
+    <div id="previewArea"></div>
     <div id="statusArea"></div>
     <div id="errorArea"></div>
     <div class="quota-note" id="quotaArea"></div>
@@ -565,24 +572,14 @@
     return String(str == null ? "" : str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  /* Shows what's currently selected/searched right inside the dropzone
-     itself, instead of a separate large preview image above the results. */
-  function setDropzoneSelection(opts) {
-    const thumb = $("dropzoneThumb"), icon = $("dropzoneIcon"), title = $("dropzoneTitle"), sub = $("dropzoneSub"), dz = $("dropzone");
-    if (!opts) {
-      thumb.classList.add("hidden"); thumb.removeAttribute("src");
-      icon.classList.remove("hidden");
-      title.textContent = "Drop an image, or tap to choose one";
-      sub.textContent = "Sent to SauceNAO to search.";
-      dz.classList.remove("dropzone--filled");
-      return;
-    }
-    thumb.src = opts.thumbSrc;
-    thumb.classList.remove("hidden");
-    icon.classList.add("hidden");
-    title.textContent = opts.label;
-    sub.textContent = "Tap to search a different image.";
-    dz.classList.add("dropzone--filled");
+  function setPreview(srcUrl) {
+    const el = $("previewArea");
+    el.textContent = "";
+    if (!srcUrl) return;
+    const wrap = document.createElement("div"); wrap.className = "preview-card";
+    const img = document.createElement("img"); img.className = "preview-card__img"; img.src = srcUrl; img.alt = ""; img.referrerPolicy = "no-referrer";
+    wrap.appendChild(img);
+    el.appendChild(wrap);
   }
 
   let busy = false;
@@ -636,6 +633,10 @@
     }).join("");
   }
 
+  function showEmptyState() {
+    $("resultsArea").innerHTML = `<div class="state-panel"><p>Nothing searched yet.</p></div>`;
+  }
+
   /* ═══════════════ Search orchestration ═══════════════ */
   function resetOutputs() {
     clearError();
@@ -654,23 +655,24 @@
       renderResults(outcome.results);
     } catch (err) {
       setBusy(false);
+      showEmptyState();
       showError((err && err.message) || String(err));
     }
   }
 
   function runFileSearch(file) {
     if (!file.type || !file.type.startsWith("image/")) { showError("That file isn't an image."); return; }
-    setDropzoneSelection({ thumbSrc: URL.createObjectURL(file), label: file.name || "Pasted image" });
+    setPreview(URL.createObjectURL(file));
     runSearch("file", file);
   }
   function runUrlSearch(url) {
-    setDropzoneSelection({ thumbSrc: url, label: url });
+    setPreview(url);
     runSearch("url", url);
   }
 
   /* ═══════════════ Mode tabs ═══════════════ */
   const tabs = Array.from(document.querySelectorAll(".tab"));
-  const panels = { image: $("panelImage"), reddit: $("panelReddit") };
+  const panels = { image: $("panelImage"), url: $("panelUrl"), reddit: $("panelReddit") };
   function selectTab(mode) {
     tabs.forEach((t) => {
       const active = t.dataset.mode === mode;
@@ -769,6 +771,7 @@
     $("redditGallery").classList.add("hidden");
     $("redditPostTitle").classList.add("hidden");
     $("redditPostTitle").textContent = "";
+    setPreview(null);
     setBusy(true, "Loading reddit post…");
     try {
       const { title, images } = await fetchRedditImages(postUrl);
@@ -799,6 +802,8 @@
       showError("Couldn't read the clipboard — your browser may need permission, or paste with Ctrl/Cmd+V instead.");
     }
   });
+
+  showEmptyState();
 })();
 </script>
 </body>
