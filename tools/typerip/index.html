@@ -320,7 +320,9 @@
   }
 
   async function fetchViaProxy(url) {
-    const res = await fetch(CORS_PROXY + encodeURIComponent(url), { cache: "no-store" });
+    // Matches the source tool exactly: the target URL is appended raw, not
+    // URL-encoded — allorigins' /raw endpoint expects it that way.
+    const res = await fetch(CORS_PROXY + url, { cache: "no-store" });
     if (!res.ok) throw new Error("HTTP " + res.status + " fetching that page.");
     return await res.text();
   }
@@ -374,8 +376,10 @@
   }
 
   function normalizeUrl(raw) {
+    // Matches the source tool exactly, including defaulting to http:// (not
+    // https://) when no scheme is given.
     let u = raw.trim();
-    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    if (!/^https?:\/\//i.test(u)) u = "http://" + u;
     return u;
   }
 
