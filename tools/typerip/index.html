@@ -175,8 +175,10 @@
     .caveat-text { margin: 0; font-size: 0.8rem; color: var(--text-faint); text-align: center; padding: 0.5rem 0; }
 
     /* ── Family result ── */
+    .family-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+    .family-header .btn { flex-shrink: 0; }
     .family-name { margin: 0 0 0.2rem; font-family: 'Google Sans', sans-serif; font-size: 1.2rem; font-weight: 600; color: var(--text); }
-    .family-by { margin: 0 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); }
+    .family-by { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
     .family-by a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
     .checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.9rem; }
     .checkbox-row input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
@@ -231,9 +233,6 @@
         <button type="button" class="icon-btn" id="pasteBtn" aria-label="Paste from clipboard">
           <span class="material-icons">content_paste</span>
         </button>
-        <button type="button" class="icon-btn" id="submitBtn" aria-label="Look up font family">
-          <span class="material-icons">arrow_forward</span>
-        </button>
       </div>
 
       <div class="error-banner hidden" id="errorBanner" role="alert">
@@ -245,16 +244,18 @@
       </div>
     </div>
 
-    <div class="card" id="statusCard">
-      <p class="caveat-text">Enter a font family URL from <a href="https://fonts.adobe.com/" target="_blank" rel="noopener">Adobe Fonts</a> to begin.</p>
-    </div>
+    <div class="card hidden" id="statusCard"></div>
 
     <div class="card hidden" id="familyCard">
-      <h2 class="family-name" id="familyName"></h2>
-      <p class="family-by hidden" id="familyBy"></p>
-      <button type="button" class="btn btn--primary btn--block" id="downloadAllBtn">
-        <span class="material-icons" style="font-size:18px;">download</span>Download all
-      </button>
+      <div class="family-header">
+        <div>
+          <h2 class="family-name" id="familyName"></h2>
+          <p class="family-by hidden" id="familyBy"></p>
+        </div>
+        <button type="button" class="btn btn--primary" id="downloadAllBtn">
+          <span class="material-icons" style="font-size:18px;">download</span>Download all
+        </button>
+      </div>
     </div>
 
     <div class="font-grid" id="fontGrid"></div>
@@ -397,7 +398,7 @@
   }
 
   /* ── Rendering ── */
-  const urlInput = $("urlInput"), submitBtn = $("submitBtn"), pasteBtn = $("pasteBtn");
+  const urlInput = $("urlInput"), pasteBtn = $("pasteBtn");
   const errorBanner = $("errorBanner"), errorBody = $("errorBody");
   const statusCard = $("statusCard");
   const familyCard = $("familyCard"), familyName = $("familyName"), familyBy = $("familyBy");
@@ -445,8 +446,10 @@
     ).join("");
   }
 
-  submitBtn.addEventListener("click", runSearch);
   urlInput.addEventListener("input", debounce(runSearch, 600));
+  urlInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); runSearch(); }
+  });
 
   pasteBtn.addEventListener("click", async () => {
     try {
@@ -469,15 +472,16 @@
     fontGrid.innerHTML = "";
     statusCard.classList.remove("hidden");
     statusCard.innerHTML = '<p class="caveat-text">Loading…</p>';
-    submitBtn.disabled = true;
+    urlInput.disabled = true;
     try {
       const family = await handleRequest(raw);
       renderFamily(family);
     } catch (err) {
-      statusCard.innerHTML = '<p class="caveat-text">Enter a font family URL from <a href="https://fonts.adobe.com/" target="_blank" rel="noopener">Adobe Fonts</a> to begin.</p>';
+      statusCard.classList.add("hidden");
+      statusCard.innerHTML = "";
       showError((err && err.message) || String(err));
     } finally {
-      submitBtn.disabled = false;
+      urlInput.disabled = false;
     }
   }
 
