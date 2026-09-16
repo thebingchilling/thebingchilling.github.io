@@ -158,7 +158,6 @@
     /* ── Buttons ── */
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: box-shadow var(--t), filter var(--t), background var(--t); }
     .btn--sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
-    .btn--block { width: 100%; }
     .btn--primary { background: var(--primary); color: var(--on-primary); }
     .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
     .btn--primary:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -180,7 +179,7 @@
     .search-card__hint { margin: 0.6rem 0 0; font-size: 0.76rem; color: var(--text-faint); line-height: 1.4; }
 
     /* ── Dropzone (image mode) ── */
-    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 20px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); margin-bottom: 0.75rem; }
+    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 20px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
     .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
     .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
@@ -188,10 +187,6 @@
     .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
     .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
     .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    /* Separate from the dropzone's own icon on purpose — a paste icon
-       layered inside the dropzone read as a duplicate of its existing
-       add_photo_alternate glyph, so this sits as its own control below it. */
-    #pasteImageBtn { margin-bottom: 1rem; }
 
     /* ── Reddit gallery ── */
     .reddit-post-title { font-size: 0.85rem; font-weight: 500; color: var(--text); margin: 0.7rem 0 0; line-height: 1.4; }
@@ -209,7 +204,6 @@
 
     /* ── State / error / quota ── */
     .state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
-    .state-panel .material-icons { font-size: 34px; margin-bottom: 0.5rem; display: block; margin-left: auto; margin-right: auto; }
     .state-panel p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
     .source-error { background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.8rem; line-height: 1.45; margin-bottom: 0.85rem; }
     .source-error strong { font-weight: 600; }
@@ -232,22 +226,6 @@
     .sauce-card__creator { font-size: 0.78rem; color: var(--text-muted); }
     .sauce-card__links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.15rem; }
 
-    /* ── Settings sheet (M3 modal bottom sheet) ── */
-    .settings { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
-    .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); }
-    .settings__panel { position: relative; width: 100%; max-width: 560px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem calc(1rem + env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left)); animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; overscroll-behavior-y: contain; }
-    .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
-    @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
-    .settings__title { margin: 0; font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 500; color: var(--text); }
-    .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
-    .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
-    .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
-    .settings__hint a { color: var(--primary); }
-    .settings input[type=text], .settings select { width: 100%; border: 1px solid var(--md-outline); border-radius: 10px; padding: 0.55rem 0.7rem; font-size: 0.86rem; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
-    .settings input[type=text]:focus, .settings select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-    .settings__actions { display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap; }
-
     /* ── Footer note ── */
     .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
     .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
@@ -262,9 +240,6 @@
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div class="top-bar__actions">
-      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Search settings">
-        <span class="material-icons">tune</span>
-      </button>
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
         <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
       </button>
@@ -297,20 +272,17 @@
         <span class="dropzone__sub">Sent to SauceNAO to search.</span>
         <input id="fileInput" type="file" accept="image/*" aria-label="Choose an image" />
       </label>
-      <button type="button" class="btn btn--ghost btn--block" id="pasteImageBtn">
-        <span class="material-icons" style="font-size:18px;">content_paste</span>Paste image from clipboard
-      </button>
     </div>
 
     <div class="panel hidden" id="panelUrl">
       <form class="search-card" id="urlForm">
         <div class="search-row">
           <input type="text" id="urlInput" placeholder="https://example.com/image.jpg" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Image URL" />
-          <button type="button" class="icon-btn" id="urlPasteBtn" aria-label="Paste from clipboard">
+          <button type="button" class="icon-btn" id="urlPasteBtn" aria-label="Paste an image or a URL from clipboard">
             <span class="material-icons">content_paste</span>
           </button>
         </div>
-        <p class="search-card__hint">Direct link to an image file.</p>
+        <p class="search-card__hint">A link to an image file, or paste an image directly.</p>
       </form>
     </div>
 
@@ -360,40 +332,6 @@
   </div>
 </div>
 
-<!-- Settings sheet -->
-<div id="settingsSheet" class="settings hidden" role="dialog" aria-modal="true" aria-label="Search settings" aria-hidden="true">
-  <div class="settings__backdrop" id="settingsBackdrop"></div>
-  <div class="settings__panel">
-    <div class="settings__header">
-      <h2 class="settings__title">Search settings</h2>
-      <button id="settingsClose" class="icon-btn" type="button" aria-label="Close">
-        <span class="material-icons">close</span>
-      </button>
-    </div>
-
-    <div class="settings__section">
-      <div class="settings__section-label">SauceNAO API key</div>
-      <input type="text" id="apiKeyInput" placeholder="Optional — leave blank to search anonymously" autocomplete="off" spellcheck="false" />
-      <p class="settings__hint">Stored only in this browser, sent only to SauceNAO. A free account raises the search quota well above the anonymous limit — get a key from your <a href="https://saucenao.com/user.php" target="_blank" rel="noopener noreferrer">SauceNAO account page</a> (Account → api).</p>
-    </div>
-
-    <div class="settings__section">
-      <div class="settings__section-label">Results per search</div>
-      <select id="numResSelect">
-        <option value="3">3</option>
-        <option value="6">6</option>
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="40">40</option>
-      </select>
-    </div>
-
-    <div class="settings__actions">
-      <button id="settingsSave" class="btn btn--primary btn--sm" type="button">Save</button>
-    </div>
-  </div>
-</div>
-
 <script src="/shared/chrome.js"></script>
 <script>
 (function () {
@@ -412,34 +350,15 @@
     return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
   }
 
-  /* ═══════════════ Storage (localStorage, in-memory fallback) ═══════════════ */
-  const hasLS = (() => {
-    try { const k = "__bq_test__"; localStorage.setItem(k, "1"); localStorage.removeItem(k); return true; }
-    catch (e) { return false; }
-  })();
-  const mem = {};
-  const Store = {
-    get(key) { if (hasLS) { try { return localStorage.getItem(key); } catch (e) { return mem[key] ?? null; } } return mem[key] ?? null; },
-    set(key, value) { if (hasLS) { try { localStorage.setItem(key, value); return; } catch (e) {} } mem[key] = value; }
-  };
-
-  /* ═══════════════ Settings ═══════════════ */
-  /* Fixed — not user-configurable. A request that fails direct is retried
-     through this proxy automatically; there is no way to override it from
-     the UI. */
+  /* Fixed — not user-configurable, no settings sheet. */
   const CORS_PROXY = "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}";
   function proxyList() { return [CORS_PROXY]; }
 
-  function loadApiKey() { return Store.get("bq_saucenao_api_key") || ""; }
-  function saveApiKey(v) { Store.set("bq_saucenao_api_key", v); }
-  let API_KEY = loadApiKey();
-
-  function loadNumRes() {
-    const n = parseInt(Store.get("bq_saucenao_numres"), 10);
-    return (n >= 1 && n <= 40) ? n : 6;
-  }
-  function saveNumRes(v) { Store.set("bq_saucenao_numres", String(v)); }
-  let NUM_RES = loadNumRes();
+  // Hardcoded to this site owner's account — visible in page source to
+  // anyone, by design (the account owner's explicit choice over keeping it
+  // private in a per-visitor Settings field).
+  const API_KEY = "41bea43effa00c88e0df8d0948a4a08d619da888";
+  const NUM_RES = 40; // max — always requests the full result set
 
   /* ═══════════════ Networking: direct fetch, falling back through proxies ═══════════════
      Mirrors the CORS-proxy fallback used elsewhere in this toolbox (see the
@@ -483,7 +402,7 @@
     p.set("db", "999");
     p.set("output_type", "2");
     p.set("numres", String(NUM_RES));
-    if (API_KEY) p.set("api_key", API_KEY);
+    p.set("api_key", API_KEY);
     Object.keys(extra || {}).forEach((k) => p.set(k, extra[k]));
     return p;
   }
@@ -688,7 +607,7 @@
   function renderResults(results) {
     const area = $("resultsArea");
     if (!results.length) {
-      area.innerHTML = `<div class="state-panel"><span class="material-icons">search_off</span><p>No matches found above SauceNAO's confidence threshold.</p></div>`;
+      area.innerHTML = `<div class="state-panel"><p>No matches found above SauceNAO's confidence threshold.</p></div>`;
       return;
     }
     area.innerHTML = results.map((r) => {
@@ -715,7 +634,7 @@
   }
 
   function showEmptyState() {
-    $("resultsArea").innerHTML = `<div class="state-panel"><span class="material-icons">image_search</span><p>Nothing searched yet.</p></div>`;
+    $("resultsArea").innerHTML = `<div class="state-panel"><p>Nothing searched yet.</p></div>`;
   }
 
   /* ═══════════════ Search orchestration ═══════════════ */
@@ -795,25 +714,7 @@
     }
   });
 
-  $("pasteImageBtn").addEventListener("click", async () => {
-    try {
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        const type = item.types.find((t) => t.indexOf("image/") === 0);
-        if (type) {
-          const blob = await item.getType(type);
-          selectTab("image");
-          runFileSearch(blob);
-          return;
-        }
-      }
-      showError("No image found on the clipboard — copy an image first.");
-    } catch (e) {
-      showError("Couldn't read an image from the clipboard — your browser may need permission, or paste with Ctrl/Cmd+V instead.");
-    }
-  });
-
-  /* ═══════════════ Image URL panel: paste button, auto-search on input ═══════════════ */
+  /* ═══════════════ Image URL panel: paste (image or text), auto-search on input ═══════════════ */
   const urlInput = $("urlInput");
   function submitUrlSearch() {
     const val = urlInput.value.trim();
@@ -822,6 +723,17 @@
   urlInput.addEventListener("input", debounce(submitUrlSearch, 600));
   $("urlForm").addEventListener("submit", (e) => { e.preventDefault(); submitUrlSearch(); });
   $("urlPasteBtn").addEventListener("click", async () => {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.indexOf("image/") === 0);
+        if (type) {
+          const blob = await item.getType(type);
+          runFileSearch(blob);
+          return;
+        }
+      }
+    } catch (e) { /* no image on clipboard, or unsupported — fall through to text */ }
     try {
       const text = await navigator.clipboard.readText();
       if (text) { urlInput.value = text.trim(); runUrlSearch(text.trim()); }
@@ -867,7 +779,7 @@
       if (title) { $("redditPostTitle").textContent = title; $("redditPostTitle").classList.remove("hidden"); }
       renderGallery(images);
       if (images.length > 1) {
-        $("statusArea").innerHTML = `<div class="state-panel"><span class="material-icons">touch_app</span><p>${images.length} images found — tap one to search it.</p></div>`;
+        $("statusArea").innerHTML = `<div class="state-panel"><p>${images.length} images found — tap one to search it.</p></div>`;
       }
     } catch (err) {
       setBusy(false);
@@ -889,28 +801,6 @@
     } catch (e) {
       showError("Couldn't read the clipboard — your browser may need permission, or paste with Ctrl/Cmd+V instead.");
     }
-  });
-
-  /* ═══════════════ Settings sheet ═══════════════ */
-  const settingsSheet = $("settingsSheet"), settingsBackdrop = $("settingsBackdrop");
-  function openSettings() {
-    $("apiKeyInput").value = API_KEY;
-    $("numResSelect").value = String(NUM_RES);
-    settingsSheet.classList.remove("hidden");
-    settingsSheet.setAttribute("aria-hidden", "false");
-  }
-  function closeSettings() {
-    settingsSheet.classList.add("hidden");
-    settingsSheet.setAttribute("aria-hidden", "true");
-  }
-  $("settingsBtn").addEventListener("click", openSettings);
-  $("settingsClose").addEventListener("click", closeSettings);
-  settingsBackdrop.addEventListener("click", closeSettings);
-  $("settingsSave").addEventListener("click", () => {
-    API_KEY = $("apiKeyInput").value.trim(); saveApiKey(API_KEY);
-    const n = parseInt($("numResSelect").value, 10);
-    NUM_RES = (n >= 1 && n <= 40) ? n : 6; saveNumRes(NUM_RES);
-    closeSettings();
   });
 
   showEmptyState();
