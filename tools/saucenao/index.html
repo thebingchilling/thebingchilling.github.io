@@ -221,7 +221,6 @@
     .sauce-card__sim--mid { background: var(--warn-bg); color: var(--warn); }
     .sauce-card__sim--low { background: var(--md-surface-container-high); color: var(--text-faint); }
     .sauce-card__index { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--md-on-primary-container); background: var(--md-primary-container); padding: 0.15rem 0.5rem; border-radius: 999px; }
-    .sauce-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
     .sauce-card__creator { font-size: 0.78rem; color: var(--text-muted); }
     .sauce-card__links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.15rem; }
     .sauce-card__favicon { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
@@ -627,12 +626,34 @@
 
   function simClass(sim) { return sim >= 80 ? "high" : sim >= 60 ? "mid" : "low"; }
 
-  /* Simple colored-badge SVGs for SauceNAO's major indexed sources — no
-     favicon service, no external image fetch. Unrecognized hosts fall
-     back to a generic link icon. */
+  /* Real brand marks (verified against simple-icons' own SVGs, each
+     matched by its embedded <title>) for the mainstream platforms that
+     actually have one. SauceNAO's actual booru/imageboard indexes mostly
+     don't — Danbooru, Gelbooru, e621, Sankaku, etc. aren't in any icon
+     library — so those get a plain colored letter badge instead of a
+     fabricated logo. Unrecognized hosts get the same kind of letter
+     badge, colored from a hash of the host name. No favicon service, no
+     external image fetch, no webfont dependency (a Material-icon glyph
+     fallback would depend on that font having loaded in time). */
+  const BRAND_PATHS = {
+    pixiv: 'M4.94 0A4.953 4.953 0 0 0 0 4.94v14.12A4.953 4.953 0 0 0 4.94 24h14.12A4.953 4.953 0 0 0 24 19.06c-.014 1.355 0-14.12 0-14.12A4.953 4.953 0 0 0 19.06 0Zm1.783 5.465h.904a.37.37 0 0 1 .31.17l.752 1.17a6.172 6.172 0 0 1 10.01 4.834 6.172 6.172 0 0 1-9.394 5.265v2.016a.37.37 0 0 1-.37.367H6.724a.37.37 0 0 1-.37-.367V5.834a.37.37 0 0 1 .37-.37m5.804 2.951a3.222 3.222 0 1 0-.002 6.443 3.222 3.222 0 0 0 .002-6.443',
+    deviantart: 'M19.207 4.794l.23-.43V0H15.07l-.436.44-2.058 3.925-.646.436H4.58v5.993h4.04l.36.436-4.175 7.98-.24.43V24H8.93l.436-.44 2.07-3.925.644-.436h7.35v-5.993h-4.05l-.36-.438 4.186-7.977z',
+    x: 'M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z',
+    artstation: 'M0 17.723l2.027 3.505h.001a2.424 2.424 0 0 0 2.164 1.333h13.457l-2.792-4.838H0zm24 .025c0-.484-.143-.935-.388-1.314L15.728 2.728a2.424 2.424 0 0 0-2.142-1.289H9.419L21.598 22.54l1.92-3.325c.378-.637.482-.919.482-1.467zm-11.129-3.462L7.428 4.858l-5.444 9.428h10.887z',
+    tumblr: 'M14.563 24c-5.093 0-7.031-3.756-7.031-6.411V9.747H5.116V6.648c3.63-1.313 4.512-4.596 4.71-6.469C9.84.051 9.941 0 9.999 0h3.517v6.114h4.801v3.633h-4.82v7.47c.016 1.001.375 2.371 2.207 2.371h.09c.631-.02 1.486-.205 1.936-.419l1.156 3.425c-.436.636-2.4 1.374-4.156 1.404h-.178l.011.002z',
+    instagram: 'M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077',
+    sinaweibo: 'M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.737 5.439l-.002.004zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.18.601l.014-.028zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.57-.18-.405-.615.375-.977.42-1.804 0-2.404-.781-1.112-2.915-1.053-5.364-.03 0 0-.766.331-.571-.271.376-1.217.315-2.224-.27-2.809-1.338-1.337-4.869.045-7.888 3.08C1.309 10.87 0 13.273 0 15.348c0 3.981 5.099 6.395 10.086 6.395 6.536 0 10.888-3.801 10.888-6.82 0-1.822-1.547-2.854-2.915-3.284v.01zm1.908-5.092c-.766-.856-1.908-1.187-2.96-.962-.436.09-.706.511-.616.932.09.42.511.691.932.602.511-.105 1.067.044 1.442.465.376.421.466.977.316 1.473-.136.406.089.856.51.992.405.119.857-.105.992-.512.33-1.021.12-2.178-.646-3.035l.03.045zm2.418-2.195c-1.576-1.757-3.905-2.419-6.054-1.968-.496.104-.812.587-.706 1.081.104.496.586.813 1.082.707 1.532-.331 3.185.15 4.296 1.383 1.112 1.246 1.429 2.943.947 4.416-.165.48.106 1.007.586 1.157.479.165.991-.104 1.157-.586.675-2.088.241-4.478-1.338-6.235l.03.045z'
+  };
   const SOURCE_ICONS = {
-    "pixiv.net": { l: "P", bg: "#0096fa" },
-    "fanbox.cc": { l: "P", bg: "#0096fa" },
+    "pixiv.net": { brand: "pixiv", bg: "#0096fa" },
+    "fanbox.cc": { brand: "pixiv", bg: "#0096fa" },
+    "deviantart.com": { brand: "deviantart", bg: "#05cc47" },
+    "twitter.com": { brand: "x", bg: "#000000" },
+    "x.com": { brand: "x", bg: "#000000" },
+    "artstation.com": { brand: "artstation", bg: "#13aff0" },
+    "tumblr.com": { brand: "tumblr", bg: "#34526f" },
+    "instagram.com": { brand: "instagram", bg: "#e4405f" },
+    "weibo.com": { brand: "sinaweibo", bg: "#e6162d" },
     "danbooru.donmai.us": { l: "D", bg: "#0073ff" },
     "gelbooru.com": { l: "G", bg: "#ee8fb0" },
     "yande.re": { l: "Y", bg: "#42576b" },
@@ -644,22 +665,23 @@
     "chan.sankakucomplex.com": { l: "S", bg: "#3d3d3d" },
     "anime-pictures.net": { l: "A", bg: "#5b8ac0" },
     "nijie.info": { l: "N", bg: "#f39800" },
-    "deviantart.com": { l: "dA", bg: "#05cc47" },
-    "twitter.com": { l: "X", bg: "#000000" },
-    "x.com": { l: "X", bg: "#000000" },
-    "artstation.com": { l: "AS", bg: "#13aff0" },
-    "tumblr.com": { l: "t", bg: "#34526f" },
-    "instagram.com": { l: "IG", bg: "#c1367e" },
-    "weibo.com": { l: "W", bg: "#e6162d" },
     "fantia.jp": { l: "F", bg: "#3399ff" },
     "bcy.net": { l: "B", bg: "#3ca4f0" },
     "seiga.nicovideo.jp": { l: "N", bg: "#231815" },
     "nicovideo.jp": { l: "N", bg: "#231815" },
     "mangadex.org": { l: "M", bg: "#ff6740" }
   };
+  const FALLBACK_PALETTE = ["#8a4a16", "#77584a", "#3d5a80", "#3f7d5c", "#7a4a7a", "#5c6b73", "#9c4221", "#4a5859"];
+  function hashHue(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return FALLBACK_PALETTE[h % FALLBACK_PALETTE.length];
+  }
   function sourceIcon(host) {
-    const meta = SOURCE_ICONS[host];
-    if (!meta) return `<span class="material-icons" style="font-size:14px;">open_in_new</span>`;
+    const meta = SOURCE_ICONS[host] || { l: (host || "?").replace(/^www\./, "").charAt(0).toUpperCase() || "?", bg: hashHue(host || "") };
+    if (meta.brand && BRAND_PATHS[meta.brand]) {
+      return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><g transform="translate(3,3) scale(0.417)"><path d="${BRAND_PATHS[meta.brand]}" fill="#fff"/></g></svg>`;
+    }
     const fontSize = meta.l.length > 1 ? 6.5 : 8.5;
     return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><text x="8" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="'DM Sans', sans-serif" font-size="${fontSize}" font-weight="700" fill="#fff">${escapeHtml(meta.l)}</text></svg>`;
   }
@@ -671,7 +693,6 @@
       return;
     }
     area.innerHTML = results.map((r) => {
-      const title = escapeHtml(r.title || r.indexName || "Untitled");
       const links = r.links.slice(0, 4).map((l) => {
         let host = l;
         try { host = new URL(l).hostname.replace(/^www\./, ""); } catch (e) {}
@@ -685,7 +706,6 @@
               <span class="sauce-card__sim sauce-card__sim--${simClass(r.similarity)}">${r.similarity.toFixed(1)}%</span>
               <span class="sauce-card__index">${escapeHtml(r.indexName)}</span>
             </div>
-            <p class="sauce-card__title">${title}</p>
             ${r.creator ? `<span class="sauce-card__creator">by ${escapeHtml(r.creator)}</span>` : ""}
             ${links ? `<div class="sauce-card__links">${links}</div>` : ""}
           </div>
