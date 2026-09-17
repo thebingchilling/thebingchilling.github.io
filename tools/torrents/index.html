@@ -291,7 +291,15 @@
     },
     {
       name: "The Pirate Bay",
-      urlTemplate: "https://apibay.org/q.php?q={query}"
+      urlTemplate: "https://apibay.org/q.php?q={query}",
+      // apibay.org never sends CORS headers, so a direct request always
+      // fails — skip straight to the proxy list instead of wasting a
+      // round trip finding that out every search. Internet Archive above
+      // does support CORS, so it stays direct-first: routing it through
+      // the proxy too would add load there for no reason, and defeat the
+      // whole point of a second proxy if a working direct source starts
+      // competing with apibay for it whenever the proxy's under strain.
+      requiresProxy: true
     }
   ];
 
@@ -430,40 +438,48 @@
     try {
       res = await fetch(url, { mode: "cors" });
     } catch (e) {
-      throw new Error("couldn't reach it (network/CORS error)");
+      const err = new Error("unreachable");
+      throw err;
     }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(`HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
     try { return await res.json(); }
-    catch (e) { throw new Error("response wasn't valid JSON"); }
+    catch (e) { throw new Error("bad response"); }
   }
 
   async function runSource(source, query) {
     const url = source.urlTemplate.replace(/\{query\}/g, encodeURIComponent(query));
-    let data;
-    try {
-      data = await fetchJson(url);
-    } catch (directErr) {
-      const proxies = corsProxyList();
-      const proxyErrors = [];
-      let ok = false;
-      for (const proxy of proxies) {
+    let data, lastErr;
+    // A source that never sends CORS headers (apibay.org) skips straight
+    // to the proxy list — a direct attempt there is guaranteed to fail
+    // and just adds a pointless round trip. Everything else tries direct
+    // first so a working, unproxied source (Internet Archive) never
+    // competes with a proxy-reliant one for the same shared proxy.
+    if (!source.requiresProxy) {
+      try { data = await fetchJson(url); } catch (e) { lastErr = e; }
+    } else {
+      lastErr = new Error("skip");
+    }
+    if (lastErr) {
+      lastErr = null;
+      for (const proxy of corsProxyList()) {
         const proxyUrl = proxy.includes("{url}") ? proxy.replace("{url}", encodeURIComponent(url)) : proxy + encodeURIComponent(url);
-        let host = proxy;
-        try { host = new URL(proxy.replace("{url}", "")).hostname; } catch (e) {}
         try {
           data = await fetchJson(proxyUrl);
-          ok = true;
+          lastErr = null;
           break;
-        } catch (proxyErr) {
-          proxyErrors.push(`${host} → ${proxyErr.message}`);
-        }
-      }
-      if (!ok) {
-        throw new Error(`Direct request failed: ${directErr.message}. Every CORS proxy also failed: ${proxyErrors.join("; ")}. (A "HTTP 403"/"HTTP 429" from a proxy usually means the source itself is blocking that proxy's IP, not that the proxy is down.)`);
+        } catch (e) { lastErr = e; }
       }
     }
+    if (lastErr) {
+      const rateLimited = lastErr.status === 403 || lastErr.status === 429;
+      throw new Error(rateLimited ? "rate-limited right now, try again shortly." : "unreachable right now.");
+    }
     const arr = source.resultsPath ? getByPath(data, source.resultsPath) : findResultsArray(data);
-    if (!Array.isArray(arr)) throw new Error("Couldn't find a results array in the response.");
+    if (!Array.isArray(arr)) throw new Error("got a response, but not in the expected format.");
     return arr.map(item => normalizeItem(item, source));
   }
 

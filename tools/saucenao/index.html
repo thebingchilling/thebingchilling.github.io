@@ -447,45 +447,31 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !keyMenu.classList.contains("hidden")) closeKeyMenu(); });
 
-  /* ═══════════════ Networking: direct fetch, falling back through proxies ═══════════════
-     Mirrors the CORS-proxy fallback used elsewhere in this toolbox (see the
-     torrent search tool's history) — SauceNAO and Reddit both omit
-     Access-Control-Allow-Origin on these endpoints, so a browser fetch from
-     any other origin is blocked outright until it's routed through a proxy
-     that adds that header back. */
+  /* ═══════════════ Networking: proxy only ═══════════════
+     SauceNAO and Reddit both omit Access-Control-Allow-Origin on these
+     endpoints, so a direct browser fetch is blocked outright — there's no
+     point trying it first, straight through the proxy list instead. */
   async function fetchDirectOrProxied(url, opts) {
     opts = opts || {};
-    try {
-      const res = await fetch(url, Object.assign({ mode: "cors" }, opts));
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return res;
-    } catch (directErr) {
-      const proxies = proxyList();
-      if (!proxies.length) {
-        const err = new Error("Couldn't reach it.");
-        err.detail = `Direct request failed: ${directErr.message}`;
-        console.error(err.detail);
-        throw err;
+    const proxies = proxyList();
+    const proxyErrors = [];
+    for (const proxy of proxies) {
+      const proxyUrl = proxy.indexOf("{url}") !== -1 ? proxy.replace("{url}", encodeURIComponent(url)) : proxy + encodeURIComponent(url);
+      let host = proxy;
+      try { host = new URL(proxy.replace("{url}", "")).hostname; } catch (e) {}
+      try {
+        const res = await fetch(proxyUrl, opts);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res;
+      } catch (proxyErr) {
+        proxyErrors.push(`${host} → ${proxyErr.message}`);
       }
-      const proxyErrors = [];
-      for (const proxy of proxies) {
-        const proxyUrl = proxy.indexOf("{url}") !== -1 ? proxy.replace("{url}", encodeURIComponent(url)) : proxy + encodeURIComponent(url);
-        let host = proxy;
-        try { host = new URL(proxy.replace("{url}", "")).hostname; } catch (e) {}
-        try {
-          const res = await fetch(proxyUrl, opts);
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          return res;
-        } catch (proxyErr) {
-          proxyErrors.push(`${host} → ${proxyErr.message}`);
-        }
-      }
-      const detail = `Direct request failed (${directErr.message}). Every CORS proxy also failed: ${proxyErrors.join("; ")}.`;
-      console.error(detail);
-      const err = new Error("Couldn't reach it — direct and proxied requests both failed.");
-      err.detail = detail;
-      throw err;
     }
+    const detail = `Every CORS proxy failed: ${proxyErrors.join("; ")}.`;
+    console.error(detail);
+    const err = new Error("Couldn't reach it.");
+    err.detail = detail;
+    throw err;
   }
 
   /* ═══════════════ SauceNAO ═══════════════ */
@@ -577,7 +563,13 @@
         if (!isQuotaError(e.message)) throw e;
       }
     }
-    throw lastErr;
+    // Both keys hit a quota/rate error — say that plainly instead of
+    // whatever the last transport-level error happened to say (e.g. a
+    // generic "Couldn't reach it." from fetchDirectOrProxied if the
+    // quota signal came back as a bare HTTP 429 rather than a JSON body).
+    const err = new Error("SauceNAO's daily search limit has been reached on both keys.");
+    err.detail = lastErr && lastErr.detail;
+    throw err;
   }
 
   async function searchByUrl(imageUrl) {
