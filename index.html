@@ -354,8 +354,6 @@
     .episodes-header .detail-section-label { margin-bottom: 0; }
     /* A 40px control next to a 13px label makes the whole row 40px tall and
        shoves the season chips down. In a header row it is compact. */
-    .episodes-header .reroll-btn { width: 32px; height: 32px; }
-    .episodes-header .reroll-btn .material-icons { font-size: 18px; }
     /* The chips sit right under their label rather than a line below it. */
     #seasonChips { margin: 0.35rem 0 0.75rem; }
     .grid--episodes { display: grid; grid-template-columns: 1fr; gap: 0.55rem; margin-top: 0.35rem; }
@@ -481,33 +479,6 @@
       letter-spacing: var(--track-body-small);
       line-height: 1.45;
       color: var(--text-muted);
-    }
-    .reroll-btn {
-      position: relative;
-      overflow: hidden;
-      isolation: isolate;
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      border-radius: var(--shape-full);
-      background: var(--md-secondary-container);
-      color: var(--md-on-secondary-container);
-      cursor: pointer;
-      transition: box-shadow var(--t), transform var(--t);
-    }
-    @media (hover: hover) { .reroll-btn:hover { box-shadow: var(--el2); transform: rotate(30deg); } }
-    .reroll-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
-    .reroll-btn .material-icons { font-size: 20px; }
-    .reroll-btn:disabled {
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-      background: color-mix(in srgb, var(--md-on-surface) calc(var(--disabled-container) * 100%), transparent);
-      color: color-mix(in srgb, var(--md-on-surface) calc(var(--disabled-content) * 100%), transparent);
     }
 
     /* ── Settings: source list ── */
@@ -865,7 +836,7 @@
    it did before (no offline shell / install prompt), never broken.
 ═══════════════════════════════════════════════════════ */
 BQChrome.initRipple(".icon-btn, .btn, .chip, .media-card, .ep-card, .source-card, " +
-  ".play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .menu__item");
+  ".play-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .menu__item");
 
 /* ── Swipe-back ───────────────────────────────────────────────────────
    An edge swipe (start within EDGE px of the left edge, drag right past
@@ -1955,8 +1926,8 @@ function renderTV(tv) {
       <div class="detail-extra">
         <div class="episodes-header">
           <div class="detail-section-label">Seasons</div>
-          <button class="reroll-btn" id="rollShowBtn" type="button" aria-label="Surprise me — play a random episode" title="Surprise me">
-            <span class="material-icons" aria-hidden="true">shuffle</span>
+          <button class="btn btn--ghost btn--sm" id="rollShowBtn" type="button" aria-label="Roll — play a random episode">
+            <span class="material-icons" aria-hidden="true">shuffle</span>Roll
           </button>
         </div>
         <div id="seasonChips" class="chip-grid">${chipsHtml}${!seasons.length?`<p class="overview">No season data.</p>`:""}</div>
