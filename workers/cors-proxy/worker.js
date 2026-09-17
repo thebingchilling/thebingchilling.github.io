@@ -68,10 +68,19 @@ function textResponse(body, status, origin) {
 // only blocks the obviously-not-a-public-API cases: loopback, link-local,
 // and private network ranges.
 function isBlockedHost(hostname) {
-  const h = hostname.toLowerCase();
-  if (h === "localhost" || h.endsWith(".local")) return true;
+  // URL.hostname wraps an IPv6 literal in brackets ("[::1]"), so strip
+  // those before matching — the bare "::1" comparison below never fired
+  // against a real parsed URL without this.
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h === "localhost." || h.endsWith(".local") || h.endsWith(".localhost")) return true;
   if (/^127\.|^0\.|^10\.|^169\.254\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
-  if (h === "::1" || h.startsWith("fc") || h.startsWith("fd")) return true;
+  // IPv6 loopback (::1), unique-local (fc00::/7) and link-local (fe80::/10).
+  // These have to be anchored to actual IPv6 literals: matching a bare
+  // "starts with fc/fd" prefix, as this did, blocks ordinary domain names
+  // too — fc2.com is a real image host the reverse-image-search tool wants
+  // to reach, and it was being rejected as a private address.
+  if (h === "::1" || h === "::") return true;
+  if (h.includes(":") && /^(f[cd][0-9a-f]{0,2}|fe[89ab][0-9a-f]?):/.test(h)) return true;
   return false;
 }
 

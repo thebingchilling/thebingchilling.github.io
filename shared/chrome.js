@@ -348,6 +348,14 @@ window.BQChrome = (function () {
     const tabs = Array.from(container.querySelectorAll('[role="tab"]'));
     if (!tabs.length) return { select: () => {} };
 
+    // Re-entrancy guard. The natural way to write a page's onSelect is to
+    // funnel every tab change through one setTab()-style function that
+    // both updates page state and calls select() to sync the strip — which
+    // re-enters here and calls onSelect again, forever. (live.html did
+    // exactly that: every tab tap blew the stack before it ever rendered.)
+    // Callers still always get their onSelect when they call select()
+    // themselves; it's only suppressed while one is already running.
+    let notifying = false;
     function select(tab, moveFocus) {
       tabs.forEach((t) => {
         const active = t === tab;
@@ -356,7 +364,10 @@ window.BQChrome = (function () {
         t.classList.toggle("segmented__item--active", active);
       });
       if (moveFocus) tab.focus();
-      if (onSelect) onSelect(tab);
+      if (onSelect && !notifying) {
+        notifying = true;
+        try { onSelect(tab); } finally { notifying = false; }
+      }
     }
 
     tabs.forEach((tab, i) => {

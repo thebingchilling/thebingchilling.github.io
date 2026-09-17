@@ -1103,7 +1103,9 @@ async function init() {
   $("countRadio").textContent = state.radio.length ? `(${state.radio.length})` : "";
   $("countTv").textContent = state.tv.length ? `(${state.tv.length})` : "";
   renderStatus(); renderGrid();
-  if (!state.error) fetchEpgInBackground(tvTvgUrl);
+  // A playlist that failed says nothing about whether the guide feed is
+  // reachable, and the channels that did load still deserve their EPG.
+  fetchEpgInBackground(tvTvgUrl);
 }
 
 /* ═══════════ Rendering ═══════════ */
@@ -1133,9 +1135,14 @@ function renderStatus() {
     return;
   }
   if (state.error) {
+    const loaded = currentList().length;
     statusEl.className = "search-status search-status--error";
     statusEl.innerHTML = "";
-    statusEl.append(document.createTextNode(state.error + " "));
+    // Say what still works, not just what broke — with a partial failure
+    // there are usually channels on screen right below this line.
+    statusEl.append(document.createTextNode(
+      state.error + (loaded ? ` Showing the ${loaded} channel${loaded === 1 ? "" : "s"} that loaded. ` : " ")
+    ));
     const retry = document.createElement("button");
     retry.className = "retry-link"; retry.type = "button"; retry.textContent = "Retry";
     retry.addEventListener("click", init);
@@ -1175,14 +1182,18 @@ function renderGrid() {
   }
   emptyImportBtn.classList.add("hidden");
 
+  // state.error means *some* playlist failed, not that there is nothing to
+  // show — loadChannelsMerged() deliberately keeps whatever loaded. This
+  // used to blank the grid outright on any error, so one dead URL among
+  // several hid every channel that had loaded fine. The failure is
+  // reported in the status line above instead; the grid renders what it
+  // has, and the empty state only appears when there is genuinely nothing.
   const list = filteredList();
   empty.classList.toggle("hidden", list.length !== 0 || !!state.error);
   if (list.length === 0 && !state.error) {
     emptyTitle.textContent = "No channels found";
     emptySub.textContent = "Try a different search term";
   }
-
-  if (state.error) { grid.innerHTML = ""; return; }
 
   const kind = state.tab;
   const pins = state.pinned[kind];
@@ -1507,7 +1518,10 @@ function updateEpgPanel() {
   const nextRow = $("epgNextRow");
   const guideBtn = $("viewGuideBtn");
 
-  if (!currentPlayerChannel || state.tab !== "tv" || !state.epg.has(currentPlayerChannel.id)) {
+  // Keyed off what is actually playing, not which tab the Browse view
+  // happens to be showing — switching to the Radio tab with a TV channel
+  // open used to blank the guide out from under it.
+  if (!currentPlayerChannel || !playingIsTv || !state.epg.has(currentPlayerChannel.id)) {
     panel.classList.add("hidden");
     return;
   }

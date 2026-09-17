@@ -420,13 +420,18 @@
 
   /* ═══════════════ Search + render results ═══════════════ */
   function resultCardHtml(r) {
+    // Every value here comes straight out of a third-party indexer's JSON
+    // and goes into innerHTML, so all of it gets escaped. The seeder and
+    // leecher counts and the size are usually numbers, but nothing in this
+    // tool guarantees that — formatSize() even passes a non-numeric size
+    // through verbatim — and "usually a number" is not a security boundary.
     const size = formatSize(r.size);
     const stats = [];
-    if (r.seeders !== undefined && r.seeders !== null && r.seeders !== "") stats.push(`<span class="seed"><span class="material-icons" aria-hidden="true">arrow_upward</span>${r.seeders}</span>`);
-    if (r.leechers !== undefined && r.leechers !== null && r.leechers !== "") stats.push(`<span class="leech"><span class="material-icons" aria-hidden="true">arrow_downward</span>${r.leechers}</span>`);
+    if (r.seeders !== undefined && r.seeders !== null && r.seeders !== "") stats.push(`<span class="seed"><span class="material-icons" aria-hidden="true">arrow_upward</span>${escapeHtml(r.seeders)}</span>`);
+    if (r.leechers !== undefined && r.leechers !== null && r.leechers !== "") stats.push(`<span class="leech"><span class="material-icons" aria-hidden="true">arrow_downward</span>${escapeHtml(r.leechers)}</span>`);
 
     const meta = [];
-    if (size) meta.push(`<span><span class="material-icons" aria-hidden="true">save</span>${size}</span>`);
+    if (size) meta.push(`<span><span class="material-icons" aria-hidden="true">save</span>${escapeHtml(size)}</span>`);
     meta.push(`<span class="result-card__stats">${stats.join("")}</span>`);
     if (r.added) meta.push(`<span><span class="material-icons" aria-hidden="true">event</span>${escapeHtml(String(r.added).slice(0, 10))}</span>`);
 
@@ -467,6 +472,11 @@
   let lastQuery = "";
   let hasSearched = false;
   let searching = false;
+  // Set when a search is requested while one is already running. The
+  // request used to just be dropped, which left the results on screen
+  // stale relative to what was in the box — type, wait, and the last thing
+  // you typed was never searched for.
+  let searchQueued = false;
 
   function renderResultsArea() {
     let html = "";
@@ -484,9 +494,11 @@
 
   async function doSearch() {
     const query = queryInput.value.trim();
-    if (!query || searching) return;
+    if (!query) return;
+    if (searching) { searchQueued = true; return; }
 
     searching = true;
+    searchQueued = false;
     resultsArea.innerHTML = `<div class="state-panel"><span class="spinner"></span><p>Searching…</p></div>`;
 
     const errors = [];
@@ -497,6 +509,13 @@
     hasSearched = true;
     searching = false;
     renderResultsArea();
+    // Something was typed while that was in flight. doSearch() re-reads the
+    // input, so this picks up whatever is in the box now, not the query
+    // that was queued — and stops if it is the one just searched for.
+    if (searchQueued) {
+      searchQueued = false;
+      if (queryInput.value.trim() !== query) doSearch();
+    }
   }
 
   /* ═══════════════ Auto-search: typing (debounced) or an Enter press

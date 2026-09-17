@@ -895,10 +895,17 @@
   // BQChrome.initTabs owns aria-selected, the roving tabindex and
   // Left/Right/Home/End; this only has to show the matching panel.
   const panels = { image: $("panelImage"), reddit: $("panelReddit") };
-  BQChrome.initTabs($("modeTabs"), (tab) => {
+  const modeTabs = BQChrome.initTabs($("modeTabs"), (tab) => {
     const mode = tab.dataset.mode;
     Object.keys(panels).forEach((k) => panels[k].classList.toggle("hidden", k !== mode));
   });
+  // Pasting an image while the Reddit tab is showing has to switch tabs
+  // from code — routed through initTabs so aria-selected and the roving
+  // tabindex move with the panel.
+  function selectTab(mode) {
+    const tab = $("modeTabs").querySelector('[data-mode="' + mode + '"]');
+    if (tab) modeTabs.select(tab);
+  }
 
   /* ═══════════════ Image panel: dropzone, file picker, clipboard paste ═══════════════ */
   const dropzone = $("dropzone"), fileInput = $("fileInput");

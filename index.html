@@ -983,8 +983,35 @@ const backFromDetail   = $("backFromDetail");
 const backFromPlayer   = $("backFromPlayer");
 const detailBody       = $("detailBody");
 const playerTitle      = $("playerTitle");
-const playerFrame      = $("playerFrame");
+let   playerFrame      = $("playerFrame");
 const playerWrap       = $("playerWrap");
+
+/* ── Loading an embed replaces this <iframe>, never re-points its src ──
+   Assigning to the src of an iframe that has already navigated is itself a
+   navigation, and it goes into the session history. That put a phantom
+   entry in front of the app's own: pressing Back in the player silently
+   undid the embed's navigation and left the user staring at the same
+   screen, and only a second press actually left the view. On Android,
+   where the system Back gesture is how you navigate a PWA, that reads as
+   the app ignoring you.
+
+   An iframe's *first* navigation — src already set at the moment it is
+   inserted — replaces rather than pushes, so building a fresh element each
+   time costs no history entry at all. It also guarantees the previous
+   embed is really gone (no lingering timers, audio or postMessage
+   listeners) instead of trusting it to tear itself down on navigate. ── */
+const PLAYER_FRAME_ATTRS = Array.from(playerFrame.attributes)
+  .filter((a) => a.name !== "src" && a.name !== "title")
+  .map((a) => [a.name, a.value]);
+function swapPlayerFrame(url, title) {
+  const next = document.createElement("iframe");
+  PLAYER_FRAME_ATTRS.forEach(([name, value]) => next.setAttribute(name, value));
+  next.title = title || "Video player";
+  if (url) next.src = url;
+  playerFrame.replaceWith(next);
+  playerFrame = next;
+  return next;
+}
 const playerOverlay    = $("playerOverlay");
 const playerOverlayText = $("playerOverlayText");
 const playerOverlayIcon = $("playerOverlayIcon");
@@ -1113,13 +1140,20 @@ function setView(name) {
 function cleanPath() {
   return location.protocol === "file:" ? location.pathname : location.pathname.replace(/index\.html$/i, "");
 }
+// Set while handleHashRoute() is replaying a URL that is *already* the
+// current history entry (first load, or a browser back/forward). The entry
+// exists, so pushing another one for the same state leaves the user
+// pressing Back only to land back on the page they're looking at — which
+// is what deep-linking straight to an episode used to do.
+let replayingRoute = false;
 function pushPlayerHash() {
   const p = currentPlayer;
   if (!p.id) return;
   const hash = p.mediaType === "movie"
     ? `#/movie/${p.id}`
     : (p.season && p.episode ? `#/tv/${p.id}/s${p.season}/e${p.episode}` : `#/tv/${p.id}`);
-  history.pushState(null, "", hash);
+  if (replayingRoute) history.replaceState(null, "", hash);
+  else history.pushState(null, "", hash);
 }
 function pushDetailHash(mt, id) { history.pushState(null, "", `#/${mt}/${id}`); }
 
@@ -1134,7 +1168,12 @@ async function handleHashRoute() {
   const [, type, idStr, sStr, eStr] = m;
   const id = Number(idStr);
   if (sStr && eStr && currentDetail.id === id && currentPlayer.id === id) { setView("player"); return; }
-  if (!sStr && currentDetail.id === id) { setView("detail"); return; }
+  // Landing back on a Detail URL means we are leaving the player, whether
+  // that was the in-app Back button or the browser's own back gesture.
+  // Only the in-app buttons used to tear the iframe down, so a system back
+  // swipe left the embed running — audio, ads and all — behind the Detail
+  // view. Same teardown for both paths now.
+  if (!sStr && currentDetail.id === id) { teardownPlayer(); setView("detail"); return; }
   renderDetailSkeleton(type); setView("detail");
   if (detailFetch) detailFetch.abort();
   detailFetch = new AbortController();
@@ -1149,7 +1188,10 @@ async function handleHashRoute() {
         // with the actually deep-linked season so the grid (and its chip)
         // reflect what's about to play, not season 1.
         await switchToSeason(id, season).catch(() => {});
-        loadPlayer({ mediaType: "tv", id, season, episode, label: currentDetail.title });
+        // This URL is already the current history entry — see replayingRoute.
+        replayingRoute = true;
+        try { loadPlayer({ mediaType: "tv", id, season, episode, label: currentDetail.title }); }
+        finally { replayingRoute = false; }
       }
     }
   } catch(err) {
@@ -1229,7 +1271,14 @@ topSourceBtn.addEventListener("click", () => {
 document.addEventListener("click", e => {
   if (!sourceMenu.classList.contains("hidden") && !e.target.closest(".source-menu-wrap")) closeSourceMenu();
 });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !sourceMenu.classList.contains("hidden")) closeSourceMenu(); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || sourceMenu.classList.contains("hidden")) return;
+  // Escape closes the menu and nothing else. Without this the view-level
+  // Escape handler further down ran on the same keypress, so dismissing
+  // the menu also navigated out of the Player.
+  e.stopImmediatePropagation();
+  closeSourceMenu();
+});
 
 function loadPlayer({ mediaType, id, season, episode, label, rolledEpData = null }) {
   if (viewDetail.classList.contains("view--active")) detailScrollTop = viewDetail.scrollTop;
@@ -1237,13 +1286,17 @@ function loadPlayer({ mediaType, id, season, episode, label, rolledEpData = null
   const url = buildPlayerUrl({ mediaType, tmdbId: id, season, episode });
   updateSourceMenuButton();
 
-  if (playerFrame.src !== url) {
+  // getAttribute, not .src: the property resolves "" against the document
+  // URL, so an empty frame reads back as the page's own address and never
+  // compares equal to anything meaningful.
+  if (playerFrame.getAttribute("src") !== url) {
     setPlayerOverlayLoading("Loading player…");
-    playerFrame.src = url || "";
-    playerFrame.title = `Video player — ${label || ""}`;
+    const frame = swapPlayerFrame(url, `Video player — ${label || ""}`);
     if (url) {
-      playerFrame.addEventListener("load", setPlayerOverlayReady, { once: true });
-      setTimeout(() => { if (playerFrame.src === url) setPlayerOverlayReady(); }, 8000);
+      frame.addEventListener("load", setPlayerOverlayReady, { once: true });
+      // Give up waiting after 8s, but only if this is still the frame on
+      // screen — a newer load has its own timer and its own overlay.
+      setTimeout(() => { if (playerFrame === frame) setPlayerOverlayReady(); }, 8000);
     }
   }
   if (!url) setPlayerOverlayLoading(lastPlayerUrlError || "Couldn't load a player for this title.");
@@ -1287,7 +1340,7 @@ function teardownPlayer() {
     const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
     exit?.call(document)?.catch?.(() => {});
   }
-  playerFrame.src = ""; playerFrame.title = "Video player";
+  swapPlayerFrame("", "Video player");
   setPlayerOverlayLoading("Loading player…");
   epCard.classList.add("hidden");
 }
@@ -1297,7 +1350,7 @@ function teardownPlayer() {
 // But pagehide also fires when the OS backgrounds/suspends the page (e.g.
 // a mobile app-switcher swipe that doesn't fully kill the process), so
 // this is a real extra guarantee there, not just a formality.
-window.addEventListener("pagehide", () => { playerFrame.src = ""; });
+window.addEventListener("pagehide", () => { swapPlayerFrame("", "Video player"); });
 function goBackFromPlayer() {
   // Stop the embed the instant we leave the player, whether we're heading
   // back to the show's Detail view or all the way out to Search — playback
@@ -1384,7 +1437,10 @@ function excludeCurrent(pool) {
 }
 
 async function doRoll(tvId, seasonNums, label) {
-  if (!seasonNums.length) { setStatus("No seasons to roll from.", true); return; }
+  // Snackbar, not setStatus(): the status line lives in the Search view,
+  // and Roll is reachable from Detail and from the Player, where that line
+  // is not on screen at all — the message simply never appeared.
+  if (!seasonNums.length) { BQChrome.snackbar("No seasons to roll from."); return; }
   const shuffled = [...seasonNums].sort(() => Math.random() - 0.5);
   for (const sn of shuffled) {
     let eps = []; try { eps = await fetchSeasonEps(tvId, sn); } catch { continue; }
@@ -1396,7 +1452,7 @@ async function doRoll(tvId, seasonNums, label) {
     loadPlayer({ mediaType:"tv", id:tvId, season:sn, episode:ep.episode_number, label });
     return;
   }
-  setStatus("No aired episodes to roll.", true);
+  BQChrome.snackbar("No aired episodes to roll.");
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1678,6 +1734,10 @@ async function doSearch(query) {
     setStatus(data.results?.length ? "" : "No results."); searchInput.focus({preventScroll:true});
   } catch(err) {
     searchFetch=null; if (err.name==="AbortError"||seq!==searchSeq) return;
+    // renderSearchSkeleton() filled the grid with shimmering placeholders
+    // when the search started; on failure nothing else clears them, so they
+    // would shimmer forever underneath the error message.
+    resultsGrid.innerHTML = "";
     searchStatus.innerHTML = "";
     searchStatus.className = "search-status search-status--error";
     searchStatus.removeAttribute("aria-hidden");
@@ -1857,7 +1917,16 @@ settingsSheet.addEventListener("click", async e => {
       });
       if (!ok) return;
     }
-    SOURCES.splice(idx,1); if (activeSourceIdx>=SOURCES.length) setActiveSource(Math.max(0,SOURCES.length-1)); sourcesSave(SOURCES); renderSourceList(); if (SOURCES.length) focusSourceControl(Math.min(idx, SOURCES.length-1), "delete"); else addSourceBtn.focus(); }
+    // Removing an entry shifts everything after it down one, so the active
+    // index has to move with it. Only clamping it to the new length (what
+    // this did before) silently made a *different* source active whenever
+    // the deleted one sat in front of it.
+    const wasActive = activeSourceIdx;
+    SOURCES.splice(idx,1);
+    if (wasActive === idx)      setActiveSource(Math.max(0, Math.min(idx, SOURCES.length - 1)));
+    else if (wasActive > idx)   setActiveSource(wasActive - 1);
+    sourcesSave(SOURCES); renderSourceList(); updateSourceMenuButton();
+    if (SOURCES.length) focusSourceControl(Math.min(idx, SOURCES.length-1), "delete"); else addSourceBtn.focus(); }
 });
 
 addSourceBtn.addEventListener("click", () => { editingSourceIdx=-1; sfName.value=""; sfMovieUrl.value=""; sfTvUrl.value=""; sourceFormTitle.textContent="Add source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); });
@@ -1868,7 +1937,12 @@ sfSave.addEventListener("click", () => {
   const entry = { name, movie_url, tv_url: tv_url||null };
   if (editingSourceIdx>=0) SOURCES[editingSourceIdx]=entry;
   else { SOURCES.push(entry); setActiveSource(SOURCES.length-1); }
-  sourcesSave(SOURCES); renderSourceList(); sourceForm.classList.add("hidden"); addSourceBtn.classList.remove("hidden");
+  // The top-bar switcher only appears once there are two or more sources,
+  // so it has to be re-evaluated whenever that count changes — otherwise
+  // adding a second source leaves it hidden until something else happens
+  // to call this.
+  sourcesSave(SOURCES); renderSourceList(); updateSourceMenuButton();
+  sourceForm.classList.add("hidden"); addSourceBtn.classList.remove("hidden");
 });
 
 /* ── Config import/export ── */
@@ -1888,6 +1962,10 @@ configImportBtn.addEventListener("click", () => {
   sourcesSave(SOURCES);
   setActiveSource(0);
   renderSourceList();
+  // An import swaps out every source, including whichever one was active,
+  // so the switcher and anything already playing both have to follow it.
+  updateSourceMenuButton();
+  reloadCurrentPlayerIfActive();
   configTextarea.value = "";
   setConfigFeedback(`Imported ${sources.length} source${sources.length > 1 ? "s" : ""}.`, true);
 });

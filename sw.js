@@ -5,7 +5,7 @@
 // vendored fonts under /shared/fonts/). TMDB requests, video-source
 // iframes, and streaming payloads are never intercepted — those must
 // always hit the network live.
-const CACHE_VERSION = "bq-shell-v12";
+const CACHE_VERSION = "bq-shell-v13";
 const SHELL_URLS = [
   "/", "/index.html", "/live", "/live.html", "/tools/", "/tools/index.html",
   "/tools/authenticator/", "/tools/currency/", "/tools/pdf/",
@@ -38,29 +38,55 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // never touch cross-origin (TMDB, embeds, fonts, streams)
 
+  // Only ever cache a response that actually succeeded. A 404 or a 5xx
+  // from a bad deploy is still a Response, and caching it pins the broken
+  // version in place until the next CACHE_VERSION bump. Opaque responses
+  // (status 0) can't be inspected, so they're not cached either.
+  const cacheable = (res) => res && res.ok && res.type !== "opaque";
+  const putInCache = (request, res) => {
+    if (!cacheable(res)) return;
+    const copy = res.clone();
+    caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy)).catch(() => {});
+  };
+
   // Navigations: network-first so content stays fresh, falling back to the
   // cached shell when offline instead of a browser error page.
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy)).catch(() => {});
-          return res;
-        })
+        .then((res) => { putInCache(req, res); return res; })
         .catch(() => caches.match(req).then((cached) => cached || caches.match("/index.html")))
     );
     return;
   }
 
-  // Static shell assets (icons, manifest, shared chrome CSS/JS): cache-first.
+  // Static shell assets (icons, manifest, shared chrome CSS/JS):
+  // stale-while-revalidate, NOT plain cache-first.
+  //
+  // Cache-first here meant a shared asset, once cached, was served from
+  // that cache forever — the only way to ship a change to a returning
+  // visitor was to remember to bump CACHE_VERSION in this file in the same
+  // commit. That is exactly what stopped happening: seven consecutive
+  // commits reworked /shared/*.css while CACHE_VERSION sat at v12, so
+  // every returning visitor kept seeing the pre-redesign stylesheet with
+  // no way to ever get the new one.
+  //
+  // Serving the cached copy immediately keeps the instant, offline-capable
+  // load that made cache-first attractive; revalidating in the background
+  // means the next load picks the change up on its own. Correctness no
+  // longer depends on remembering to bump a constant by hand.
   if (url.pathname.startsWith("/icons/") || url.pathname.startsWith("/shared/") || url.pathname === "/manifest.webmanifest") {
     event.respondWith(
-      caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy)).catch(() => {});
-        return res;
-      }))
+      caches.match(req).then((cached) => {
+        const network = fetch(req).then((res) => { putInCache(req, res); return res; });
+        // With a cached copy in hand a failed revalidation is a non-event
+        // (we're offline, and the cached asset is what we're serving
+        // anyway) — swallow it so it doesn't surface as an unhandled
+        // rejection. With no cached copy, the network result is all there
+        // is, so its failure has to propagate.
+        if (cached) { network.catch(() => {}); return cached; }
+        return network;
+      })
     );
   }
 });

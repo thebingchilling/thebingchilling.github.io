@@ -450,11 +450,18 @@
      BQChrome.initTabs owns aria-selected, the roving tabindex and
      Left/Right/Home/End; this only has to swap the panel. */
   const panels = { qr: $("panelQr"), uri: $("panelUri"), manual: $("panelManual") };
-  BQChrome.initTabs($("addTabs"), (tab) => {
+  const addTabs = BQChrome.initTabs($("addTabs"), (tab) => {
     const name = tab.dataset.panel;
     Object.keys(panels).forEach((k) => panels[k].classList.toggle("add-panel--active", k === name));
     hideAddError();
   });
+  // Switching tabs from code (a scanned QR jumping to the prefilled manual
+  // form, adding an account jumping back to the start) has to go through
+  // initTabs so aria-selected and the roving tabindex move with the panel.
+  function selectTab(name) {
+    const tab = $("addTabs").querySelector('[data-panel="' + name + '"]');
+    if (tab) addTabs.select(tab);
+  }
 
   const addError = $("addError"), addErrorBody = $("addErrorBody");
   const addStatus = $("addStatus");
