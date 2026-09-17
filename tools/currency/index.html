@@ -479,15 +479,32 @@
      open.er-api.com is tried first (free, keyless, ~160 currencies);
      frankfurter.app (ECB-based, ~30 major currencies) is the fallback.
      ═══════════════════════════════════════════════════════════════════ */
+  /* api.frankfurter.app is the legacy host: it now redirects to the
+     canonical api.frankfurter.dev/v1. A redirect is invisible to curl but
+     not to a browser — the redirected request has to satisfy CORS all over
+     again — which is why the sparkline could fail while the rest of the
+     tool, which never followed that redirect, carried on working.
+     Canonical host first, legacy kept only as a fallback. */
+  const FRANKFURTER_HOSTS = ["https://api.frankfurter.dev/v1", "https://api.frankfurter.app"];
+
+  async function frankfurter(path, timeout) {
+    let lastErr;
+    for (const host of FRANKFURTER_HOSTS) {
+      try { return await fetchJson(host + path, timeout || 8000); }
+      catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error("Frankfurter unreachable");
+  }
+
   async function fetchRatesUSD() {
     try {
       const d = await fetchJson("https://open.er-api.com/v6/latest/USD", 8000);
       if (!d || d.result !== "success" || !d.rates) throw new Error("Lookup failed");
       return { rates: Object.assign({ USD: 1 }, d.rates), date: d.time_last_update_utc || null, source: "open.er-api.com" };
     } catch (e1) {
-      const d = await fetchJson("https://api.frankfurter.app/latest?from=USD", 8000);
+      const d = await frankfurter("/latest?from=USD");
       if (!d || !d.rates) throw new Error("Lookup failed");
-      return { rates: Object.assign({ USD: 1 }, d.rates), date: d.date || null, source: "frankfurter.app" };
+      return { rates: Object.assign({ USD: 1 }, d.rates), date: d.date || null, source: "frankfurter.dev" };
     }
   }
 
@@ -773,8 +790,7 @@
     const key = from + ">" + to;
     if (sparkCache.has(key)) return sparkCache.get(key);
     const since = new Date(Date.now() - SPARK_DAYS * 86400000);
-    const url = `https://api.frankfurter.app/${ymd(since)}..?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-    const d = await fetchJson(url, 8000);
+    const d = await frankfurter(`/${ymd(since)}..?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
     if (!d || !d.rates) throw new Error("No series");
     const points = Object.keys(d.rates).sort()
       .map((date) => ({ date, rate: Number(d.rates[date][to]) }))
@@ -833,7 +849,11 @@
       renderSpark(points, local, main);
     } catch (e) {
       if (token !== sparkToken) return;
-      host.innerHTML = ""; // outside the ECB set, or offline — show nothing
+      // Absent rather than apologetic on screen — a missing sparkline costs
+      // nothing and the conversion above is unaffected — but not silent in
+      // the console, or "the trend isn't working" is unanswerable.
+      console.warn(`Rate history unavailable for ${local}->${main}:`, e && e.message);
+      host.innerHTML = "";
     }
   }
 

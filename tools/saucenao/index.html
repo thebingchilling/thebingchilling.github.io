@@ -879,16 +879,30 @@
     runSearch("url", url);
   }
 
-  /* Source links are plain target="_blank" anchors, but installed/standalone
-     PWA contexts (notably iOS "Add to Home Screen") routinely swallow that
-     navigation since there's no browser chrome to open a new tab in.
-     Intercepting the click and opening the window explicitly works there
-     too, so results stay clickable everywhere this page runs. */
+  /* Source links are plain target="_blank" anchors, which is all a normal
+     browser tab needs. An installed PWA is the exception — notably iOS
+     "Add to Home Screen", which swallows target="_blank" because there is
+     no browser chrome to open a tab in — so there the click is intercepted
+     and the window opened by hand.
+
+     The interception is now limited to that case, because doing it
+     everywhere was breaking the links it was meant to fix: passing a
+     non-empty feature string to window.open ("noopener,noreferrer") asks
+     for a *popup* rather than a tab, and popup blockers treat the two very
+     differently. With preventDefault() already called, a blocked popup
+     meant clicking a source did nothing at all. Opening with no feature
+     string keeps it a tab, and the opener is severed afterwards, which is
+     what rel="noopener" on the anchor was doing anyway. */
+  const inStandalonePwa = () =>
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+    window.navigator.standalone === true;
+
   $("resultsArea").addEventListener("click", (e) => {
-    const link = e.target.closest(".sauce-card__links a");
-    if (!link) return;
+    const link = e.target.closest('a[target="_blank"]');
+    if (!link || !inStandalonePwa()) return; // in a browser the anchor already works
     e.preventDefault();
-    window.open(link.href, "_blank", "noopener,noreferrer");
+    const w = window.open(link.href, "_blank");
+    if (w) w.opener = null;
   });
 
   /* ═══════════════ Mode tabs ═══════════════ */
