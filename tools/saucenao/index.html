@@ -220,10 +220,12 @@
       </label>
       <form class="search-card" id="urlForm">
         <div class="search-row">
-          <div class="field-outlined"><input type="text" id="urlInput" placeholder="Paste an image URL…" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Image URL" /></div>
-          <button type="button" class="icon-btn" id="urlPasteBtn" aria-label="Paste an image or a URL from clipboard">
-            <span class="material-icons" aria-hidden="true">content_paste</span>
-          </button>
+          <div class="field-outlined">
+            <input type="text" id="urlInput" placeholder="Paste an image URL…" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Image URL" />
+            <button type="button" class="icon-btn" id="urlPasteBtn" aria-label="Paste an image or a URL from clipboard">
+              <span class="material-icons" aria-hidden="true">content_paste</span>
+            </button>
+          </div>
         </div>
         <p class="search-card__hint">Paste a copied image or an image link, or tap the button to paste from your clipboard.</p>
       </form>
@@ -232,10 +234,12 @@
     <div class="panel hidden" id="panelReddit" role="tabpanel" aria-labelledby="tabReddit">
       <form class="search-card" id="redditForm">
         <div class="search-row">
-          <div class="field-outlined"><input type="text" id="redditInput" placeholder="https://www.reddit.com/r/.../comments/..." autocomplete="off" spellcheck="false" inputmode="url" aria-label="Reddit post URL" /></div>
-          <button type="button" class="icon-btn" id="redditPasteBtn" aria-label="Paste from clipboard">
-            <span class="material-icons" aria-hidden="true">content_paste</span>
-          </button>
+          <div class="field-outlined">
+            <input type="text" id="redditInput" placeholder="https://www.reddit.com/r/.../comments/..." autocomplete="off" spellcheck="false" inputmode="url" aria-label="Reddit post URL" />
+            <button type="button" class="icon-btn" id="redditPasteBtn" aria-label="Paste from clipboard">
+              <span class="material-icons" aria-hidden="true">content_paste</span>
+            </button>
+          </div>
         </div>
         <p class="search-card__hint">Loads every image in the post, including galleries.</p>
         <p class="reddit-post-title hidden" id="redditPostTitle"></p>

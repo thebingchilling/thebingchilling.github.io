@@ -490,8 +490,8 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .select-row + .select-row,
 .password-row + .password-row { margin-top: 0.6rem; }
 .field-outlined > input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
-/* The search rows read as one pill rather than a boxy field. */
-.field-outlined { border-radius: var(--shape-full); padding-left: 1rem; }
+/* A leading icon inside the field (search glyph), not floating outside. */
+.input-row > .material-icons,
 .field-outlined > .material-icons { flex-shrink: 0; font-size: 20px; color: var(--text-muted); }
 
 /* Stacked halves of one field (a select over an amount, say) read as a
@@ -633,10 +633,11 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .chip:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
 .chip--selected,
 .chip[aria-pressed="true"] {
-  background: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
-  border-color: transparent;
-  box-shadow: var(--el1);
+  background: var(--surface-raised);
+  color: var(--primary-dark);
+  font-weight: 600;
+  border-color: var(--md-primary);
+  box-shadow: var(--el2);
 }
 .chip .material-icons { font-size: 18px; }
 
@@ -802,12 +803,13 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   padding: 0.75rem 0.85rem;
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--shape-m);
-  background: var(--surface);
+  background: var(--surface-raised);
+  box-shadow: var(--el1);
   cursor: pointer;
-  transition: border-color var(--t), background var(--t);
+  transition: border-color var(--t), background var(--t), box-shadow var(--t);
 }
 .option-card:last-of-type { margin-bottom: 0; }
-@media (hover: hover) { .option-card:hover { background: var(--surface2); } }
+@media (hover: hover) { .option-card:hover { box-shadow: var(--el2); } }
 .option-card input[type="checkbox"],
 .option-card input[type="radio"] {
   position: absolute;
@@ -841,7 +843,11 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   transform: scale(0.6);
   transition: opacity var(--t), transform var(--t);
 }
-.option-card:has(input:checked) { border-color: var(--md-primary); background: var(--md-primary-container); }
+.option-card:has(input:checked) {
+  border-color: var(--md-primary);
+  background: var(--surface-raised);
+  box-shadow: var(--el2);
+}
 .option-card:has(input:checked) .option-card__box { background: var(--md-primary); border-color: var(--md-primary); }
 .option-card:has(input:checked) .option-card__box .material-icons { opacity: 1; transform: scale(1); }
 .option-card:has(input:focus-visible) { outline: 2px solid var(--md-primary); outline-offset: 2px; }
@@ -859,8 +865,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   line-height: 1.45;
   color: var(--text-muted);
 }
-.option-card:has(input:checked) .option-card__title,
-.option-card:has(input:checked) p { color: var(--md-on-primary-container); }
+.option-card:has(input:checked) .option-card__title { color: var(--primary-dark); font-weight: 600; }
 
 .source-error {
   margin-bottom: 0.5rem;
@@ -957,6 +962,14 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .search-scope:empty,
 .quota-note:empty,
 .caveat-text:empty { display: none; }
+.status-text--plain,
+.search-scope,
+.quota-note,
+.muted-hint {
+  padding: 0;
+  background: none;
+  color: var(--text-faint);
+}
 .status-text--error,
 .search-status--error { background: var(--md-error-container); color: var(--md-on-error-container); }
 .status-text--ok { background: var(--md-success-container); color: var(--md-on-success-container); }
@@ -1402,16 +1415,20 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .search-bar {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  min-height: 56px;
-  padding: 0 1rem;
-  border: 1px solid transparent;
-  border-radius: var(--shape-xl);
-  background: var(--md-surface-container-high);
-  transition: background var(--t), box-shadow var(--t);
+  gap: 0.6rem;
+  min-height: 52px;
+  /* Same box as every other field — it was a 28px pill while the tool
+     pages' search rows were 12px boxes. */
+  padding: 0 0.4rem 0 0.9rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--shape-m);
+  background: var(--surface-raised);
+  box-shadow: var(--el1);
+  transition: border-color var(--t), box-shadow var(--t);
 }
-.search-bar:focus-within { background: var(--md-surface-container-highest); box-shadow: var(--el1); }
-.search-bar__icon { flex-shrink: 0; font-size: 22px; color: var(--md-on-surface-variant); }
+@media (hover: hover) { .search-bar:hover { box-shadow: var(--el2); } }
+.search-bar:focus-within { border-color: var(--md-primary); box-shadow: var(--el2), inset 0 0 0 1px var(--md-primary); }
+.search-bar__icon { flex-shrink: 0; font-size: 20px; color: var(--text-muted); }
 .search-bar__input {
   flex: 1;
   min-width: 0;
@@ -1424,6 +1441,12 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 }
 .search-bar__input::placeholder { color: var(--text-faint); }
 .search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+/* The status pill between the bar and the results collapses when empty,
+   so the bar itself owns the gap. */
+.search-bar { margin-bottom: 0.85rem; }
+/* When the pill *is* showing it supplies its own spacing, so the bar's
+   margin would double up. */
+.search-bar:has(+ .search-status:not(:empty)) { margin-bottom: 0.1rem; }
 
 
 /* A link-styled button inside a status line ("Retry"). */
@@ -1476,7 +1499,6 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   overflow: hidden;
   /* Letterbox bars belong to the video, not the theme — always black. */
   background: #000;
-  box-shadow: var(--el2);
 }
 .player-wrap iframe,
 .player-wrap video { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
