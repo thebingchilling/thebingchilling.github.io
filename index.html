@@ -144,53 +144,38 @@
       letter-spacing: var(--track-body-small);
       color: var(--text-faint);
     }
-    /* ── Scene-release indicator ──
-       Present only when a scene release actually exists; there is no
-       "not released" state to render, so absence is the other half of the
-       signal. Top-left, opposite the external-search button. ── */
-    .media-card__scene {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      z-index: 2;
-      padding: 0.1rem 0.4rem;
+    /* ── Scene releases list ──
+       One card per release: the name, then the facts about it. The name
+       is monospaced because it's a dot-separated filename whose parts
+       (resolution, source, group) are what you actually read it for —
+       not because it's code. Capped in height so the dialog stays a
+       dialog on a phone. */
+    .scene-list { display: flex; flex-direction: column; gap: 0.45rem; max-height: min(55vh, 420px); overflow: auto; -webkit-overflow-scrolling: touch; }
+    .scene-row { padding: 0.55rem 0.7rem; border-radius: var(--shape-s); background: var(--md-surface-container-high); }
+    .scene-row__name {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.76rem;
+      line-height: 1.5;
+      color: var(--text);
+      word-break: break-all;
+    }
+    .scene-row__meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+      margin-top: 0.35rem;
+      font: var(--type-label-small);
+      letter-spacing: var(--track-label-small);
+      color: var(--text-faint);
+    }
+    .scene-row__tag {
+      padding: 0.05rem 0.4rem;
       border-radius: var(--shape-xs);
       background: var(--md-tertiary-container);
       color: var(--md-on-tertiary-container);
-      font: var(--type-label-small);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      box-shadow: var(--el1);
-      pointer-events: none;
+      font-weight: 600;
     }
-
-    /* "Open on the source site" — sits over the poster art, so it uses the
-       inverse surface rather than a page surface token. */
-    .media-card__ext-btn {
-      position: absolute;
-      bottom: 6px;
-      right: 6px;
-      z-index: 2;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      border-radius: var(--shape-full);
-      background: var(--md-inverse-surface);
-      color: var(--md-inverse-on-surface);
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity var(--t), transform var(--t);
-    }
-    .media-card__ext-btn .material-icons { font-size: 16px; }
-    .media-card:hover .media-card__ext-btn,
-    .media-card:focus-within .media-card__ext-btn { opacity: 1; }
-    .media-card__ext-btn:hover { transform: scale(1.12); }
-    .media-card__ext-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; opacity: 1; }
-    /* Touch has no hover, so showing it on hover would hide it forever. */
-    @media (hover: none) { .media-card__ext-btn { opacity: 1; } }
 
     /* ── Detail ── */
     .detail-body { overflow: hidden; border: none; border-radius: var(--shape-m); background: var(--surface); box-shadow: var(--el1); }
@@ -757,6 +742,24 @@
   </div>
 </div>
 
+<!-- Raw scene-release output, opened from a movie's detail view -->
+<div id="sceneDialog" class="scrim scrim--center hidden" role="dialog" aria-modal="true" aria-labelledby="sceneDialogTitle" aria-hidden="true">
+  <div class="dialog">
+    <div class="dialog__header">
+      <div>
+        <h3 id="sceneDialogTitle" class="dialog__title">Scene releases</h3>
+        <p id="sceneDialogSub" class="dialog__sub"></p>
+      </div>
+      <button id="sceneDialogClose" class="icon-btn" type="button" aria-label="Close">
+        <span class="material-icons" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <div class="dialog__body">
+      <div id="sceneDialogBody" class="scene-list"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Settings sheet -->
 <div id="settingsSheet" class="scrim scrim--bottom hidden" role="dialog" aria-modal="true" aria-label="Settings" aria-hidden="true">
   <div class="sheet">
@@ -1031,7 +1034,6 @@ function historyHash(h) {
 const TMDB_BASE  = "https://api.themoviedb.org/3";
 const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0OTNiNWI3ODhlM2U0NDM4Y2Y2ZmY0ODI3NTJjN2Q2MSIsIm5iZiI6MTcxOTMxMTk4Ny4zMDksInN1YiI6IjY2N2E5ZTczOTdkMDQ3YWNlNTNiNWU2MiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.5tY9cdg7BSCvRV7A9GaLq-AYKnok0G116wf7ISdfKyQ";
 const TMDB_HDR   = { Authorization: `Bearer ${TMDB_TOKEN}`, "Content-Type": "application/json;charset=utf-8" };
-const EXT_SEARCH = "https://predb.me/?search=";
 
 const CACHE_MAX = 100;
 const cache     = new Map();
@@ -1055,144 +1057,141 @@ const tmdbSeason = (id, n, s)=> tmdbFetch(`/tv/${id}/season/${n}`, { language: "
 const tmdbTrending = (s)      => tmdbFetch("/trending/all/week",    { language: "en-US" }, s);
 
 /* ═══════════════════════════════════════════════════════
-   SCENE RELEASE INDICATOR
+   SCENE RELEASES
    ─────────────────────────────────────────────────────
-   A badge on a movie card when the scene has actually released that film,
-   and nothing at all when it hasn't — absence is the other half of the
-   signal, so there is deliberately no "not released" state to render. That
-   also makes every failure mode correct-looking: a blocked request, a dead
-   API or a rate limit all degrade to exactly what the cards looked like
-   before this existed.
+   On demand, from a movie's detail view: what the scene has actually
+   released for this film, listed. Nothing is inferred or summarised into
+   a verdict — an earlier attempt at a released/not-released badge turned
+   on classifying release names, and that classification is exactly the
+   part that can't be trusted (a cinema CAM and a finished BluRay are both
+   "a release" but mean opposite things to someone deciding what to
+   watch). Listing them lets you make that call from the names, which is
+   what the names are for.
 
-   Only movies are checked. TV is out both because it was asked for that
-   way and because per-episode scene naming doesn't answer "has this been
-   released" at the granularity of a show card.
-
-   Data comes from srrdb, which indexes scene releases and needs no key:
+   Source: srrdb's keyless search API.
      GET https://api.srrdb.com/v1/search/<term>/<term>/...
-     -> { results: [ { release, date, hasNFO, hasSRS } ], resultsCount }
+     -> { results: [ { release, date, size, hasNFO, hasSRS, imdbId } ] }
 ═══════════════════════════════════════════════════════ */
 const SRRDB_SEARCH = "https://api.srrdb.com/v1/search/";
-// Same two proxies the other tools use, in case srrdb sends no CORS header.
+// Direct works today; these are the same proxies the other tools use, in
+// case srrdb ever stops sending the CORS header.
 const SCENE_PROXIES = [
   "https://thebingchilling-github-io.vercel.app/api/proxy?url={url}",
   "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}",
 ];
 
-/* Cached hard, for two reasons: a grid renders a dozen cards at once, and
-   this is somebody else's free API. A positive is effectively permanent —
-   a film does not become un-released — while a negative is worth retrying,
-   since an unreleased film is exactly the one that will flip later. */
-const SCENE_CACHE_KEY = "bq_scene_cache";
-const SCENE_TTL_YES = 30 * 24 * 60 * 60 * 1000;
-const SCENE_TTL_NO  = 12 * 60 * 60 * 1000;
-let sceneCache = {};
-function sceneCacheLoad() {
-  try { sceneCache = JSON.parse(localStorage.getItem(SCENE_CACHE_KEY)) || {}; } catch (e) { sceneCache = {}; }
-}
-function sceneCacheSave() {
-  try { localStorage.setItem(SCENE_CACHE_KEY, JSON.stringify(sceneCache)); } catch (e) {}
-}
-function sceneCacheGet(id) {
-  const hit = sceneCache[id];
-  if (!hit) return undefined;
-  if (Date.now() - hit.ts > (hit.scene ? SCENE_TTL_YES : SCENE_TTL_NO)) { delete sceneCache[id]; return undefined; }
-  return hit.scene;
-}
-function sceneCacheSet(id, scene) { sceneCache[id] = { scene, ts: Date.now() }; sceneCacheSave(); }
-
-/* srrdb takes slash-separated terms and matches them against dot-separated
-   release names, so the title is reduced to bare words. The year is
-   required rather than optional: without it "Up" or "It" match half the
-   database, and with it a hit is meaningful. */
-function sceneQueryPath(title, year) {
+/* srrdb matches slash-separated terms against dot-separated release
+   names, so the title is reduced to bare words. The year is included when
+   known: without it a title like "Up" or "It" matches half the database. */
+function srrdbQueryUrl(title, year) {
   const words = String(title || "").toLowerCase()
     .replace(/[^a-z0-9\s]+/g, " ")
     .split(/\s+/).filter(Boolean).slice(0, 8);
-  if (!words.length || !/^\d{4}$/.test(String(year || ""))) return null;
-  return words.concat(String(year)).map(encodeURIComponent).join("/");
+  if (!words.length) return null;
+  const terms = /^\d{4}$/.test(String(year || "")) ? words.concat(String(year)) : words;
+  return SRRDB_SEARCH + terms.map(encodeURIComponent).join("/");
 }
 
-/* srrdb indexes every scene category, so a bare title+year hit can just as
-   easily be the soundtrack, the game tie-in or an ebook. Requiring a
-   video-ish tag in the release name is what makes this mean "the film was
-   released" rather than "something with this name exists". */
-const SCENE_VIDEO_TAG = /(?:^|[.\-_ ])(?:1080p|2160p|720p|480p|bluray|blu-ray|bdrip|brrip|bdremux|remux|web-?dl|web-?rip|hdtv|pdtv|dvdrip|dvdscr|dvd-?r|hdrip|cam|telesync|ts|tc|x264|x265|h ?264|h ?265|hevc|avc|xvid|divx|uhd)(?:$|[.\-_ ])/i;
-
-async function sceneFetchJson(url) {
-  // Direct first — if srrdb allows CORS this costs nothing and keeps the
-  // shared proxies free for the tools that genuinely cannot work without.
+async function srrdbSearch(title, year) {
+  const url = srrdbQueryUrl(title, year);
+  if (!url) throw new Error("Nothing to search for.");
+  let lastErr = null;
   try {
     const res = await fetch(url, { mode: "cors" });
     if (res.ok) return await res.json();
-  } catch (e) { /* CORS-blocked or unreachable — fall through to the proxies */ }
+    lastErr = new Error("srrdb returned HTTP " + res.status);
+  } catch (e) { lastErr = e; }
   for (const proxy of SCENE_PROXIES) {
     try {
       const res = await fetch(proxy.replace("{url}", encodeURIComponent(url)));
       if (res.ok) return await res.json();
-    } catch (e) { /* try the next one */ }
+      lastErr = new Error("Proxy returned HTTP " + res.status);
+    } catch (e) { lastErr = e; }
   }
-  return null;
+  console.warn("srrdb lookup failed for", url, lastErr);
+  throw new Error("Couldn't reach srrdb.");
 }
 
-async function lookupScene(title, year) {
-  const path = sceneQueryPath(title, year);
-  if (!path) return false;
-  const data = await sceneFetchJson(SRRDB_SEARCH + path);
-  if (!data || !Array.isArray(data.results)) return null; // unknown, not "no"
-  return data.results.some(r => r && SCENE_VIDEO_TAG.test(String(r.release || "")));
+function fmtSceneSize(bytes) {
+  const n = Number(bytes);
+  if (!isFinite(n) || n <= 0) return "";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0, v = n;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return `${v.toFixed(v < 10 && i > 1 ? 1 : 0)} ${units[i]}`;
 }
 
-/* A small queue rather than firing one request per card the moment a grid
-   renders: twenty parallel requests to a free API is how you get rate
-   limited, and the answers are not urgent. */
-const SCENE_PARALLEL = 3;
-const sceneQueue = [];
-let sceneActive = 0;
-function scenePump() {
-  while (sceneActive < SCENE_PARALLEL && sceneQueue.length) {
-    const job = sceneQueue.shift();
-    sceneActive++;
-    job().catch(() => {}).then(() => { sceneActive--; scenePump(); });
-  }
+// srrdb sends "2024-05-07 07:27:11". The space isn't valid ISO 8601, and
+// Safari refuses it outright, so it's normalised before parsing.
+function fmtSceneDate(raw) {
+  if (!raw) return "";
+  const d = new Date(String(raw).trim().replace(" ", "T"));
+  if (isNaN(d.getTime())) return String(raw).slice(0, 10);
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
-function showSceneBadge(card) {
-  const wrap = card.querySelector(".media-card__img-wrap");
-  if (!wrap || wrap.querySelector(".media-card__scene")) return;
-  const badge = document.createElement("span");
-  badge.className = "media-card__scene";
-  badge.textContent = "SCENE";
-  badge.title = "A scene release exists for this title";
-  wrap.appendChild(badge);
-  card.setAttribute("aria-label", (card.getAttribute("aria-label") || "") + ", scene release available");
-}
+function renderSceneList(results) {
+  const body = document.getElementById("sceneDialogBody");
+  body.innerHTML = "";
+  // Newest first: when a film has both an early low-quality release and a
+  // later proper one, the later one is what you want to see at the top.
+  const rows = results.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  rows.forEach((r) => {
+    const row = document.createElement("div"); row.className = "scene-row";
+    const name = document.createElement("div"); name.className = "scene-row__name";
+    name.textContent = r.release || "(unnamed release)";
+    row.appendChild(name);
 
-function checkSceneFor(card) {
-  const id = card.dataset.id, title = card.dataset.title, year = card.dataset.year;
-  if (!id || !title || !year) return;
-  const cached = sceneCacheGet(id);
-  if (cached !== undefined) { if (cached) showSceneBadge(card); return; }
-  sceneQueue.push(async () => {
-    const scene = await lookupScene(title, year);
-    if (scene === null) return;            // couldn't tell — don't cache a guess
-    sceneCacheSet(id, scene);
-    if (scene && document.contains(card)) showSceneBadge(card);
+    const meta = document.createElement("div"); meta.className = "scene-row__meta";
+    const bits = [fmtSceneDate(r.date), fmtSceneSize(r.size)].filter(Boolean);
+    if (bits.length) { const s = document.createElement("span"); s.textContent = bits.join(" · "); meta.appendChild(s); }
+    if (r.hasNFO === "yes") { const t = document.createElement("span"); t.className = "scene-row__tag"; t.textContent = "NFO"; meta.appendChild(t); }
+    if (r.isForeign === "yes") { const t = document.createElement("span"); t.className = "scene-row__tag"; t.textContent = "FOREIGN"; meta.appendChild(t); }
+    if (meta.children.length) row.appendChild(meta);
+    body.appendChild(row);
   });
-  scenePump();
 }
 
-/* Checked when a card actually comes into view, so scrolling a long grid
-   costs requests only for what was looked at. */
-const sceneObserver = ("IntersectionObserver" in window)
-  ? new IntersectionObserver((entries, obs) => {
-      entries.forEach(e => { if (e.isIntersecting) { obs.unobserve(e.target); checkSceneFor(e.target); } });
-    }, { rootMargin: "300px" })
-  : null;
+/* Built on first use, and with document.getElementById rather than the $
+   helper: this section sits above where $ is declared, and a const in its
+   temporal dead zone throws at parse-evaluation time — which takes the
+   whole script with it, not just this feature. */
+let sceneDialog = null;
+function ensureSceneDialog() {
+  if (sceneDialog) return sceneDialog;
+  sceneDialog = BQChrome.dialog(document.getElementById("sceneDialog"), {
+    initialFocus: () => document.getElementById("sceneDialogClose"),
+  });
+  document.getElementById("sceneDialogClose")
+    .addEventListener("click", () => sceneDialog.close());
+  return sceneDialog;
+}
 
-function watchSceneCard(card) {
-  if (sceneObserver) sceneObserver.observe(card);
-  else checkSceneFor(card); // no IntersectionObserver — just check it
+async function openSceneReleases(title, year) {
+  const dialog = ensureSceneDialog();
+  const sub = document.getElementById("sceneDialogSub");
+  const body = document.getElementById("sceneDialogBody");
+  document.getElementById("sceneDialogTitle").textContent = "Scene releases";
+  sub.textContent = [title, year].filter(Boolean).join(" · ");
+  body.innerHTML = '<p class="overview" style="margin:0;">Looking up…</p>';
+  dialog.open();
+  try {
+    const data = await srrdbSearch(title, year);
+    const results = Array.isArray(data && data.results) ? data.results : [];
+    if (!results.length) {
+      body.innerHTML = '<p class="overview" style="margin:0;">No scene releases found for this title.</p>';
+      sub.textContent = [title, year].filter(Boolean).join(" · ");
+      return;
+    }
+    renderSceneList(results);
+    sub.textContent = `${results.length} release${results.length === 1 ? "" : "s"} · ${[title, year].filter(Boolean).join(" · ")}`;
+  } catch (err) {
+    body.innerHTML = "";
+    const p = document.createElement("p");
+    p.className = "overview overview--error"; p.style.margin = "0";
+    p.textContent = (err && err.message) || "Lookup failed.";
+    body.appendChild(p);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1802,12 +1801,6 @@ function buildMediaCard({ id, mediaType, title, year, poster, epLabel, resumeHas
   if (poster) { const img = document.createElement("img"); img.className="media-card__img"; img.src=poster; img.alt=title||""; img.loading="lazy"; imgWrap.appendChild(img); }
   else { const ph = document.createElement("div"); ph.className="media-card__placeholder"; ph.innerHTML=`<span class="material-icons" aria-hidden="true">${isMovie?"movie":"live_tv"}</span>`; imgWrap.appendChild(ph); }
 
-  const extBtn = document.createElement("button");
-  extBtn.className = "media-card__ext-btn"; extBtn.type = "button";
-  extBtn.setAttribute("aria-label", "Search externally"); extBtn.title = "Search on predb.me";
-  extBtn.innerHTML = `<span class="material-icons" aria-hidden="true">travel_explore</span>`;
-  imgWrap.appendChild(extBtn);
-
   const body = document.createElement("div"); body.className = "media-card__body";
   const titleEl = document.createElement("div"); titleEl.className = "media-card__title"; titleEl.textContent = title||"Untitled";
   const meta  = document.createElement("div"); meta.className = "media-card__meta";
@@ -1817,8 +1810,6 @@ function buildMediaCard({ id, mediaType, title, year, poster, epLabel, resumeHas
   else if (year) { const yr = document.createElement("span"); yr.className="media-card__year"; yr.textContent=year; meta.appendChild(yr); }
   body.appendChild(titleEl); body.appendChild(meta);
   art.appendChild(imgWrap); art.appendChild(body);
-  // Movies only, and only when there's a year to disambiguate the title.
-  if (isMovie && year) watchSceneCard(art);
   return art;
 }
 
@@ -1899,10 +1890,16 @@ function renderMovie(movie) {
         <button class="play-btn movie-panel__play" id="playMovieBtn" type="button">
           <span class="play-btn__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></span>Play movie
         </button>
+        <button class="btn btn--ghost btn--sm movie-panel__scene" id="sceneBtn" type="button">
+          <span class="material-icons" aria-hidden="true">inventory_2</span>Scene releases
+        </button>
       </div>
     </div>`;
 
   $("playMovieBtn").addEventListener("click", () => loadPlayer({ mediaType:"movie", id:movie.id, label:title }));
+  // Looked up on demand rather than with the detail fetch: most visits to
+  // a film's page aren't asking this, and it's someone else's free API.
+  $("sceneBtn").addEventListener("click", () => openSceneReleases(title, year));
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2184,12 +2181,6 @@ function setHeroPoster(el) {
   if (el) el.style.viewTransitionName = "hero-poster";
 }
 async function handleCardClick(e) {
-  const extBtn = e.target.closest(".media-card__ext-btn");
-  if (extBtn) {
-    e.stopPropagation();
-    const art = extBtn.closest(".media-card"); const q = `${art.dataset.title||""} ${art.dataset.year||""}`.trim();
-    if (q) window.open(EXT_SEARCH + encodeURIComponent(q), "_blank", "noopener"); return;
-  }
   const card = e.target.closest(".media-card"); if (!card) return;
   const id = Number(card.dataset.id), mt = card.dataset.mediaType; if (!id||!mt) return;
   const posterImg = card.querySelector(".media-card__img");
@@ -2223,7 +2214,6 @@ function wireCardContainer(el) {
   el.addEventListener("click", handleCardClick);
   el.addEventListener("keydown", e => {
     if (e.key==="Enter"||e.key===" ") {
-      if (e.target.closest(".media-card__ext-btn")) { e.preventDefault(); e.target.click(); return; }
       const c = e.target.closest(".media-card"); if (c) { e.preventDefault(); handleCardClick({target:c}); }
     }
   });
@@ -2472,7 +2462,6 @@ try {
 } catch (e) { /* pushState unavailable in this context — leave the URL as-is */ }
 
 (async () => {
-  sceneCacheLoad();
   await initSources();
   await initHistory();
   updateSourceMenuButton();
