@@ -93,7 +93,13 @@
 
     /* ── Now-playing card actions ── Next sits before Roll: continuing is
        the common intent, rolling is the occasional one. ── */
-    .now-playing-card__actions { display: flex; flex-shrink: 0; gap: 0.35rem; align-items: center; }
+    /* Roll left, Next right, with real space between them: they do very
+       different things (one continues, one jumps somewhere random) and
+       sitting flush together they read as a pair of equals and are easy to
+       hit by mistake. The variants matter as much as the gap — tonal and
+       primary-container are nearly the same colour in this palette, so Roll
+       takes the ghost treatment and only Next carries the accent. */
+    .now-playing-card__actions { display: flex; justify-content: flex-end; align-items: center; gap: 0.85rem; }
 
     /* ── Idle screen (no search query): what you were watching, then what
        everyone else is. Replaces a blank page with the two things most
@@ -150,6 +156,9 @@
        (resolution, source, group) are what you actually read it for —
        not because it's code. Capped in height so the dialog stays a
        dialog on a phone. */
+    /* Secondary to Play, and far enough from it not to read as a pair. */
+    .movie-panel__scene { align-self: center; margin-top: 0.55rem; }
+
     .scene-list { display: flex; flex-direction: column; gap: 0.45rem; max-height: min(55vh, 420px); overflow: auto; -webkit-overflow-scrolling: touch; }
     .scene-row { padding: 0.55rem 0.7rem; border-radius: var(--shape-s); background: var(--md-surface-container-high); }
     .scene-row__name {
@@ -436,7 +445,10 @@
     /* ── Now playing / reroll ── */
     .now-playing-card {
       display: flex;
-      align-items: flex-start;
+      /* Stacked, not side-by-side: once Roll and Next carry labels they are
+         far too wide to share a row with the episode title on a phone. */
+      flex-direction: column;
+      align-items: stretch;
       gap: 0.6rem;
       margin-top: 0.75rem;
       padding: 0.65rem 0.75rem;
@@ -707,11 +719,11 @@
           <div class="now-playing-card__overview" id="epCardOverview"></div>
         </div>
         <div class="now-playing-card__actions">
-          <button id="epCardNextBtn" class="reroll-btn hidden" type="button" aria-label="Play the next episode" title="Next episode">
-            <span class="material-icons" aria-hidden="true">skip_next</span>
+          <button id="epCardRollBtn" class="btn btn--ghost" type="button" aria-label="Roll a random episode">
+            <span class="material-icons" aria-hidden="true">shuffle</span>Roll
           </button>
-          <button id="epCardRollBtn" class="reroll-btn" type="button" aria-label="Roll a random episode" title="Surprise me">
-            <span class="material-icons" aria-hidden="true">shuffle</span>
+          <button id="epCardNextBtn" class="btn btn--primary hidden" type="button" aria-label="Play the next episode">
+            <span class="material-icons" aria-hidden="true">skip_next</span>Next
           </button>
         </div>
       </div>
@@ -1693,8 +1705,10 @@ async function updateEpCard(tvId, season, episode, rolledEpData) {
   const next = await findNextEpisode(tvId, season, episode);
   if (token !== epCardSeq || !next) return;
   epCardNextBtn.classList.remove("hidden");
+  // Leads with "Next" so the accessible name contains the visible label,
+  // as WCAG's Label in Name requires — the rest is the useful detail.
   epCardNextBtn.setAttribute("aria-label",
-    `Play the next episode, season ${next.season} episode ${next.episode}`);
+    `Next episode — season ${next.season}, episode ${next.episode}`);
   epCardNextBtn.onclick = () => loadPlayer({
     mediaType: "tv", id: tvId, season: next.season, episode: next.episode,
     label: currentDetail.title, rolledEpData: next.ep,
