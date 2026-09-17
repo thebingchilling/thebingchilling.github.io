@@ -437,6 +437,31 @@
 
     .skel-card { aspect-ratio: 1/1; border-radius: var(--shape-m); }
     .empty-state__import-btn { margin-top: 0.9rem; }
+    /* ── Guide search ── */
+    .search-bar--inline { margin: 0 0 0.75rem; }
+    .epg-results { display: flex; flex-direction: column; gap: 0.4rem; max-height: min(50vh, 380px); overflow: auto; -webkit-overflow-scrolling: touch; }
+    .epg-result {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border: none;
+      border-radius: var(--shape-s);
+      background: var(--surface-raised);
+      box-shadow: var(--el1);
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: box-shadow var(--t);
+    }
+    @media (hover: hover) { .epg-result:hover { box-shadow: var(--el2); } }
+    .epg-result:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+    .epg-result__body { flex: 1; min-width: 0; }
+    .epg-result__title { font: var(--type-body-medium); letter-spacing: var(--track-body-medium); color: var(--text); }
+    .epg-result__meta { margin-top: 0.15rem; font: var(--type-label-small); letter-spacing: var(--track-label-small); color: var(--text-faint); }
+    .epg-result__when { flex-shrink: 0; font: var(--type-label-small); letter-spacing: var(--track-label-small); color: var(--md-primary); font-weight: 600; }
+    .epg-result--live .epg-result__when { color: var(--md-error); }
   </style>
 </head>
 <body>
@@ -474,6 +499,9 @@
           placeholder="Search channels…" autocomplete="off" aria-label="Search channels" />
         <button id="clearBtn" class="icon-btn hidden" type="button" aria-label="Clear search">
           <span class="material-icons" aria-hidden="true">close</span>
+        </button>
+        <button id="epgSearchBtn" class="icon-btn hidden" type="button" aria-label="Search the TV guide" title="Search the guide">
+          <span class="material-icons" aria-hidden="true">manage_search</span>
         </button>
       </div>
 
@@ -634,6 +662,29 @@
         </div>
       </div>
     </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search every channel's guide data at once -->
+<div id="epgSearchModal" class="scrim scrim--center hidden" role="dialog" aria-modal="true" aria-labelledby="epgSearchTitle" aria-hidden="true">
+  <div class="dialog">
+    <div class="dialog__header">
+      <div>
+        <h3 id="epgSearchTitle" class="dialog__title">Search the guide</h3>
+        <p id="epgSearchSub" class="dialog__sub"></p>
+      </div>
+      <button id="epgSearchClose" class="icon-btn" type="button" aria-label="Close">
+        <span class="material-icons" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <div class="dialog__body">
+      <div class="search-bar search-bar--inline">
+        <span class="material-icons search-bar__icon" aria-hidden="true">search</span>
+        <input id="epgSearchInput" type="search" class="search-bar__input" autocomplete="off"
+          placeholder="Find a programme…" aria-label="Search programme titles" />
+      </div>
+      <div id="epgSearchResults" class="epg-results"></div>
     </div>
   </div>
 </div>
@@ -987,6 +1038,7 @@ function fetchEpgInBackground(fallbackTvgUrl) {
   loadEpgSmart(url).then(map => {
     state.epg = map;
     renderGrid();
+    updateEpgSearchButton();
     if ($("viewPlayer").classList.contains("view--active")) updateEpgPanel();
   }).catch(() => { /* guide is a nice-to-have; ignore failures silently */ });
 }
@@ -1227,7 +1279,7 @@ function renderGrid() {
     const drmLabel = c.drm ? ` — DRM protected, can't be played here, shows programme guide` : "";
 
     return `${sectionLabel}
-      <div class="media-card ${c.drm ? "media-card--drm" : ""}" tabindex="0" role="listitem" data-idx="${i}" aria-label="${escapeHtml(c.name)}${drmLabel}">
+      <div class="media-card ${c.drm ? "media-card--drm" : ""}" tabindex="0" role="listitem" data-idx="${i}" data-cid="${escapeAttr(c.id)}" aria-label="${escapeHtml(c.name)}${drmLabel}">
         <div class="media-card__img-wrap">
           ${chno ? `<span class="media-card__badge">${escapeHtml(chno)}</span>` : ""}
           ${c.drm ? `<span class="media-card__drm-badge"><span class="material-icons" aria-hidden="true">lock</span>DRM</span>` : ""}
@@ -1269,6 +1321,42 @@ function renderGrid() {
   });
 }
 
+/* The grid's "now" titles and progress bars were computed once, when the
+   grid was rendered, and then left alone — so after an hour on the Browse
+   screen every bar was an hour stale and some named a programme that had
+   already finished. Updated in place rather than by re-rendering: a
+   re-render would throw away focus and any open pin.  */
+function updateCardEpg(card) {
+  const wrap = card.querySelector(".media-card__img-wrap");
+  const body = card.querySelector(".media-card__body");
+  if (!wrap || !body) return;
+  const nn = nowNextFor(card.dataset.cid);
+  const current = nn && nn.current;
+
+  let nowEl = body.querySelector(".media-card__now");
+  let barEl = wrap.querySelector(".media-card__progress");
+  if (!current) { if (nowEl) nowEl.remove(); if (barEl) barEl.remove(); return; }
+
+  if (!nowEl) { nowEl = document.createElement("div"); nowEl.className = "media-card__now"; body.appendChild(nowEl); }
+  if (nowEl.textContent !== current.title) nowEl.textContent = current.title;
+
+  if (!barEl) {
+    barEl = document.createElement("div"); barEl.className = "media-card__progress";
+    barEl.innerHTML = '<div class="media-card__progress-fill"></div>';
+    wrap.appendChild(barEl);
+  }
+  const span = current.stop - current.start;
+  const pct = span > 0 ? Math.min(100, Math.max(0, ((Date.now() - current.start) / span) * 100)) : 0;
+  barEl.firstElementChild.style.width = pct.toFixed(1) + "%";
+}
+
+function tickGridEpg() {
+  if (state.tab !== "tv" || !state.epg.size) return;
+  document.querySelectorAll("#resultsGrid .media-card:not(.media-card--drm)[data-cid]").forEach(updateCardEpg);
+}
+// A minute is finer than any progress bar this size can show, and cheap.
+setInterval(tickGridEpg, 60000);
+
 function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function escapeAttr(s) { return escapeHtml(s); }
 
@@ -1278,7 +1366,7 @@ function setTab(tab) {
   state.tab = tab; state.query = "";
   $("searchInput").value = ""; $("clearBtn").classList.add("hidden");
   kindTabs.select(tab === "tv" ? $("tabTv") : $("tabRadio"));
-  renderStatus(); renderGrid();
+  renderStatus(); renderGrid(); updateEpgSearchButton();
 }
 
 $("searchInput").addEventListener("input", () => {
@@ -1380,6 +1468,7 @@ function destroyShaka() {
 }
 
 function stopAllPlayback() {
+  if (typeof clearReconnect === "function") clearReconnect();
   destroyHls();
   destroyShaka();
   videoEl.pause(); videoEl.removeAttribute("src"); try { videoEl.load(); } catch (e) {}
@@ -1472,7 +1561,7 @@ async function loadDrmStream(channel, mediaEl, { onReady, onFail } = {}) {
   }
 }
 
-function loadStream(url, mediaEl, { onWaiting, onReady, onFail } = {}) {
+function loadStream(url, mediaEl, { onWaiting, onReady, onFail, onReconnecting } = {}) {
   destroyHls();
   const directAudioExt = /\.(mp3|aac|m4a|ogg|wav|flac)(\?|$)/i.test(url);
 
@@ -1486,13 +1575,30 @@ function loadStream(url, mediaEl, { onWaiting, onReady, onFail } = {}) {
     const hls = new Hls({ enableWorker: true, liveDurationInfinity: true });
     currentHls = hls;
     let fellBack = false;
+    let netRecoveries = 0, mediaRecoveries = 0;
     hls.on(Hls.Events.ERROR, (evt, data) => {
-      if (data && data.fatal && !fellBack) {
+      if (!data || !data.fatal) return;
+      // hls.js can recover from most fatal errors without starting over,
+      // and on a live stream that is nearly always the right move: a
+      // network error usually means the segment window moved on, not that
+      // the channel is gone. Only once those are exhausted does this fall
+      // back to a direct <video> load, and only after that does it fail.
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR && netRecoveries < 3) {
+        netRecoveries++;
+        if (onReconnecting) onReconnecting();
+        try { hls.startLoad(); return; } catch (e) { /* fall through */ }
+      }
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
+        mediaRecoveries++;
+        if (onReconnecting) onReconnecting();
+        try { hls.recoverMediaError(); return; } catch (e) { /* fall through */ }
+      }
+      if (!fellBack) {
         fellBack = true;
         try { hls.destroy(); } catch (e) {}
         if (currentHls === hls) currentHls = null;
         tryDirect();
-      } else if (data && data.fatal && onFail) {
+      } else if (onFail) {
         onFail();
       }
     });
@@ -1608,6 +1714,88 @@ const guideDialog = BQChrome.dialog($("guideModal"), { initialFocus: () => $("gu
 $("viewGuideBtn").addEventListener("click", () => { if (currentPlayerChannel) openGuideModal(currentPlayerChannel); });
 $("guideModalClose").addEventListener("click", closeGuideModal);
 
+/* ═══════════ Guide search ═══════════
+   The EPG is already parsed into memory for the now/next lines, but it was
+   only ever reachable one channel at a time. This searches every channel's
+   programmes at once, which is the question people actually have — "is
+   this on anywhere, and when" — rather than "what is on channel 47".
+   Results are future-and-current only; a programme that finished this
+   morning is not an answer to anything. */
+const EPG_SEARCH_MAX = 60;
+
+function searchEpg(query) {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const byId = new Map(state.tv.map((c) => [c.id, c]));
+  const now = Date.now();
+  const hits = [];
+  for (const [channelId, programmes] of state.epg) {
+    const channel = byId.get(channelId);
+    if (!channel) continue; // guide data for a channel this playlist doesn't carry
+    for (const p of programmes) {
+      if (p.stop < now) continue;
+      if (!p.title.toLowerCase().includes(q)) continue;
+      hits.push({ channel, programme: p, live: p.start <= now && now < p.stop });
+      if (hits.length > 400) break;
+    }
+  }
+  hits.sort((a, b) => a.programme.start - b.programme.start);
+  return hits.slice(0, EPG_SEARCH_MAX);
+}
+
+function whenLabel(d) {
+  const now = new Date();
+  const days = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) -
+                           new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+  if (days === 0) return fmtTime(d);
+  if (days === 1) return "Tomorrow " + fmtTime(d);
+  return d.toLocaleDateString([], { weekday: "short" }) + " " + fmtTime(d);
+}
+
+function renderEpgSearch(hits, query) {
+  const box = $("epgSearchResults"), sub = $("epgSearchSub");
+  box.innerHTML = "";
+  if (query.trim().length < 2) { sub.textContent = "Searching " + state.epg.size + " channels' guide data."; return; }
+  if (!hits.length) { sub.textContent = ""; box.innerHTML = '<div class="state-panel"><p>Nothing matching that is still to come.</p></div>'; return; }
+  sub.textContent = `${hits.length}${hits.length === EPG_SEARCH_MAX ? "+" : ""} upcoming`;
+  hits.forEach(({ channel, programme, live }) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "epg-result" + (live ? " epg-result--live" : "");
+    const body = document.createElement("div"); body.className = "epg-result__body";
+    const t = document.createElement("div"); t.className = "epg-result__title"; t.textContent = programme.title;
+    const m = document.createElement("div"); m.className = "epg-result__meta";
+    m.textContent = channel.name + " · " + fmtTime(programme.start) + "–" + fmtTime(programme.stop);
+    body.appendChild(t); body.appendChild(m);
+    const when = document.createElement("span"); when.className = "epg-result__when";
+    when.textContent = live ? "NOW" : whenLabel(programme.start);
+    row.appendChild(body); row.appendChild(when);
+    row.setAttribute("aria-label",
+      `${programme.title} on ${channel.name}, ${live ? "on now" : whenLabel(programme.start)} — open this channel`);
+    row.addEventListener("click", () => { epgSearchDialog.close(); openPlayer(channel); });
+    box.appendChild(row);
+  });
+}
+
+const epgSearchDialog = BQChrome.dialog($("epgSearchModal"), { initialFocus: () => $("epgSearchInput") });
+$("epgSearchClose").addEventListener("click", () => epgSearchDialog.close());
+let epgSearchDebounce = null;
+$("epgSearchInput").addEventListener("input", () => {
+  clearTimeout(epgSearchDebounce);
+  const v = $("epgSearchInput").value;
+  epgSearchDebounce = setTimeout(() => renderEpgSearch(searchEpg(v), v), 150);
+});
+$("epgSearchBtn").addEventListener("click", () => {
+  $("epgSearchInput").value = "";
+  renderEpgSearch([], "");
+  epgSearchDialog.open();
+});
+
+// Only offered where it can answer something: the TV tab, with guide data.
+function updateEpgSearchButton() {
+  $("epgSearchBtn").classList.toggle("hidden", !(state.tab === "tv" && state.epg.size > 0));
+}
+
 /* ═══════════ Media Session ═══════════
    Surfaces the current channel on the OS's own now-playing UI — lock
    screen, notification shade, hardware/earbud media keys — exactly like a
@@ -1712,33 +1900,94 @@ function openPlayer(channel) {
     return;
   }
 
-  if (isTv) {
-    playerOverlay.classList.remove("hidden");
-    $("playerOverlayText").textContent = "Loading stream…";
-    loadStream(channel.url, videoEl, {
-      onReady: () => playerOverlay.classList.add("hidden"),
-      onFail: () => { $("playerOverlayText").textContent = "Couldn't load this channel."; }
-    });
-    videoEl.addEventListener("playing", () => playerOverlay.classList.add("hidden"), { once: true });
-    videoEl.addEventListener("error", () => {
-      $("playerError").textContent = "This channel couldn't be played in your browser.";
-      $("playerError").classList.remove("hidden");
-    }, { once: true });
-  } else {
+  if (!isTv) {
     const logo = channel.attrs["tvg-logo"] || "";
     const logoImg = $("radioLogo"), logoPh = $("radioArtPh");
     if (logo) { logoImg.src = logo; logoImg.classList.remove("hidden"); logoImg.onerror = () => { logoImg.classList.add("hidden"); logoPh.classList.remove("hidden"); }; logoPh.classList.add("hidden"); }
     else { logoImg.classList.add("hidden"); logoPh.classList.remove("hidden"); }
     setRadioPlayIcon(false);
-    loadStream(channel.url, audioEl, {
-      onFail: () => { $("playerError").textContent = "Couldn't load this station."; $("playerError").classList.remove("hidden"); }
-    });
-    audioEl.addEventListener("error", () => {
-      $("playerError").textContent = "This station couldn't be played in your browser.";
-      $("playerError").classList.remove("hidden");
-    }, { once: true });
   }
+  startChannelPlayback(channel);
 }
+
+/* ═══════════ Reconnect ═══════════
+   Live streams drop. The source restarts, the CDN rotates its edge, the
+   phone moves from wifi to mobile — none of which means the channel is
+   gone, and all of which used to end with playback simply stopping and
+   staying stopped. hls.js recovers what it can in place (see loadStream);
+   this is the outer loop for everything it can't, re-opening the stream
+   with a widening delay so a source that is genuinely down isn't hammered.
+
+   It always checks the channel it was scheduled for is still the one on
+   screen, so switching channels mid-backoff can't resurrect the old one. */
+const RECONNECT_MAX = 8;
+let reconnectTimer = null, reconnectAttempts = 0;
+
+function clearReconnect() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+  reconnectAttempts = 0;
+}
+
+function scheduleReconnect(channel) {
+  if (!channel || channel !== currentPlayerChannel || reconnectTimer) return;
+  if (reconnectAttempts >= RECONNECT_MAX) {
+    $("playerError").textContent = "Lost the connection to this channel and couldn't get it back. Tap the channel again to retry.";
+    $("playerError").classList.remove("hidden");
+    playerOverlay.classList.add("hidden");
+    return;
+  }
+  // 2s, 4s, 8s … capped at 30s.
+  const delay = Math.min(30000, 2000 * Math.pow(2, reconnectAttempts));
+  reconnectAttempts++;
+  if (playingIsTv) {
+    playerOverlay.classList.remove("hidden");
+    $("playerOverlayText").textContent = `Reconnecting… (${reconnectAttempts}/${RECONNECT_MAX})`;
+  }
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (channel !== currentPlayerChannel) return;
+    startChannelPlayback(channel, true);
+  }, delay);
+}
+
+// The actual stream open, separated from openPlayer's view setup so a
+// reconnect can re-run just this part without touching the UI around it.
+function startChannelPlayback(channel, isRetry) {
+  const mediaEl = playingIsTv ? videoEl : audioEl;
+  if (isRetry) { destroyHls(); destroyShaka(); try { mediaEl.pause(); } catch (e) {} }
+  if (!isRetry) clearReconnect();
+
+  if (playingIsTv) {
+    playerOverlay.classList.remove("hidden");
+    if (!isRetry) $("playerOverlayText").textContent = "Loading stream…";
+  }
+
+  loadStream(channel.url, mediaEl, {
+    onReady: () => { if (playingIsTv) playerOverlay.classList.add("hidden"); },
+    onReconnecting: () => {
+      if (playingIsTv && channel === currentPlayerChannel) {
+        playerOverlay.classList.remove("hidden");
+        $("playerOverlayText").textContent = "Reconnecting…";
+      }
+    },
+    onFail: () => scheduleReconnect(channel),
+  });
+}
+
+/* Playing again means whatever went wrong is over, so the backoff resets —
+   otherwise an hour of viewing with three brief blips would arrive at the
+   next one already near the retry limit. */
+["playing"].forEach((evt) => {
+  videoEl.addEventListener(evt, () => { clearReconnect(); playerOverlay.classList.add("hidden"); });
+  audioEl.addEventListener(evt, clearReconnect);
+});
+// A live stream should never end or error on its own; when it does, the
+// feed dropped.
+["error", "ended"].forEach((evt) => {
+  videoEl.addEventListener(evt, () => { if (currentPlayerChannel && playingIsTv) scheduleReconnect(currentPlayerChannel); });
+  audioEl.addEventListener(evt, () => { if (currentPlayerChannel && !playingIsTv) scheduleReconnect(currentPlayerChannel); });
+});
 
 const bottomDock = $("bottomDock");
 const navBrowseBtn = $("navBrowseBtn");
