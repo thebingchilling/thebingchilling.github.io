@@ -155,6 +155,18 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .btn:focus-visible::before { opacity: var(--state-focus); }
 .btn:active:not(:disabled)::before { opacity: var(--state-press); }
 .btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+/* A real link wearing .btn keeps iOS's long-press callout — "Open in New
+   Tab", "Copy Link", the share sheet. -webkit-touch-callout:none above is
+   right for a <button> (there is nothing to call out) but on an <a href>
+   it silently removes the one manual way to open the link in a new tab,
+   which is exactly what the source buttons in the reverse-image-search
+   tool are for. Same reasoning for the text: a link's URL should still be
+   selectable and copyable. */
+a.btn[href] {
+  -webkit-touch-callout: default;
+  user-select: auto;
+  -webkit-user-select: auto;
+}
 .btn .material-icons { font-size: 20px; }
 
 /* Every button with a container is raised and solid — elevation, not a

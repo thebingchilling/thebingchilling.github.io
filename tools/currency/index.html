@@ -185,7 +185,15 @@
        plot, so the month labels can't end up clipped or in a nested
        scroller. */
     .spark { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
-    .spark__plot { position: relative; height: 72px; }
+    .spark__plot {
+      position: relative;
+      height: 72px;
+      cursor: crosshair;
+      /* pan-y, not none: a vertical swipe past the chart still scrolls the
+         page, but a horizontal drag along it is ours to scrub with rather
+         than being swallowed as a browser gesture. */
+      touch-action: pan-y;
+    }
     .spark__svg { display: block; width: 100%; height: 100%; overflow: visible; }
     /* 2px, per the mark spec — thin, but not a hairline that disappears
        against the surface on a dense display. */
@@ -213,24 +221,12 @@
       pointer-events: none;
     }
 
-    /* Axis ticks are recessive: muted ink, never the series colour, and
-       tabular figures so the two y values line up. */
-    .spark__y {
-      position: absolute;
-      right: 0;
-      font: var(--type-label-small);
-      letter-spacing: var(--track-label-small);
-      font-variant-numeric: tabular-nums;
-      color: var(--text-faint);
-      background: var(--surface);
-      padding: 0 0.15rem;
-      pointer-events: none;
-    }
-    /* Inside the plot box, not hanging out of it: below the plot they
-       overlap the last month tick, which sits at the same right edge. */
-    .spark__y--max { top: 0; }
-    .spark__y--min { bottom: 0; }
+    /* No high/low labels over the plot. The question this chart answers
+       is which way the pair has moved, and the exact bounds were two more
+       numbers floating on the line for a reading nobody was doing — point
+       at a month and the readout gives you that month's rate. */
 
+    /* Axis ticks are recessive: muted ink, never the series colour. */
     .spark__axis {
       position: relative;
       height: 1.15rem;
@@ -239,26 +235,32 @@
       letter-spacing: var(--track-label-small);
       color: var(--text-faint);
     }
-    .spark__tick { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+    .spark__tick {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      /* Tabular figures: the labels are all numbers now, and they should
+         sit at the same width whatever digits they happen to contain. */
+      font-variant-numeric: tabular-nums;
+    }
     .spark__tick--first { transform: none; }
     .spark__tick--last { transform: translateX(-100%); }
-    /* The readout reuses the axis band rather than floating over the plot:
-       same height either way, so nothing moves when it appears. */
+    /* Its own line under the axis, not a panel laid over it. Covering the
+       month labels was survivable while the readout only existed under a
+       mouse pointer; now that a tap leaves it up, an axis that vanishes
+       for the rest of the session is no axis at all. The row is always
+       present and empty when nothing is picked, so nothing shifts. */
     .spark__readout {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      background: var(--surface);
+      min-height: 1.15rem;
+      margin: 0.2rem 0 0;
+      text-align: center;
+      font: var(--type-label-small);
+      letter-spacing: var(--track-label-small);
       color: var(--text);
       font-variant-numeric: tabular-nums;
     }
-    /* display:flex on the rule above out-ranks the hidden attribute's
-       display:none, so without this the readout sits over the month ticks
-       permanently — empty, opaque, and invisible in the DOM checks. */
-    .spark__readout[hidden] { display: none; }
+    .spark__readout:empty::after { content: "\200B"; } /* holds the line open */
     .spark__readout b { font-weight: 600; }
     .spark__plot:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 3px; border-radius: var(--shape-xs); }
     /* Held at reduced opacity while a new pair loads, rather than blanked —
@@ -869,7 +871,13 @@
     });
     return [...byMonth.entries()].map(([month, v]) => ({
       month, date: v.date, rate: v.rate,
-      label: new Date(v.date + "T00:00:00").toLocaleDateString(undefined, { month: "short" }),
+      // Plain numbers — month/year — rather than a short month name. Over
+      // twelve months the names repeat nothing but they also say nothing
+      // about which year you're looking at, and "1" after "12" reads as a
+      // new year far more clearly than "Jan" after "Dec". Built from the
+      // month key rather than a locale format so the axis is the same
+      // width and the same order everywhere.
+      label: `${Number(month.slice(5, 7))}/${month.slice(2, 4)}`,
     }));
   }
 
@@ -952,27 +960,36 @@
           `<span class="spark__cross" hidden></span>` +
           `<span class="spark__hover-dot" hidden></span>` +
           `<span class="spark__dot" style="left:${g.pctX(points.length - 1).toFixed(2)}%;top:${g.pctY(last.rate).toFixed(2)}%"></span>` +
-          `<span class="spark__y spark__y--max">${escapeHtml(fmtRate(g.max))}</span>` +
-          `<span class="spark__y spark__y--min">${escapeHtml(fmtRate(g.min))}</span>` +
         "</div>" +
-        `<div class="spark__axis">${ticks}<span class="spark__readout" hidden></span></div>` +
+        `<div class="spark__axis">${ticks}</div>` +
+        `<p class="spark__readout" aria-live="polite"></p>` +
       "</div>";
 
     wireSparkHover(points, g, local, main);
   }
 
-  /* Hover and keyboard both land on the same readout. The hit area is the
-     whole plot rather than the points themselves — an 8px dot you have to
-     hit dead-centre is not a target on a touchscreen — and the nearest
-     month to the pointer wins. */
+  /* Pointer, touch and keyboard all land on the same readout. The hit
+     area is the whole plot rather than the points themselves — an 8px dot
+     you have to hit dead-centre is not a target on a touchscreen — and
+     the nearest month to the pointer wins.
+
+     Touch is not hover, and treating it as though it were is what made
+     this unusable on a phone: pointermove only fires there while a finger
+     is down, and pointerleave fires the moment it lifts, so the reading
+     you went to get vanished as you took your finger off to look at it.
+     A touch now sets the month and leaves it set — drag along to scrub,
+     lift to read, tap elsewhere to dismiss. A mouse keeps hover
+     semantics, where following the pointer is the whole point. */
+  let sparkDismiss = null; // the outside-tap listener belonging to the live chart
+
   function wireSparkHover(points, g, local, main) {
     const plot = document.getElementById("sparkPlot");
     if (!plot) return;
     const cross = plot.querySelector(".spark__cross");
     const dot = plot.querySelector(".spark__hover-dot");
     const readout = document.querySelector(".spark__readout");
-    const ticks = [...document.querySelectorAll(".spark__tick")];
     let active = -1;
+    let scrubbing = false;
 
     function show(i) {
       if (i < 0 || i >= points.length) return;
@@ -985,13 +1002,12 @@
       readout.innerHTML = `${escapeHtml(new Date(p.date + "T00:00:00")
         .toLocaleDateString(undefined, { month: "short", year: "numeric" }))} · ` +
         `<b>${escapeHtml(fmtRate(p.rate))}</b> ${escapeHtml(main)}`;
-      readout.hidden = false;
-      ticks.forEach((t) => { t.style.visibility = "hidden"; });
     }
     function clear() {
       active = -1;
-      cross.hidden = dot.hidden = readout.hidden = true;
-      ticks.forEach((t) => { t.style.visibility = ""; });
+      scrubbing = false;
+      cross.hidden = dot.hidden = true;
+      readout.textContent = "";
     }
     function nearest(clientX) {
       const r = plot.getBoundingClientRect();
@@ -1000,17 +1016,40 @@
       return Math.round(frac * (points.length - 1));
     }
 
-    plot.addEventListener("pointermove", (e) => show(nearest(e.clientX)));
-    plot.addEventListener("pointerdown", (e) => show(nearest(e.clientX)));
-    plot.addEventListener("pointerleave", clear);
-    plot.addEventListener("blur", clear);
+    plot.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse") {
+        scrubbing = true;
+        // Capture so a drag that wanders off the 72px-tall plot keeps
+        // scrubbing instead of stopping at the edge.
+        try { plot.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      show(nearest(e.clientX));
+    });
+    plot.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "mouse" && !scrubbing) return;
+      show(nearest(e.clientX));
+    });
+    // Note what is deliberately absent: no clear() on pointerup. The
+    // reading stays on screen after the finger lifts.
+    plot.addEventListener("pointerup", () => { scrubbing = false; });
+    plot.addEventListener("pointercancel", () => { scrubbing = false; });
+    plot.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") clear(); });
     plot.addEventListener("focus", () => show(points.length - 1));
     plot.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { clear(); return; }
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       e.preventDefault();
       const from = active === -1 ? points.length - 1 : active;
       show(Math.min(points.length - 1, Math.max(0, from + (e.key === "ArrowRight" ? 1 : -1))));
     });
+
+    // Dismissal, now that lifting a finger no longer does it. Re-registered
+    // per chart, and the previous one removed first — renderSpark replaces
+    // the whole subtree on every pair change, so without this each new
+    // chart would leave a listener behind holding the old one alive.
+    if (sparkDismiss) document.removeEventListener("pointerdown", sparkDismiss, true);
+    sparkDismiss = (e) => { if (!plot.contains(e.target)) clear(); };
+    document.addEventListener("pointerdown", sparkDismiss, true);
   }
 
   async function refreshSpark() {

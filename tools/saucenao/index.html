@@ -172,7 +172,10 @@
     .sauce-card__creator-name { font-weight: 600; color: var(--text); text-decoration: none; }
     a.sauce-card__creator-name:hover { color: var(--md-primary); text-decoration: underline; }
     .sauce-card__links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto; padding-top: 0.15rem; }
-    .sauce-card__favicon { flex-shrink: 0; width: 14px; height: 14px; border-radius: var(--shape-xs); }
+    /* pointer-events:none so a tap on the favicon targets the link rather
+       than the <svg> inside it — WebKit does not always walk an inline SVG
+       child back up to its <a> ancestor when it synthesises the click. */
+    .sauce-card__favicon { flex-shrink: 0; width: 14px; height: 14px; border-radius: var(--shape-xs); pointer-events: none; }
   </style>
 </head>
 <body>
@@ -996,44 +999,44 @@
 
   /* Opening a source link.
 
-     In an ordinary browser tab the anchor's own target="_blank" is all
-     this needs, and the handler below stays out of the way. An installed
-     app is the exception, and there are two different exceptions:
+     These are ordinary <a target="_blank"> anchors, which is all this
+     should need — and in most browsers it is. It is not enough in the
+     browsers people have actually hit this in, where a tap on a source
+     button did nothing at all: a new tab a blocker refuses to open is
+     indistinguishable, from the page's side, from a link that was never
+     clicked. Earlier attempts to paper over it made it worse — asking
+     window.open for a popup (a non-empty feature string does exactly
+     that) got it blocked in strictly more places, and limiting the
+     workaround to installed apps left the browser case untouched.
 
-       • iOS "Add to Home Screen" has no tab to open into at all.
-         target="_blank" does nothing, and window.open() is worse than
-         useless — it hands back a window object that never appears, so
-         there is nothing to feature-detect and no way to notice the
-         failure. Navigating is the one thing that works: the link is
-         outside this app's manifest scope, so iOS hands it to Safari.
+     So the handler now runs everywhere and always ends somewhere:
 
-       • An installed Chrome/Edge app does open a tab from window.open(),
-         but a blocked popup returns null, and with preventDefault()
-         already called that used to mean the click did nothing at all.
-         So: fall back to navigating there too.
+       1. window.open(href, "_blank") with no feature string — a tab, not
+          a popup, which is what blockers are lenient about.
+       2. If that hands back nothing, the browser refused. Navigate this
+          tab instead. Losing the results page is a real cost, but Back
+          restores it, and it beats a button that does nothing.
 
-     Modified clicks (⌘/Ctrl/Shift/middle) are left entirely alone — the
+     Modified clicks (⌘/Ctrl/Shift/middle) never come through here: the
      browser's own "open in a new tab/window" is better than anything
-     re-implemented here, and intercepting them was breaking it. */
-  const inStandalonePwa = () =>
-    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
-    window.navigator.standalone === true;
-
+     re-implemented, and intercepting them was breaking it. The anchors
+     also keep their real href, so long-press → "Open in New Tab" works —
+     see the a.btn[href] rule in ui.css, which is what was quietly
+     disabling that. */
   function openExternal(href) {
-    if (window.navigator.standalone === true) { window.location.href = href; return; }
     let opened = null;
-    // No feature string: that would ask for a popup window rather than a
-    // tab, and popup blockers treat the two very differently.
     try { opened = window.open(href, "_blank"); } catch (e) {}
-    if (!opened) { window.location.href = href; return; }
-    try { opened.opener = null; } catch (e) {} // what rel="noopener" was doing
+    if (!opened) { window.location.assign(href); return; }
+    // What rel="noopener" does for the anchor path.
+    try { opened.opener = null; } catch (e) {}
+    try { opened.focus(); } catch (e) {}
   }
 
   document.addEventListener("click", (e) => {
     if (e.defaultPrevented || e.button !== 0) return;
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     const link = e.target && e.target.closest && e.target.closest('a[target="_blank"]');
-    if (!link || !link.href || !inStandalonePwa()) return;
+    if (!link || !link.href) return;
     e.preventDefault();
     openExternal(link.href);
   });
