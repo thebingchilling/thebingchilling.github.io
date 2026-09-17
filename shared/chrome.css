@@ -198,3 +198,74 @@
 }
 .bottom-nav__item--active .bottom-nav__label,
 .bottom-nav__item[aria-current="page"] .bottom-nav__label { font-weight: 600; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Install chip + offline banner — both injected by chrome.js, so they
+   live here rather than in any one page's <style>. Both sit above the
+   bottom nav's safe-area inset so they can't be hidden behind the OS
+   gesture bar on a phone.
+   ═══════════════════════════════════════════════════════════════════════ */
+.install-chip {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--content-bottom, 1rem) + env(safe-area-inset-bottom, 0px) + 0.5rem);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(92vw, 420px);
+  padding: 0.5rem 0.5rem 0.5rem 0.9rem;
+  border-radius: var(--shape-full);
+  background: var(--md-inverse-surface);
+  color: var(--md-inverse-on-surface);
+  box-shadow: var(--el3);
+  animation: bq-chip-in 0.24s var(--ease-emphasized) both;
+}
+@keyframes bq-chip-in { from { opacity: 0; transform: translateX(-50%) translateY(0.5rem); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .install-chip { animation: none; } }
+.install-chip .material-icons { font-size: 20px; flex-shrink: 0; }
+.install-chip__text {
+  flex: 1;
+  min-width: 0;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.install-chip__btn {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 0 0.9rem;
+  border: none;
+  border-radius: var(--shape-full);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  cursor: pointer;
+}
+.install-chip__btn:focus-visible,
+.install-chip__close:focus-visible { outline: 2px solid var(--md-inverse-on-surface); outline-offset: 2px; }
+.install-chip__close { flex-shrink: 0; color: inherit; }
+
+.offline-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  text-align: center;
+}
+.offline-bar .material-icons { font-size: 18px; flex-shrink: 0; }
