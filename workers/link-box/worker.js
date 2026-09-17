@@ -119,8 +119,8 @@ if (BQ) {
 function toast(message) {
   if (BQ) BQ.snackbar(message);
 }
-function confirmDelete(text) {
-  if (BQ) return BQ.confirm({ title: "Delete this box?", body: text, confirmLabel: "Delete", danger: true });
+function confirmDelete() {
+  if (BQ) return BQ.confirm({ title: "Delete this box?", confirmLabel: "Delete", danger: true });
   return Promise.resolve(window.confirm("Delete this box?"));
 }
 
@@ -220,10 +220,19 @@ function renderCard(box) {
 
   card.append(row, urlInput, actions);
 
+  // The card's own status line doubles as its toast: "Saved" / "Copied"
+  // land here as subtext rather than as a snackbar over the page.
+  let flashTimer = null;
   function syncFlag() {
+    if (flashTimer) return;
     if (box.id === null) flag.textContent = "Not saved";
     else if (isDirty(box)) flag.textContent = "Unsaved changes";
     else flag.textContent = "";
+  }
+  function flash(message) {
+    clearTimeout(flashTimer);
+    flag.textContent = message;
+    flashTimer = setTimeout(() => { flashTimer = null; syncFlag(); }, 2000);
   }
   syncFlag();
 
@@ -235,7 +244,7 @@ function renderCard(box) {
   copyBtn.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(urlInput.value);
-      toast("Copied to clipboard");
+      flash("Copied");
     } catch (e) {
       urlInput.select();
       toast("Couldn't copy — text selected, copy manually");
@@ -256,8 +265,7 @@ function renderCard(box) {
       }
       box.url = payload.url;
       delete box.draft;
-      syncFlag();
-      toast("Saved");
+      flash("Saved");
     } catch (e) {
       toast("Save failed: " + e.message);
     } finally {
@@ -266,8 +274,7 @@ function renderCard(box) {
   });
 
   delBtn.addEventListener("click", async () => {
-    const preview = urlInput.value.trim().slice(0, 80) || "This box is empty.";
-    if (!(await confirmDelete(preview))) return;
+    if (!(await confirmDelete())) return;
     if (box.id) {
       try { await api("/items/" + box.id, { method: "DELETE" }); }
       catch (e) { toast("Delete failed: " + e.message); return; }
