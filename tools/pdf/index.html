@@ -163,16 +163,13 @@
 
     .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
 
-    /* ── Mode switch (M3 SegmentedButton-ish) — picks which qpdf operation
-       the shared dropzone/file below acts on. ── */
-    .mode-tabs { display: flex; gap: 0.4rem; background: var(--bg2); border-radius: 999px; padding: 0.3rem; margin-bottom: 1rem; }
-    .mode-tab { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: none; background: transparent; color: var(--text-muted); font-family: 'Google Sans', sans-serif; font-size: 0.82rem; font-weight: 500; border-radius: 999px; padding: 0.55rem 0.6rem; cursor: pointer; transition: background var(--t), color var(--t); }
-    .mode-tab .material-icons { font-size: 19px; }
-    .mode-tab:hover { color: var(--text); }
-    .mode-tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .mode-tab[aria-pressed="true"] { background: var(--md-surface-container-low); color: var(--primary); box-shadow: var(--el1); }
-    :root[data-theme="dark"] .mode-tab[aria-pressed="true"] { background: var(--md-surface-container-high); }
-    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mode-tab[aria-pressed="true"] { background: var(--md-surface-container-high); } }
+    /* ── Operation checkboxes — pick one or both qpdf operations to run
+       on the file below, instead of a mode switch that picked exactly one. ── */
+    .option-row { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0; }
+    .option-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 0.2rem; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+    .option-row__body { min-width: 0; }
+    .option-row label { display: block; font-size: 0.88rem; font-weight: 500; color: var(--text); cursor: pointer; }
+    .option-row p { margin: 0.15rem 0 0; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
 
     .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 16px; padding: 2.2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
     .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
@@ -245,18 +242,9 @@
 
   <main class="app-main">
     <div class="hero">
-      <div class="hero__icon"><span class="material-icons" id="heroIcon">lock_open</span></div>
-      <h1 class="hero__title" id="heroTitle">Unlock a PDF</h1>
-      <p class="hero__sub" id="heroSub">Strip the owner password and permission restrictions (printing, copying, editing) from a PDF.</p>
-    </div>
-
-    <div class="mode-tabs" role="tablist" aria-label="Choose what to remove">
-      <button class="mode-tab" id="modeUnlockBtn" type="button" role="tab" aria-pressed="true">
-        <span class="material-icons">lock_open</span><span>Restrictions</span>
-      </button>
-      <button class="mode-tab" id="modeUnsignBtn" type="button" role="tab" aria-pressed="false">
-        <span class="material-icons">remove_moderator</span><span>Signature</span>
-      </button>
+      <div class="hero__icon"><span class="material-icons">lock_open</span></div>
+      <h1 class="hero__title">Unlock a PDF</h1>
+      <p class="hero__sub">Remove password restrictions, a certification signature, or both from a PDF.</p>
     </div>
 
     <div class="card">
@@ -278,7 +266,23 @@
         </button>
       </div>
 
-      <label class="field-label" for="passwordInput" id="passwordLabel">Password (only if the file asks for one to open)</label>
+      <label class="field-label" style="margin-top: 1.1rem;">What to remove</label>
+      <div class="option-row">
+        <input type="checkbox" id="optRestrictions" checked />
+        <div class="option-row__body">
+          <label for="optRestrictions">Remove restrictions</label>
+          <p>Clears the owner-password flag that blocks printing, copying, or editing.</p>
+        </div>
+      </div>
+      <div class="option-row">
+        <input type="checkbox" id="optSignature" />
+        <div class="option-row__body">
+          <label for="optSignature">Remove signature</label>
+          <p>Strips a certification signature (DocMDP) that blocks edits, even without a password.</p>
+        </div>
+      </div>
+
+      <label class="field-label" for="passwordInput">Password (only if the file asks for one to open)</label>
       <div class="password-row">
         <input id="passwordInput" type="password" placeholder="Leave blank for most restricted PDFs" autocomplete="off" />
         <button class="icon-btn" id="togglePasswordBtn" type="button" aria-label="Show password">
@@ -323,7 +327,7 @@
 
     <div class="card note-card">
       <span class="material-icons">shield</span>
-      <p id="noteText">Runs via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly, entirely in your browser. A PDF can restrict printing/copying/editing without requiring a password to open it — that's the "owner password" flag; this clears it. It won't open a file that actually needs a password to view.</p>
+      <p>Runs via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly — the file is processed entirely in your browser, nothing is uploaded anywhere.</p>
     </div>
   </main>
 
@@ -412,9 +416,8 @@
     return s;
   }
 
-  async function unlockPdf(file, password) {
+  async function unlockPdf(bytes, password) {
     const qpdf = await loadQpdf();
-    const bytes = new Uint8Array(await file.arrayBuffer());
     try { qpdf.FS.unlink("/input.pdf"); } catch (e) {}
     try { qpdf.FS.unlink("/output.pdf"); } catch (e) {}
     qpdf.FS.writeFile("/input.pdf", bytes);
@@ -713,11 +716,11 @@
     return body + xref + trailer;
   }
 
-  async function unsignPdf(file, password) {
+  async function unsignPdf(bytes, password) {
     const qpdf = await loadQpdf();
     const cleanup = () => { for (const p of ["/input.pdf", "/work.qdf", "/work2.qdf", "/output.pdf"]) { try { qpdf.FS.unlink(p); } catch (e) {} } };
     cleanup();
-    qpdf.FS.writeFile("/input.pdf", new Uint8Array(await file.arrayBuffer()));
+    qpdf.FS.writeFile("/input.pdf", bytes);
     qpdfLog = [];
     let exitCode;
     try {
@@ -792,51 +795,16 @@
     return { ok, found: true, exitCode: exitCode2, outBytes, log };
   }
 
-  /* ── Mode config: which qpdf operation the shared UI below drives. ── */
-  const MODES = {
-    unlock: {
-      heroIcon: "lock_open",
-      heroTitle: "Unlock a PDF",
-      heroSub: "Strip the owner password &amp; permission restrictions (printing, copying, editing) from a PDF.",
-      passwordLabel: "Password (only if the file asks for one to open)",
-      actionIcon: "lock_open",
-      actionIdle: "Unlock PDF",
-      actionBusy: "Unlocking…",
-      resultTitle: "Restrictions removed",
-      downloadLabel: "Download unlocked PDF",
-      errorTitle: "Couldn't unlock this PDF",
-      suffix: "-unlocked.pdf",
-      note: 'Runs via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly, entirely in your browser. A PDF can restrict printing/copying/editing without requiring a password to open it — that\'s the "owner password" flag; this clears it. It won\'t open a file that actually needs a password to view.',
-    },
-    unsign: {
-      heroIcon: "remove_moderator",
-      heroTitle: "Remove a PDF signature",
-      heroSub: "Strip digital signatures &amp; certification (DocMDP) from a PDF so it can be edited freely again.",
-      passwordLabel: "Password (only if the file is also encrypted)",
-      actionIcon: "remove_moderator",
-      actionIdle: "Remove signature",
-      actionBusy: "Removing signature…",
-      resultTitle: "Signature removed",
-      downloadLabel: "Download unsigned PDF",
-      errorTitle: "Couldn't remove the signature",
-      suffix: "-unsigned.pdf",
-      note: 'Also via QPDF/WebAssembly. A PDF can carry a certification signature (DocMDP) that blocks edits without any password — this strips that signature and its metadata, the same kind of flag as unlocking, just for a different restriction.',
-    },
-  };
-
   /* ── UI wiring ── */
   const dropzone = $("dropzone"), dropzoneTitle = $("dropzoneTitle"), fileInput = $("fileInput");
   const fileChip = $("fileChip"), fileChipName = $("fileChipName"), fileChipMeta = $("fileChipMeta"), fileChipRemove = $("fileChipRemove");
-  const passwordInput = $("passwordInput"), togglePasswordBtn = $("togglePasswordBtn"), togglePasswordIcon = $("togglePasswordIcon"), passwordLabel = $("passwordLabel");
+  const optRestrictions = $("optRestrictions"), optSignature = $("optSignature");
+  const passwordInput = $("passwordInput"), togglePasswordBtn = $("togglePasswordBtn"), togglePasswordIcon = $("togglePasswordIcon");
   const actionBtn = $("actionBtn"), actionBtnIcon = $("actionBtnIcon"), actionBtnLabel = $("actionBtnLabel");
   const statusLine = $("statusLine");
   const errorBanner = $("errorBanner"), errorTitle = $("errorTitle"), errorBody = $("errorBody"), errorDetails = $("errorDetails");
   const infoBanner = $("infoBanner"), infoBody = $("infoBody");
   const resultCard = $("resultCard"), resultTitle = $("resultTitle"), resultSub = $("resultSub"), downloadBtn = $("downloadBtn"), downloadBtnLabel = $("downloadBtnLabel"), resetBtn = $("resetBtn");
-  const heroIconEl = $("heroIcon"), heroTitleEl = $("heroTitle"), heroSubEl = $("heroSub"), noteText = $("noteText");
-  const modeUnlockBtn = $("modeUnlockBtn"), modeUnsignBtn = $("modeUnsignBtn");
-
-  let currentMode = "unlock";
   let currentFile = null;
   let currentObjectUrl = null;
   let busy = false;
@@ -857,8 +825,11 @@
   function showInfo(message) { infoBody.textContent = message; infoBanner.classList.remove("hidden"); }
 
   function hideError() { errorBanner.classList.add("hidden"); errorDetails.classList.add("hidden"); errorDetails.textContent = ""; }
+  function selectedOps() { return { restrictions: optRestrictions.checked, signature: optSignature.checked }; }
   function showError(message, details) {
-    errorTitle.textContent = MODES[currentMode].errorTitle;
+    const { restrictions, signature } = selectedOps();
+    errorTitle.textContent = restrictions && signature ? "Couldn't process this PDF"
+      : signature ? "Couldn't remove the signature" : "Couldn't unlock this PDF";
     errorBody.textContent = message;
     if (details) { errorDetails.textContent = details; errorDetails.classList.remove("hidden"); }
     else { errorDetails.classList.add("hidden"); errorDetails.textContent = ""; }
@@ -871,29 +842,24 @@
   }
 
   function updateActionButton() {
-    const cfg = MODES[currentMode];
-    actionBtn.disabled = !currentFile || busy;
-    actionBtnIcon.textContent = busy ? "" : cfg.actionIcon;
-    actionBtnLabel.textContent = busy ? cfg.actionBusy : (currentFile ? cfg.actionIdle : "Choose a PDF first");
+    const { restrictions, signature } = selectedOps();
+    const hasSelection = restrictions || signature;
+    actionBtn.disabled = !currentFile || !hasSelection || busy;
+    actionBtnIcon.textContent = busy ? "" : "lock_open";
+    if (busy) {
+      actionBtnLabel.textContent = restrictions && signature ? "Removing restrictions & signature…"
+        : signature ? "Removing signature…" : "Unlocking…";
+    } else if (!currentFile) {
+      actionBtnLabel.textContent = "Choose a PDF first";
+    } else if (!hasSelection) {
+      actionBtnLabel.textContent = "Choose what to remove above";
+    } else {
+      actionBtnLabel.textContent = restrictions && signature ? "Remove restrictions & signature"
+        : signature ? "Remove signature" : "Remove restrictions";
+    }
   }
-
-  function applyMode(mode) {
-    currentMode = mode;
-    const cfg = MODES[mode];
-    modeUnlockBtn.setAttribute("aria-pressed", String(mode === "unlock"));
-    modeUnsignBtn.setAttribute("aria-pressed", String(mode === "unsign"));
-    heroIconEl.textContent = cfg.heroIcon;
-    heroTitleEl.textContent = cfg.heroTitle;
-    heroSubEl.innerHTML = cfg.heroSub;
-    passwordLabel.textContent = cfg.passwordLabel;
-    resultTitle.textContent = cfg.resultTitle;
-    downloadBtnLabel.textContent = cfg.downloadLabel;
-    noteText.innerHTML = cfg.note;
-    hideError(); hideResult(); hideInfo();
-    updateActionButton();
-  }
-  modeUnlockBtn.addEventListener("click", () => { if (!busy) applyMode("unlock"); });
-  modeUnsignBtn.addEventListener("click", () => { if (!busy) applyMode("unsign"); });
+  optRestrictions.addEventListener("change", updateActionButton);
+  optSignature.addEventListener("change", updateActionButton);
 
   function selectFile(file) {
     hideError(); hideResult(); hideInfo();
@@ -937,48 +903,77 @@
     return name.replace(/\.pdf$/i, "") + suffix;
   }
 
+  function qpdfFailureMessage(result, checkPassword) {
+    const detail = (result.log || []).join("\n").trim();
+    const needsPassword = checkPassword && /invalid password|password is invalid|wrong password/i.test(detail);
+    return {
+      message: needsPassword
+        ? "This PDF needs a password to open. Enter it above and try again."
+        : "qpdf couldn't process this file — it may be corrupted, not a real PDF, or use an unsupported structure.",
+      detail: detail || ("Exit code " + result.exitCode),
+    };
+  }
+
   async function runAction() {
-    if (!currentFile || busy) return;
-    const cfg = MODES[currentMode];
+    const { restrictions, signature } = selectedOps();
+    if (!currentFile || busy || (!restrictions && !signature)) return;
     busy = true;
     hideError(); hideResult(); hideInfo();
     updateActionButton();
-    setStatus(qpdfPromise ? cfg.actionBusy : "Loading PDF engine (first time only)…");
+    setStatus(qpdfPromise ? actionBtnLabel.textContent : "Loading PDF engine (first time only)…");
     try {
-      const result = currentMode === "unlock"
-        ? await unlockPdf(currentFile, passwordInput.value)
-        : await unsignPdf(currentFile, passwordInput.value);
+      let bytes = new Uint8Array(await currentFile.arrayBuffer());
+      let ranRestrictions = false, ranSignature = false, signatureSkipped = false;
 
-      if (currentMode === "unsign" && result.found === false) {
+      if (restrictions) {
+        const result = await unlockPdf(bytes, passwordInput.value);
+        if (!result.ok) {
+          const { message, detail } = qpdfFailureMessage(result, true);
+          showError(message, detail);
+          return;
+        }
+        bytes = result.outBytes;
+        ranRestrictions = true;
+      }
+
+      if (signature) {
+        // Once restrictions have already been cleared, the file is no
+        // longer encrypted, so no password is needed for this second pass.
+        const result = await unsignPdf(bytes, ranRestrictions ? "" : passwordInput.value);
+        if (result.found === false) {
+          signatureSkipped = true;
+        } else if (!result.ok) {
+          const { message, detail } = qpdfFailureMessage(result, !ranRestrictions);
+          showError(message, detail);
+          return;
+        } else {
+          bytes = result.outBytes;
+          ranSignature = true;
+        }
+      }
+
+      if (!ranRestrictions && !ranSignature) {
         showInfo("This PDF doesn't appear to have a digital signature or certification to remove — nothing to do.");
-        setStatus("");
         return;
       }
 
-      if (result.ok) {
-        const blob = new Blob([result.outBytes], { type: "application/pdf" });
-        currentObjectUrl = URL.createObjectURL(blob);
-        const outName = suggestOutputName(currentFile.name, cfg.suffix);
-        downloadBtn.href = currentObjectUrl;
-        downloadBtn.download = outName;
-        resultSub.textContent = outName + " · " + formatBytes(blob.size);
-        resultCard.classList.remove("hidden");
-        setStatus("");
-      } else {
-        const detail = (result.log || []).join("\n").trim();
-        const needsPassword = /invalid password|password is invalid|wrong password/i.test(detail);
-        showError(
-          needsPassword
-            ? "This PDF needs a password to open. Enter it above and try again."
-            : "qpdf couldn't process this file — it may be corrupted, not a real PDF, or use an unsupported structure.",
-          detail || ("Exit code " + result.exitCode)
-        );
-        setStatus("");
-      }
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      currentObjectUrl = URL.createObjectURL(blob);
+      const suffix = ranRestrictions && ranSignature ? "-unlocked-unsigned.pdf" : ranSignature ? "-unsigned.pdf" : "-unlocked.pdf";
+      const outName = suggestOutputName(currentFile.name, suffix);
+      downloadBtn.href = currentObjectUrl;
+      downloadBtn.download = outName;
+      downloadBtnLabel.textContent = ranRestrictions && ranSignature ? "Download processed PDF"
+        : ranSignature ? "Download unsigned PDF" : "Download unlocked PDF";
+      resultTitle.textContent = ranRestrictions && ranSignature ? "Restrictions & signature removed"
+        : ranSignature ? "Signature removed" : "Restrictions removed";
+      resultSub.textContent = outName + " · " + formatBytes(blob.size)
+        + (signatureSkipped ? " — no signature was found to remove" : "");
+      resultCard.classList.remove("hidden");
     } catch (err) {
       showError("Something went wrong while processing this PDF.", String((err && err.message) || err));
-      setStatus("");
     } finally {
+      setStatus("");
       busy = false;
       updateActionButton();
     }
@@ -994,7 +989,7 @@
     hideInfo();
   });
 
-  applyMode("unlock");
+  updateActionButton();
 })();
 </script>
 </body>
