@@ -145,6 +145,19 @@
        the narrow column instead of the actual window edge on a wide
        desktop viewport. */
     main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem max(1rem, calc((100% - 640px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
+
+    /* ── API key picker — same dropdown shape as the main app's player
+       source menu (index.html's .source-menu), just scoped to this page
+       since each tool keeps its own <style> block. ── */
+    .key-menu-wrap { position: relative; }
+    .key-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 190px; max-width: 260px; background: var(--md-surface-container-low); border-radius: 14px; box-shadow: var(--el3); padding: 0.35rem; z-index: 40; display: flex; flex-direction: column; gap: 0.1rem; }
+    .key-menu.hidden { display: none; }
+    .key-menu__item { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem; border-radius: 10px; border: none; background: none; color: var(--text); font-family: 'Google Sans', sans-serif; font-size: 0.85rem; cursor: pointer; text-align: left; width: 100%; }
+    .key-menu__item:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+    .key-menu__item--active { color: var(--primary-dark); font-weight: 600; }
+    .key-menu__item .material-icons { font-size: 16px; flex-shrink: 0; visibility: hidden; }
+    .key-menu__item--active .material-icons { visibility: visible; }
+    .key-menu__item span:not(.material-icons) { flex: 1; min-width: 0; }
     .hero { text-align: center; padding: 0.5rem 0.5rem 1.25rem; }
     .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
     .hero__icon .material-icons { font-size: 30px; }
@@ -244,6 +257,12 @@
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div class="top-bar__actions">
+      <div class="key-menu-wrap">
+        <button id="topKeyBtn" class="icon-btn" type="button" aria-label="Choose SauceNAO API key" title="API key" aria-haspopup="true" aria-expanded="false">
+          <span class="material-icons">vpn_key</span>
+        </button>
+        <div id="keyMenu" class="key-menu hidden" role="menu" aria-label="SauceNAO API key"></div>
+      </div>
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
         <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
       </button>
@@ -372,6 +391,62 @@
   ];
   const NUM_RES = 40; // max — always requests the full result set
 
+  /* Manual key preference (top-bar dropdown) — persisted per-browser, not
+     round-robined automatically. Whichever key is picked here is tried
+     first; the other is still there as an automatic fallback on a quota
+     error (see isQuotaError() below), it just moves to second in line
+     rather than being removed. Defaults to key 1 if nothing's stored yet
+     or the stored index is out of range (e.g. a key was since removed). */
+  let preferredKeyIdx = 0;
+  try {
+    const stored = Number(localStorage.getItem("bq_saucenao_key_idx"));
+    if (Number.isInteger(stored) && stored >= 0 && stored < API_KEYS.length) preferredKeyIdx = stored;
+  } catch (e) {}
+  function setPreferredKeyIdx(i) {
+    preferredKeyIdx = i;
+    try { localStorage.setItem("bq_saucenao_key_idx", String(i)); } catch (e) {}
+  }
+  function orderedApiKeys() {
+    return [API_KEYS[preferredKeyIdx], ...API_KEYS.filter((_, i) => i !== preferredKeyIdx)];
+  }
+
+  /* ═══════════════ API key picker (top bar) ═══════════════
+     Same open/close/click-outside/Escape behavior as the main app's
+     player-source menu (index.html) — just two fixed entries instead of
+     a data-driven list. */
+  const topKeyBtn = $("topKeyBtn");
+  const keyMenu = $("keyMenu");
+  function keyLabel(i) { return i === 0 ? "Key 1 (primary)" : "Key 2 (backup)"; }
+  function renderKeyMenu() {
+    keyMenu.innerHTML = API_KEYS.map((_, i) => `
+      <button type="button" class="key-menu__item${i === preferredKeyIdx ? " key-menu__item--active" : ""}" role="menuitemradio" aria-checked="${i === preferredKeyIdx}" data-idx="${i}">
+        <span class="material-icons">check</span><span>${keyLabel(i)}</span>
+      </button>`).join("");
+    keyMenu.querySelectorAll(".key-menu__item").forEach(item => {
+      item.addEventListener("click", () => {
+        setPreferredKeyIdx(Number(item.dataset.idx));
+        renderKeyMenu();
+        closeKeyMenu();
+      });
+    });
+  }
+  function openKeyMenu() {
+    renderKeyMenu();
+    keyMenu.classList.remove("hidden");
+    topKeyBtn.setAttribute("aria-expanded", "true");
+  }
+  function closeKeyMenu() {
+    keyMenu.classList.add("hidden");
+    topKeyBtn.setAttribute("aria-expanded", "false");
+  }
+  topKeyBtn.addEventListener("click", () => {
+    if (keyMenu.classList.contains("hidden")) openKeyMenu(); else closeKeyMenu();
+  });
+  document.addEventListener("click", (e) => {
+    if (!keyMenu.classList.contains("hidden") && !e.target.closest(".key-menu-wrap")) closeKeyMenu();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !keyMenu.classList.contains("hidden")) closeKeyMenu(); });
+
   /* ═══════════════ Networking: direct fetch, falling back through proxies ═══════════════
      Mirrors the CORS-proxy fallback used elsewhere in this toolbox (see the
      torrent search tool's history) — SauceNAO and Reddit both omit
@@ -493,7 +568,7 @@
   // key wouldn't fix it and would just waste that key's quota too.
   async function searchWithKeyFallback(makeRequest) {
     let lastErr;
-    for (const key of API_KEYS) {
+    for (const key of orderedApiKeys()) {
       try {
         const res = await makeRequest(key);
         return parseSaucenaoResponse(await res.json());
