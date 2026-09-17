@@ -1150,7 +1150,7 @@ async function init() {
     if (loadErrors.length) state.error = loadErrors.length === 1 ? loadErrors[0] : `${loadErrors.length} playlists failed to load.`;
   } catch (err) {
     state.loading = false;
-    state.error = (err && err.message) ? err.message : "Failed to load channel lists.";
+    state.error = BQChrome.errorText(err, "Failed to load channel lists.");
   }
   $("countRadio").textContent = state.radio.length ? `(${state.radio.length})` : "";
   $("countTv").textContent = state.tv.length ? `(${state.tv.length})` : "";

@@ -379,7 +379,7 @@
     } catch (err) {
       statusCard.classList.add("hidden");
       statusCard.innerHTML = "";
-      showError((err && err.message) || String(err));
+      showError(BQChrome.errorText(err, "Couldn't load that font page."));
     } finally {
       urlInput.disabled = false;
     }
@@ -417,7 +417,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      showError((err && err.message) || String(err));
+      showError(BQChrome.errorText(err, "Couldn't download those fonts."));
     } finally {
       if (triggerBtn) { triggerBtn.disabled = false; triggerBtn.innerHTML = originalHtml; }
     }

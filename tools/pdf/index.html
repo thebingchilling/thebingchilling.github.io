@@ -834,7 +834,7 @@
         + (signatureSkipped ? " — no signature was found to remove" : "");
       resultCard.classList.remove("hidden");
     } catch (err) {
-      showError("Something went wrong while processing this PDF.", String((err && err.message) || err));
+      showError("Something went wrong while processing this PDF.", BQChrome.errorText(err, "No further detail was reported."));
     } finally {
       setStatus("");
       busy = false;

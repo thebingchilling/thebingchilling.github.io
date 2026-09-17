@@ -697,13 +697,13 @@
         }
         ratesStatus.textContent = "Offline — using rates saved " + describeAge(cached.cachedAt)
           + (cached.source ? " via " + cached.source : "");
-        showRatesError("Couldn't refresh rates (" + ((err && err.message) || String(err))
+        showRatesError("Couldn't refresh rates (" + BQChrome.errorText(err, "the request failed", { punctuate: false })
           + "). Showing the last rates that loaded — they may be out of date.");
         onPairChanged();
         return;
       }
       conversionInfo.innerHTML = '<p class="caveat-text">Rates unavailable.</p>';
-      showRatesError((err && err.message) || String(err));
+      showRatesError(BQChrome.errorText(err, "Couldn't load exchange rates."));
     }
   }
 

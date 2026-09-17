@@ -521,7 +521,7 @@
       setAddStatus("");
     } catch (err) {
       setAddStatus("");
-      showAddError(String((err && err.message) || err));
+      showAddError(BQChrome.errorText(err, "Couldn't add that account."));
     }
   }
 
@@ -535,7 +535,7 @@
       openAddConfirm(parsed);
       $("uriInput").value = "";
     } catch (err) {
-      showAddError(String((err && err.message) || err));
+      showAddError(BQChrome.errorText(err, "Couldn't add that account."));
     }
   });
 
@@ -810,7 +810,7 @@
         ? "Imported " + added + " account" + (added === 1 ? "" : "s") + "."
         : "Nothing new to import — all accounts in that file are already here.");
     } catch (err) {
-      BQChrome.snackbar("Couldn't import that file: " + String((err && err.message) || err), { duration: 6000 });
+      BQChrome.snackbar("Couldn't import that file — " + BQChrome.errorText(err, "it isn't a backup this can read."), { duration: 6000 });
     }
   });
 

@@ -484,8 +484,75 @@ window.BQChrome = (function () {
   }
   initAppChrome();
 
+
+  /* ═══════════════ Error text ═══════════════
+     Several tools show an error message that came from somewhere else —
+     SauceNAO, Cloudflare's edge, Adobe Fonts, an exchange-rate API. Those
+     are not reliably the one clean sentence the UI assumes they are:
+     SauceNAO's "You need an Image!" reply is a fragment of its own HTML
+     error page (tags, entities, a "GO BACK TO START" link and a couple of
+     "Detected Type N:" debug lines, all of it dumped straight into the
+     error banner), Cloudflare answers with markup, and several run long
+     enough to shove the rest of the page off screen.
+
+     cleanMessage() is the one place that gets fixed: strip the markup,
+     unescape what that leaves behind, drop the debris, collapse the
+     whitespace and cap the length. Every caller passes a fallback for the
+     case where nothing readable survives — an empty error banner is worse
+     than a vague one. ── */
+  const MESSAGE_MAX = 200;
+  const ENTITIES = {
+    "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&apos;": "'",
+    "&#39;": "'", "&nbsp;": " ", "&hellip;": "…", "&mdash;": "—", "&ndash;": "–"
+  };
+
+  function decodeEntities(s) {
+    return s
+      .replace(/&#x([0-9a-f]+);/gi, (m, hex) => codePoint(parseInt(hex, 16), m))
+      .replace(/&#(\d+);/g, (m, dec) => codePoint(parseInt(dec, 10), m))
+      .replace(/&[a-z]+;/gi, (m) => (ENTITIES[m.toLowerCase()] != null ? ENTITIES[m.toLowerCase()] : m));
+  }
+  function codePoint(n, original) {
+    if (!Number.isFinite(n) || n < 32 || n > 0x10ffff) return original;
+    try { return String.fromCodePoint(n); } catch (e) { return original; }
+  }
+
+  /* opts.punctuate: false leaves the terminal full stop off, for the
+     callers that drop the result into the middle of their own sentence
+     ("Couldn't refresh rates (…)"), where one reads as a typo. */
+  function cleanMessage(raw, fallback, opts) {
+    const fb = fallback || "Something went wrong.";
+    let s = raw;
+    if (s && typeof s === "object") s = s.message != null ? s.message : String(s);
+    s = s == null ? "" : String(s);
+    // Only the tags that actually carry a line break become a space, so
+    // "line one<br>line two" doesn't run together as "line oneline two".
+    s = s.replace(/<\s*(?:br|\/p|\/div|\/li|\/tr|\/h[1-6])\b[^>]*>/gi, " ");
+    s = s.replace(/<[^>]*>/g, "");
+    // Decoding can hand back angle brackets that were escaped in the
+    // source ("&lt;b&gt;"), so strip once more rather than trusting the
+    // first pass to have seen every tag.
+    s = decodeEntities(s).replace(/<[^>]*>/g, "");
+    s = s.replace(/\.{2,}\s*GO BACK TO START\s*\.{2,}/gi, " ");
+    s = s.replace(/\bDetected Type \d+:\s*(?:[\w.+-]+\/[\w.+-]+)?/gi, " ");
+    s = s.replace(/\s+/g, " ").trim();
+    s = s.replace(/^[\s|·—–\-:]+/, "").replace(/[\s|·—–\-:]+$/, "");
+    if (!s) return fb;
+    if (s.length > MESSAGE_MAX) s = s.slice(0, MESSAGE_MAX).replace(/\s+\S*$/, "").trim() + "…";
+    if (opts && opts.punctuate === false) return s.replace(/\.$/, "");
+    if (!/[.!?…:]$/.test(s)) s += ".";
+    return s;
+  }
+
+  // Convenience for the overwhelmingly common shape: a caught value that
+  // might be an Error, a string, or something with no message at all.
+  function errorText(err, fallback, opts) {
+    return cleanMessage(err && err.message != null ? err.message : err, fallback, opts);
+  }
+
   return {
     initRipple, initTheme, syncThemeColorMeta,
-    dialog, confirm: confirmDialog, snackbar, dismissSnackbar, initTabs
+    dialog, confirm: confirmDialog, snackbar, dismissSnackbar, initTabs,
+    cleanMessage, errorText
   };
 })();

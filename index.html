@@ -1197,7 +1197,7 @@ async function openSceneReleases(title, year) {
     body.innerHTML = "";
     const p = document.createElement("p");
     p.className = "overview overview--error"; p.style.margin = "0";
-    p.textContent = (err && err.message) || "Lookup failed.";
+    p.textContent = BQChrome.errorText(err, "Lookup failed.");
     body.appendChild(p);
   }
 }

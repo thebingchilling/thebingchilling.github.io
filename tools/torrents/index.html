@@ -481,7 +481,7 @@
   function renderResultsArea() {
     let html = "";
     lastErrors.forEach(({ source, error }) => {
-      html += `<div class="source-error"><strong>${escapeHtml(source.name)}</strong> — ${escapeHtml(error.message)}</div>`;
+      html += `<div class="source-error"><strong>${escapeHtml(source.name)}</strong> — ${escapeHtml(BQChrome.errorText(error, "didn't respond."))}</div>`;
     });
     if (lastResults.length) {
       html += `<div class="result-list">${sortResults(lastResults).map(resultCardHtml).join("")}</div>`;

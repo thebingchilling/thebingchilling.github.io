@@ -276,7 +276,10 @@
       if (code === "1015") return "Rate limited by Cloudflare (error 1015) — the proxy is sending requests too quickly. Wait a minute and try again.";
       return "Cloudflare edge error " + code + " from the proxy or API.";
     }
-    return "Unexpected response (HTTP " + status + "): " + text.slice(0, 200);
+    // Whatever came back is usually an HTML page, not a sentence — run it
+    // through the shared cleaner rather than pasting markup into the banner.
+    return "Unexpected response (HTTP " + status + "): "
+      + BQChrome.cleanMessage(text, "the server sent something this couldn't read");
   }
 
   function formatDate(isoString) {
@@ -312,7 +315,8 @@
   }
 
   function apiErrorMessage(data) {
-    return (data.errors && data.errors[0] && data.errors[0].message) || (data.error && data.error.message) || "Unknown error";
+    const raw = (data.errors && data.errors[0] && data.errors[0].message) || (data.error && data.error.message);
+    return BQChrome.cleanMessage(raw, "Cloudflare's API rejected the request without saying why.");
   }
 
   async function registerWithWarp(publicKey, options) {
@@ -393,7 +397,7 @@
       outputSection.classList.remove("hidden");
     } catch (err) {
       outputSection.classList.add("hidden");
-      showError((err && err.message) || String(err));
+      showError(BQChrome.errorText(err, "Couldn't generate a configuration — try again."));
     } finally {
       generateBtn.disabled = false;
       generateBtn.innerHTML = originalHtml;

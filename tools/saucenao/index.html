@@ -424,11 +424,55 @@
     return /limit|rate|exceed|banned|\b429\b/i.test(message || "");
   }
 
+  /* SauceNAO reports a failed search as an HTTP 200 whose JSON body has a
+     negative header.status and a header.message — and that message is a
+     chunk of its own HTML error page, tags and all ("You need an
+     Image!<br /><a href="/index.php">...GO BACK TO START...</a><br
+     />Detected Type 1: application/x-empty"). That was going straight into
+     the error banner as literal markup.
+
+     BQChrome.cleanMessage strips it back to a sentence; the table below
+     then replaces the ones that have a genuinely useful thing to say with
+     copy that says it. The original text is kept as the error's detail, so
+     "Show details" still has the real thing for debugging. */
+  const SAUCENAO_MESSAGE_MAP = [
+    { re: /you need an image|x-empty|no image|invalid image|not a(?:n)? (?:valid )?image|unsupported (?:file|image)/i,
+      msg: "SauceNAO couldn't read that image. If the link came from a site that blocks other servers from fetching it (reddit, Instagram, Pixiv), save the image first and upload the file instead." },
+    { re: /too large|file ?size|exceeds.*(?:mb|size)/i,
+      msg: "That image is too large for SauceNAO — it takes files up to about 15 MB." },
+    { re: /daily search limit/i,
+      msg: "This API key has used up its searches for the day. Try the other key from the menu in the top bar, or come back tomorrow.", nextKey: true },
+    { re: /search rate too high|too many searches/i,
+      msg: "Searching too quickly for SauceNAO — wait about 30 seconds and try again.", nextKey: true },
+    { re: /invalid api key|problem with (?:your )?api key/i,
+      msg: "SauceNAO rejected the API key. Try the other key from the menu in the top bar.", nextKey: true },
+    { re: /banned|blocked/i,
+      msg: "SauceNAO has blocked this request. Try again later.", nextKey: true }
+  ];
+  function saucenaoErrorMessage(raw, status) {
+    const clean = BQChrome.cleanMessage(raw, status != null ? `SauceNAO error (status ${status}).` : "SauceNAO couldn't finish that search.");
+    const hit = SAUCENAO_MESSAGE_MAP.find((m) => m.re.test(clean));
+    // nextKey is carried out of here rather than re-derived from the
+    // rewritten text: isQuotaError() below matches on SauceNAO's own
+    // wording ("Daily Search Limit Exceeded"), and the friendly copy that
+    // replaces it deliberately doesn't repeat those words — so without
+    // this flag, rewriting the message would quietly disable the
+    // second-key fallback it's describing.
+    return { msg: hit ? hit.msg : clean, nextKey: hit ? !!hit.nextKey : isQuotaError(clean) };
+  }
+
   function parseSaucenaoResponse(json) {
     const header = json && json.header;
     if (!header) throw new Error("SauceNAO returned an unexpected response.");
     if (typeof header.status === "number" && header.status < 0) {
-      throw new Error(header.message || `SauceNAO error (status ${header.status}).`);
+      const outcome = saucenaoErrorMessage(header.message, header.status);
+      const err = new Error(outcome.msg);
+      err.tryNextKey = outcome.nextKey;
+      // Kept verbatim (minus the markup) behind "Show details" — the
+      // friendly message above deliberately drops the specifics.
+      err.detail = BQChrome.cleanMessage(header.message, "");
+      err.saucenao = true;
+      throw err;
     }
     const results = Array.isArray(json.results) ? json.results : [];
     return {
@@ -462,11 +506,36 @@
     return name ? { name, url: null } : null;
   }
 
+  /* Every index names its title field differently, and one of them —
+     "source" — is a title on some (the anime index puts the series name
+     there) and the original post's URL on most of the booru ones. A raw
+     https://… was being rendered as the card's heading, wrapping over
+     three lines and saying nothing the source buttons underneath don't
+     already say. So: same priority order as before, but anything that
+     looks like a URL is skipped rather than shown. */
+  const URL_LIKE = /^(?:[a-z][a-z0-9+.-]*:\/\/|www\.)\S+$/i;
+  function titleCandidate(v) {
+    if (v == null) return null;
+    if (Array.isArray(v)) v = v.filter(Boolean).join(", ");
+    v = String(v).trim();
+    if (!v || URL_LIKE.test(v)) return null;
+    return v;
+  }
+  function pickTitle(d) {
+    if (!d) return null;
+    const ordered = [d.title, d.eng_name, d.jp_name, d.material, d.source, d.chapter_title];
+    for (const v of ordered) {
+      const t = titleCandidate(v);
+      if (t) return t;
+    }
+    return null;
+  }
+
   function normalizeResult(r) {
     const h = r && r.header, d = r && r.data;
     if (!h) return null;
     const links = Array.isArray(d && d.ext_urls) ? d.ext_urls : [];
-    const title = (d && (d.title || d.material || d.source || d.eng_name || d.jp_name)) || null;
+    const title = pickTitle(d);
     const creator = resolveCreator(d);
     return {
       similarity: parseFloat(h.similarity) || 0,
@@ -489,7 +558,9 @@
         return parseSaucenaoResponse(await res.json());
       } catch (e) {
         lastErr = e;
-        if (!isQuotaError(e.message)) throw e;
+        // A bare HTTP 429 from the proxy never reaches parseSaucenaoResponse,
+        // so the message test still has to be here as well as on the flag.
+        if (!(e.tryNextKey || isQuotaError(e.message))) throw e;
       }
     }
     // Both keys hit a quota/rate error — say that plainly instead of
@@ -501,18 +572,61 @@
     throw err;
   }
 
-  async function searchByUrl(imageUrl) {
-    return searchWithKeyFallback((key) => {
-      const params = saucenaoParams({ url: imageUrl }, key);
-      return fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "GET" });
-    });
+  /* A URL search asks SauceNAO's own servers to go and fetch the image.
+     Plenty of hosts won't let them: reddit, Instagram and Pixiv all serve
+     their CDN images to browsers but not to an anonymous server, and what
+     SauceNAO gets back is an empty body — which is the "You need an
+     Image! … Detected Type 1: application/x-empty" reply this tool was
+     showing people as raw HTML.
+
+     The image itself is perfectly reachable from here, though, through
+     the same CORS proxy everything else in this tool uses. So rather than
+     report the failure, download it and re-run the search as a file
+     upload. Only that one failure mode retries — a quota error or a dead
+     proxy would just fail twice as slowly. */
+  const UNFETCHABLE_RE = /couldn't read that image|you need an image|x-empty|no image/i;
+
+  async function urlAsUpload(imageUrl) {
+    const res = await fetchDirectOrProxied(imageUrl, { method: "GET" });
+    const blob = await res.blob();
+    if (!blob || !blob.size) throw new Error("That link didn't return an image.");
+    if (blob.type && !blob.type.startsWith("image/")) {
+      throw new Error("That link points at a page rather than an image file — open it and copy the image's own address.");
+    }
+    return { blob, name: filenameFromUrl(imageUrl, 0) };
   }
 
-  async function searchByFile(file) {
+  async function searchByUrl(imageUrl) {
+    try {
+      return await searchWithKeyFallback((key) => {
+        const params = saucenaoParams({ url: imageUrl }, key);
+        return fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "GET" });
+      });
+    } catch (err) {
+      if (!UNFETCHABLE_RE.test((err && err.message) || "")) throw err;
+      let upload;
+      try {
+        upload = await urlAsUpload(imageUrl);
+      } catch (downloadErr) {
+        // Keep SauceNAO's diagnosis as the headline — it's the accurate
+        // one — and say what the second attempt ran into underneath it.
+        err.detail = [err.detail, `Downloading it here failed too: ${BQChrome.errorText(downloadErr, "unknown error")}`].filter(Boolean).join("\n");
+        throw err;
+      }
+      setBusy(true, "Uploading image to SauceNAO…");
+      return searchByFile(upload.blob, upload.name);
+    }
+  }
+
+  async function searchByFile(file, filename) {
+    // The filename matters: a Blob appended without one arrives as
+    // "blob" with no extension, and SauceNAO sniffs the extension before
+    // it sniffs the bytes.
+    const name = filename || (file && file.name) || "image.jpg";
     return searchWithKeyFallback((key) => {
       const params = saucenaoParams(undefined, key);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", file, name);
       return fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "POST", body: fd });
     });
   }
@@ -741,7 +855,8 @@
       ? `<div class="state-panel"><span class="spinner"></span><p>${escapeHtml(msg || "Working…")}</p></div>`
       : "";
   }
-  function showError(msg, detail) {
+  function showError(rawMsg, detail) {
+    const msg = BQChrome.cleanMessage(rawMsg, "Something went wrong — try again.");
     const detailHtml = detail
       ? `<details class="source-error__detail"><summary>Show details</summary><pre>${escapeHtml(detail)}</pre></details>`
       : "";
@@ -865,7 +980,7 @@
       renderResults(outcome.results);
     } catch (err) {
       setBusy(false);
-      showError((err && err.message) || String(err), err && err.detail);
+      showError(BQChrome.errorText(err, "That search didn't go through."), err && err.detail);
     }
   }
 
@@ -879,30 +994,48 @@
     runSearch("url", url);
   }
 
-  /* Source links are plain target="_blank" anchors, which is all a normal
-     browser tab needs. An installed PWA is the exception — notably iOS
-     "Add to Home Screen", which swallows target="_blank" because there is
-     no browser chrome to open a tab in — so there the click is intercepted
-     and the window opened by hand.
+  /* Opening a source link.
 
-     The interception is now limited to that case, because doing it
-     everywhere was breaking the links it was meant to fix: passing a
-     non-empty feature string to window.open ("noopener,noreferrer") asks
-     for a *popup* rather than a tab, and popup blockers treat the two very
-     differently. With preventDefault() already called, a blocked popup
-     meant clicking a source did nothing at all. Opening with no feature
-     string keeps it a tab, and the opener is severed afterwards, which is
-     what rel="noopener" on the anchor was doing anyway. */
+     In an ordinary browser tab the anchor's own target="_blank" is all
+     this needs, and the handler below stays out of the way. An installed
+     app is the exception, and there are two different exceptions:
+
+       • iOS "Add to Home Screen" has no tab to open into at all.
+         target="_blank" does nothing, and window.open() is worse than
+         useless — it hands back a window object that never appears, so
+         there is nothing to feature-detect and no way to notice the
+         failure. Navigating is the one thing that works: the link is
+         outside this app's manifest scope, so iOS hands it to Safari.
+
+       • An installed Chrome/Edge app does open a tab from window.open(),
+         but a blocked popup returns null, and with preventDefault()
+         already called that used to mean the click did nothing at all.
+         So: fall back to navigating there too.
+
+     Modified clicks (⌘/Ctrl/Shift/middle) are left entirely alone — the
+     browser's own "open in a new tab/window" is better than anything
+     re-implemented here, and intercepting them was breaking it. */
   const inStandalonePwa = () =>
     (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
     window.navigator.standalone === true;
 
-  $("resultsArea").addEventListener("click", (e) => {
-    const link = e.target.closest('a[target="_blank"]');
-    if (!link || !inStandalonePwa()) return; // in a browser the anchor already works
+  function openExternal(href) {
+    if (window.navigator.standalone === true) { window.location.href = href; return; }
+    let opened = null;
+    // No feature string: that would ask for a popup window rather than a
+    // tab, and popup blockers treat the two very differently.
+    try { opened = window.open(href, "_blank"); } catch (e) {}
+    if (!opened) { window.location.href = href; return; }
+    try { opened.opener = null; } catch (e) {} // what rel="noopener" was doing
+  }
+
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented || e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const link = e.target && e.target.closest && e.target.closest('a[target="_blank"]');
+    if (!link || !link.href || !inStandalonePwa()) return;
     e.preventDefault();
-    const w = window.open(link.href, "_blank");
-    if (w) w.opener = null;
+    openExternal(link.href);
   });
 
   /* ═══════════════ Mode tabs ═══════════════ */
@@ -1020,7 +1153,7 @@
       a.remove();
       setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
     } catch (e) {
-      showError("Couldn't download that image: " + ((e && e.message) || e));
+      showError("Couldn't download that image — " + BQChrome.errorText(e, "the request failed."));
     } finally {
       btn.innerHTML = original;
     }
@@ -1077,7 +1210,7 @@
       }
     } catch (err) {
       setBusy(false);
-      showError((err && err.message) || String(err), err && err.detail);
+      showError(BQChrome.errorText(err, "Couldn't load that reddit post."), err && err.detail);
     }
   }
 
