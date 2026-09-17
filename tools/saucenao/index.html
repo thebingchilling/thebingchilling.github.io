@@ -345,7 +345,9 @@
 
   function debounce(fn, delay) {
     let t;
-    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+    const wrapped = (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+    wrapped.cancel = () => clearTimeout(t);
+    return wrapped;
   }
 
   /* Fixed — not user-configurable, no settings sheet. Cloudflare Worker
@@ -359,10 +361,15 @@
   ];
   function proxyList() { return CORS_PROXIES; }
 
-  // Hardcoded to this site owner's account — visible in page source to
+  // Hardcoded to this site owner's account(s) — visible in page source to
   // anyone, by design (the account owner's explicit choice over keeping it
-  // private in a per-visitor Settings field).
-  const API_KEY = "41bea43effa00c88e0df8d0948a4a08d619da888";
+  // private in a per-visitor Settings field). The second key is a backup,
+  // tried only once the first's quota is actually exhausted — see
+  // isQuotaError() below — not round-robined or used for load-balancing.
+  const API_KEYS = [
+    "41bea43effa00c88e0df8d0948a4a08d619da888",
+    "4eef2e704d4c24ca34fc03003bf8a576e2fa7ab7",
+  ];
   const NUM_RES = 40; // max — always requests the full result set
 
   /* ═══════════════ Networking: direct fetch, falling back through proxies ═══════════════
@@ -409,14 +416,22 @@
   /* ═══════════════ SauceNAO ═══════════════ */
   const SAUCENAO_ENDPOINT = "https://saucenao.com/search.php";
 
-  function saucenaoParams(extra) {
+  function saucenaoParams(extra, apiKey) {
     const p = new URLSearchParams();
     p.set("db", "999");
     p.set("output_type", "2");
     p.set("numres", String(NUM_RES));
-    p.set("api_key", API_KEY);
+    p.set("api_key", apiKey);
     Object.keys(extra || {}).forEach((k) => p.set(k, extra[k]));
     return p;
+  }
+
+  // SauceNAO signals an exhausted/rate-limited key either as an HTTP 429
+  // or as an HTTP 200 whose JSON body's header.message says as much — the
+  // wording below covers both known phrasings ("Daily Search Limit
+  // Exceeded.", "Search Rate Too High...", an IP/key ban message).
+  function isQuotaError(message) {
+    return /limit|rate|exceed|banned|\b429\b/i.test(message || "");
   }
 
   function parseSaucenaoResponse(json) {
@@ -472,18 +487,38 @@
     };
   }
 
+  // Shared by both search modes: tries each API key in turn, but only
+  // moves to the next one on a quota/rate error — anything else (a
+  // malformed image, a dead proxy) fails immediately, since a different
+  // key wouldn't fix it and would just waste that key's quota too.
+  async function searchWithKeyFallback(makeRequest) {
+    let lastErr;
+    for (const key of API_KEYS) {
+      try {
+        const res = await makeRequest(key);
+        return parseSaucenaoResponse(await res.json());
+      } catch (e) {
+        lastErr = e;
+        if (!isQuotaError(e.message)) throw e;
+      }
+    }
+    throw lastErr;
+  }
+
   async function searchByUrl(imageUrl) {
-    const params = saucenaoParams({ url: imageUrl });
-    const res = await fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "GET" });
-    return parseSaucenaoResponse(await res.json());
+    return searchWithKeyFallback((key) => {
+      const params = saucenaoParams({ url: imageUrl }, key);
+      return fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "GET" });
+    });
   }
 
   async function searchByFile(file) {
-    const params = saucenaoParams();
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "POST", body: fd });
-    return parseSaucenaoResponse(await res.json());
+    return searchWithKeyFallback((key) => {
+      const params = saucenaoParams(undefined, key);
+      const fd = new FormData();
+      fd.append("file", file);
+      return fetchDirectOrProxied(`${SAUCENAO_ENDPOINT}?${params.toString()}`, { method: "POST", body: fd });
+    });
   }
 
   /* ═══════════════ Reddit OAuth ═══════════════
@@ -920,8 +955,12 @@
     if (!isValidHttpUrl(val)) { showError("That's not a valid URL — enter a full link to an image."); return; }
     runUrlSearch(val);
   }
-  urlInput.addEventListener("input", debounce(submitUrlSearch, 600));
-  $("urlForm").addEventListener("submit", (e) => { e.preventDefault(); submitUrlSearch(); });
+  const debouncedUrlSearch = debounce(submitUrlSearch, 600);
+  urlInput.addEventListener("input", debouncedUrlSearch);
+  // Cancel the pending debounced search first — otherwise it still fires
+  // ~600ms later with the same URL, doubling up on the SauceNAO request
+  // (and API-key quota) a submit already spent.
+  $("urlForm").addEventListener("submit", (e) => { e.preventDefault(); debouncedUrlSearch.cancel(); submitUrlSearch(); });
   $("urlPasteBtn").addEventListener("click", async () => {
     try {
       const items = await navigator.clipboard.read();
@@ -1034,8 +1073,11 @@
     const val = redditInput.value.trim();
     if (val) loadRedditGallery(val);
   }
-  redditInput.addEventListener("input", debounce(submitRedditSearch, 600));
-  $("redditForm").addEventListener("submit", (e) => { e.preventDefault(); submitRedditSearch(); });
+  const debouncedRedditSearch = debounce(submitRedditSearch, 600);
+  redditInput.addEventListener("input", debouncedRedditSearch);
+  // Same double-fire fix as the image-URL form above — cancel the pending
+  // debounced search before submit's immediate one.
+  $("redditForm").addEventListener("submit", (e) => { e.preventDefault(); debouncedRedditSearch.cancel(); submitRedditSearch(); });
   $("redditPasteBtn").addEventListener("click", async () => {
     try {
       const text = await navigator.clipboard.readText();
