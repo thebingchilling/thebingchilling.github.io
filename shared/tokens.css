@@ -99,10 +99,10 @@
   --shape-full: 999px;
 
   /* ── M3 tonal palette (warm terracotta seed), light ──────────────── */
-  --md-primary: #764c2a;              --md-on-primary: #fffaf6;
-  --md-primary-container: #f1d8c3;    --md-on-primary-container: #2f1e0e;
+  --md-primary: #7e4b22;              --md-on-primary: #fffaf6;
+  --md-primary-container: #f8dac1;    --md-on-primary-container: #2d1906;
   --md-secondary: #77584a;            --md-on-secondary: #fffaf6;
-  --md-secondary-container: #f2d8c9;  --md-on-secondary-container: #2f1f18;
+  --md-secondary-container: #f9d9c8;  --md-on-secondary-container: #2c1910;
   --md-tertiary: #6b6330;             --md-on-tertiary: #fffaf6;
   --md-tertiary-container: #ded7b0;   --md-on-tertiary-container: #1f1c00;
   --md-error: #ba1a1a;                --md-on-error: #fffaf6;
@@ -188,7 +188,7 @@
   --surface: var(--md-surface-container-low);
   --surface2: var(--md-surface-container);
   --primary: var(--md-primary);
-  --primary-dark: #694628;
+  --primary-dark: #704621;
   --on-primary: var(--md-on-primary);
   --text: var(--md-on-surface);
   --text-muted: var(--md-on-surface-variant);
@@ -211,10 +211,10 @@
    so the two can never disagree. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --md-primary: #d7b9a2;              --md-on-primary: #32251b;
-    --md-primary-container: #5e4533;    --md-on-primary-container: #ffdcbf;
+    --md-primary: #deb89b;              --md-on-primary: #362517;
+    --md-primary-container: #65442c;    --md-on-primary-container: #ffdcbf;
     --md-secondary: #e5bfa9;            --md-on-secondary: #442a1c;
-    --md-secondary-container: #56453b;  --md-on-secondary-container: #ffdbc7;
+    --md-secondary-container: #594438;  --md-on-secondary-container: #ffdbc7;
     --md-tertiary: #d2c86e;             --md-on-tertiary: #343100;
     --md-tertiary-container: #464226;   --md-on-tertiary-container: #efe58b;
     --md-error: #ffb4ab;                --md-on-error: #690005;
@@ -233,7 +233,7 @@
     --md-on-surface: #ede0d3;           --md-on-surface-variant: #d5c4b4;
     --md-outline: #9f8d7c;              --md-outline-variant: #52443a;
     --md-inverse-surface: #ede0d3;      --md-inverse-on-surface: #392e24;
-    --primary-dark: #dfc7b3;
+    --primary-dark: #e6c6ac;
     /* #a89686 fell to 4.36:1 on --md-surface-container-highest. */
     --text-faint: #b8a696;
     --el1: 0 1px 2px rgba(0,0,0,0.45), 0 1px 3px 1px rgba(0,0,0,0.30);
@@ -243,10 +243,10 @@
 }
 
 :root[data-theme="dark"] {
-  --md-primary: #d7b9a2;              --md-on-primary: #32251b;
-  --md-primary-container: #5e4533;    --md-on-primary-container: #ffdcbf;
+  --md-primary: #deb89b;              --md-on-primary: #362517;
+  --md-primary-container: #65442c;    --md-on-primary-container: #ffdcbf;
   --md-secondary: #e5bfa9;            --md-on-secondary: #442a1c;
-  --md-secondary-container: #56453b;  --md-on-secondary-container: #ffdbc7;
+  --md-secondary-container: #594438;  --md-on-secondary-container: #ffdbc7;
   --md-tertiary: #d2c86e;             --md-on-tertiary: #343100;
   --md-tertiary-container: #464226;   --md-on-tertiary-container: #efe58b;
   --md-error: #ffb4ab;                --md-on-error: #690005;
@@ -265,7 +265,7 @@
   --md-on-surface: #ede0d3;           --md-on-surface-variant: #d5c4b4;
   --md-outline: #9f8d7c;              --md-outline-variant: #52443a;
   --md-inverse-surface: #ede0d3;      --md-inverse-on-surface: #392e24;
-  --primary-dark: #dfc7b3;
+  --primary-dark: #e6c6ac;
   --text-faint: #b8a696;
   --el1: 0 1px 2px rgba(0,0,0,0.45), 0 1px 3px 1px rgba(0,0,0,0.30);
   --el2: 0 1px 2px rgba(0,0,0,0.45), 0 2px 6px 2px rgba(0,0,0,0.30);
@@ -276,10 +276,10 @@
    the :root defaults above, so this only needs to restate what the dark
    blocks changed. */
 :root[data-theme="light"] {
-  --md-primary: #764c2a;              --md-on-primary: #fffaf6;
-  --md-primary-container: #f1d8c3;    --md-on-primary-container: #2f1e0e;
+  --md-primary: #7e4b22;              --md-on-primary: #fffaf6;
+  --md-primary-container: #f8dac1;    --md-on-primary-container: #2d1906;
   --md-secondary: #77584a;            --md-on-secondary: #fffaf6;
-  --md-secondary-container: #f2d8c9;  --md-on-secondary-container: #2f1f18;
+  --md-secondary-container: #f9d9c8;  --md-on-secondary-container: #2c1910;
   --md-tertiary: #6b6330;             --md-on-tertiary: #fffaf6;
   --md-tertiary-container: #ded7b0;   --md-on-tertiary-container: #1f1c00;
   --md-error: #ba1a1a;                --md-on-error: #fffaf6;
@@ -296,7 +296,7 @@
   --md-on-surface: #22190f;           --md-on-surface-variant: #52443a;
   --md-outline: #837366;              --md-outline-variant: #d6c5b5;
   --md-inverse-surface: #392e24;      --md-inverse-on-surface: #fdede1;
-  --primary-dark: #694628;
+  --primary-dark: #704621;
   --text-faint: #67584d;
   --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
   --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
