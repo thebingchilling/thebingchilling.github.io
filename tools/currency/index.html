@@ -168,34 +168,102 @@
       color: var(--text-muted);
     }
     .caveat .material-icons { flex-shrink: 0; margin-top: 0.05rem; font-size: 18px; color: var(--text-faint); }
-    /* ── Rate sparkline ──
-       Thirty days of the same pair, so "1 EUR = 1.78 NZD" comes with the
-       one bit of context a single number can't carry: whether that's
-       unusually good or unusually bad this month. Deliberately unlabelled
-       apart from its endpoints — it's a shape, not a chart to read values
-       off. */
-    .spark {
-      margin-top: 0.6rem;
-      padding-top: 0.6rem;
-      border-top: 1px solid var(--border);
+    /* ── Rate history ──
+       Twelve months of the same pair, one point per month, so "1 EUR =
+       1.78 NZD" comes with the context a single number can't carry:
+       whether that is unusually good or unusually bad, and which way it
+       has been moving.
+
+       The plot is an SVG stretched with preserveAspectRatio="none", which
+       is fine for a path and wrong for anything round — a circle drawn
+       inside it becomes an ellipse at wide card widths. So every overlay
+       (the end point, the crosshair, the hover point) is an HTML element
+       positioned in percentages over the plot instead, where a circle
+       stays a circle at any width.
+
+       The container's height includes the axis band rather than just the
+       plot, so the month labels can't end up clipped or in a nested
+       scroller. */
+    .spark { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
+    .spark__plot { position: relative; height: 72px; }
+    .spark__svg { display: block; width: 100%; height: 100%; overflow: visible; }
+    /* 2px, per the mark spec — thin, but not a hairline that disappears
+       against the surface on a dense display. */
+    .spark__line { fill: none; stroke: var(--md-primary); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .spark__area { fill: var(--md-primary); opacity: 0.12; }
+
+    /* 8px, the minimum a marker can be and still be aimed at. */
+    .spark__dot, .spark__hover-dot {
+      position: absolute;
+      width: 8px; height: 8px;
+      margin: -4px 0 0 -4px;
+      border-radius: 50%;
+      background: var(--md-primary);
+      /* A 2px ring in the surface colour, so the point stays legible
+         where it sits on top of the line. */
+      box-shadow: 0 0 0 2px var(--surface);
+      pointer-events: none;
     }
-    .spark__head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.5rem;
-      margin-bottom: 0.3rem;
+    .spark__cross {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 1px;
+      margin-left: -0.5px;
+      background: var(--md-outline-variant);
+      pointer-events: none;
+    }
+
+    /* Axis ticks are recessive: muted ink, never the series colour, and
+       tabular figures so the two y values line up. */
+    .spark__y {
+      position: absolute;
+      right: 0;
+      font: var(--type-label-small);
+      letter-spacing: var(--track-label-small);
+      font-variant-numeric: tabular-nums;
+      color: var(--text-faint);
+      background: var(--surface);
+      padding: 0 0.15rem;
+      pointer-events: none;
+    }
+    /* Inside the plot box, not hanging out of it: below the plot they
+       overlap the last month tick, which sits at the same right edge. */
+    .spark__y--max { top: 0; }
+    .spark__y--min { bottom: 0; }
+
+    .spark__axis {
+      position: relative;
+      height: 1.15rem;
+      margin-top: 0.3rem;
       font: var(--type-label-small);
       letter-spacing: var(--track-label-small);
       color: var(--text-faint);
     }
-    .spark__change { font-weight: 700; }
-    .spark__change--up { color: var(--md-primary); }
-    .spark__change--down { color: var(--md-error); }
-    .spark__svg { display: block; width: 100%; height: 44px; overflow: visible; }
-    .spark__line { fill: none; stroke: var(--md-primary); stroke-width: 1.75; stroke-linejoin: round; stroke-linecap: round; }
-    .spark__area { fill: var(--md-primary); opacity: 0.12; }
-    .spark__dot { fill: var(--md-primary); }
+    .spark__tick { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+    .spark__tick--first { transform: none; }
+    .spark__tick--last { transform: translateX(-100%); }
+    /* The readout reuses the axis band rather than floating over the plot:
+       same height either way, so nothing moves when it appears. */
+    .spark__readout {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      background: var(--surface);
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    /* display:flex on the rule above out-ranks the hidden attribute's
+       display:none, so without this the readout sits over the month ticks
+       permanently — empty, opaque, and invisible in the DOM checks. */
+    .spark__readout[hidden] { display: none; }
+    .spark__readout b { font-weight: 600; }
+    .spark__plot:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 3px; border-radius: var(--shape-xs); }
+    /* Held at reduced opacity while a new pair loads, rather than blanked —
+       no skeleton flash, no layout jump. */
+    .spark--loading { opacity: 0.4; transition: opacity var(--t); }
   </style>
 </head>
 <body>
@@ -780,60 +848,169 @@
      conversion is unaffected. Drawn as an inline SVG path: no chart
      library, no external request beyond the data itself.
      ═══════════════════════════════════════════════════════════════════ */
-  const SPARK_DAYS = 30;
+  const SPARK_MONTHS = 12;
   let sparkToken = 0;
-  const sparkCache = new Map(); // "EUR>NZD" -> [{date, rate}]
+  const sparkCache = new Map(); // "EUR>NZD" -> [{label, date, rate}]
 
   function ymd(d) { return d.toISOString().slice(0, 10); }
+
+  /* Frankfurter returns a rate per business day. Twelve months of those is
+     ~260 points, which is both more than a chart this size can show and
+     more than the question needs — the question is which way this pair has
+     moved over the year. So the daily series is reduced to one point per
+     month, the last reading in each, which is what "month to month" means
+     and also makes the x-axis honest: twelve points, twelve months. */
+  function toMonthly(rates, to) {
+    const byMonth = new Map();
+    Object.keys(rates).sort().forEach((date) => {
+      const rate = Number(rates[date][to]);
+      if (!isFinite(rate)) return;
+      byMonth.set(date.slice(0, 7), { date, rate }); // later dates overwrite earlier
+    });
+    return [...byMonth.entries()].map(([month, v]) => ({
+      month, date: v.date, rate: v.rate,
+      label: new Date(v.date + "T00:00:00").toLocaleDateString(undefined, { month: "short" }),
+    }));
+  }
 
   async function fetchSeries(from, to) {
     const key = from + ">" + to;
     if (sparkCache.has(key)) return sparkCache.get(key);
-    const since = new Date(Date.now() - SPARK_DAYS * 86400000);
+    const since = new Date();
+    since.setMonth(since.getMonth() - SPARK_MONTHS);
     const d = await frankfurter(`/${ymd(since)}..?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
     if (!d || !d.rates) throw new Error("No series");
-    const points = Object.keys(d.rates).sort()
-      .map((date) => ({ date, rate: Number(d.rates[date][to]) }))
-      .filter((p) => isFinite(p.rate));
+    const points = toMonthly(d.rates, to);
     if (points.length < 3) throw new Error("Not enough history");
     sparkCache.set(key, points);
     return points;
   }
 
-  function sparkPath(points, w, h) {
+  // Rates span orders of magnitude (0.0058 JPY→GBP, 1.78 EUR→NZD, 18000
+  // KRW→VND), so a fixed decimal count is wrong for most of them.
+  function fmtRate(v) {
+    const abs = Math.abs(v);
+    const dp = abs >= 1000 ? 0 : abs >= 100 ? 1 : abs >= 1 ? 4 : 6;
+    return v.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  }
+
+  function sparkGeometry(points, w, h) {
     const values = points.map((p) => p.rate);
     const min = Math.min(...values), max = Math.max(...values);
     // A dead-flat series would divide by zero; draw it down the middle.
     const span = max - min || 1;
+    // Inset vertically so the line's 2px stroke and the 8px end point
+    // aren't clipped at the extremes of the plot.
+    const pad = 6;
     const x = (i) => (i / (points.length - 1)) * w;
-    const y = (v) => h - ((v - min) / span) * h;
+    const y = (v) => pad + (h - pad * 2) * (1 - (v - min) / span);
     const line = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(2)},${y(p.rate).toFixed(2)}`).join(" ");
-    const area = `${line} L${w},${h} L0,${h} Z`;
-    return { line, area, lastX: x(points.length - 1), lastY: y(values[values.length - 1]) };
+    return {
+      line, area: `${line} L${w},${h} L0,${h} Z`, min, max,
+      // Percentages, because the overlays are HTML over a stretched SVG.
+      pctX: (i) => (i / (points.length - 1)) * 100,
+      pctY: (v) => (y(v) / h) * 100,
+    };
   }
+
+  /* Four or five ticks, never twelve: at phone width a label per month
+     overlaps into a grey smear. First and last are always shown — they are
+     the range — and the ones between are evenly spaced. */
+  function tickIndices(n) {
+    if (n <= 5) return points0(n);
+    const step = (n - 1) / 4;
+    return [...new Set([0, Math.round(step), Math.round(step * 2), Math.round(step * 3), n - 1])];
+  }
+  function points0(n) { return Array.from({ length: n }, (_, i) => i); }
 
   function renderSpark(points, local, main) {
     const host = document.getElementById("sparkArea");
     if (!host) return;
-    const W = 300, H = 40;
-    const { line, area, lastX, lastY } = sparkPath(points, W, H);
-    const first = points[0].rate, last = points[points.length - 1].rate;
-    const pct = ((last - first) / first) * 100;
-    const dir = pct >= 0 ? "up" : "down";
-    const sign = pct >= 0 ? "+" : "";
+    const W = 300, H = 72;
+    const g = sparkGeometry(points, W, H);
+    const last = points[points.length - 1];
+    const first = points[0];
+    const pct = ((last.rate - first.rate) / first.rate) * 100;
+
+    const ticks = tickIndices(points.length).map((i) => {
+      const cls = i === 0 ? " spark__tick--first" : i === points.length - 1 ? " spark__tick--last" : "";
+      return `<span class="spark__tick${cls}" style="left:${g.pctX(i).toFixed(2)}%">${escapeHtml(points[i].label)}</span>`;
+    }).join("");
+
     host.innerHTML =
       '<div class="spark">' +
-        '<div class="spark__head">' +
-          `<span>1 ${escapeHtml(local)} in ${escapeHtml(main)} · ${points.length} days</span>` +
-          `<span class="spark__change spark__change--${dir}">${sign}${pct.toFixed(2)}%</span>` +
+        `<div class="spark__plot" id="sparkPlot" tabindex="0" role="img" aria-label="` +
+          `1 ${escapeHtml(local)} in ${escapeHtml(main)} over the last ${points.length} months: ` +
+          `from ${fmtRate(first.rate)} to ${fmtRate(last.rate)}, ` +
+          `${pct >= 0 ? "up" : "down"} ${Math.abs(pct).toFixed(1)} percent. ` +
+          `Low ${fmtRate(g.min)}, high ${fmtRate(g.max)}. ` +
+          `Use the arrow keys to read each month.">` +
+          `<svg class="spark__svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">` +
+            `<path class="spark__area" d="${g.area}"/>` +
+            `<path class="spark__line" d="${g.line}"/>` +
+          "</svg>" +
+          `<span class="spark__cross" hidden></span>` +
+          `<span class="spark__hover-dot" hidden></span>` +
+          `<span class="spark__dot" style="left:${g.pctX(points.length - 1).toFixed(2)}%;top:${g.pctY(last.rate).toFixed(2)}%"></span>` +
+          `<span class="spark__y spark__y--max">${escapeHtml(fmtRate(g.max))}</span>` +
+          `<span class="spark__y spark__y--min">${escapeHtml(fmtRate(g.min))}</span>` +
         "</div>" +
-        `<svg class="spark__svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" ` +
-          `aria-label="Rate over the last ${points.length} days, ${sign}${pct.toFixed(2)} percent">` +
-          `<path class="spark__area" d="${area}"/>` +
-          `<path class="spark__line" d="${line}"/>` +
-          `<circle class="spark__dot" cx="${lastX.toFixed(2)}" cy="${lastY.toFixed(2)}" r="2.5"/>` +
-        "</svg>" +
+        `<div class="spark__axis">${ticks}<span class="spark__readout" hidden></span></div>` +
       "</div>";
+
+    wireSparkHover(points, g, local, main);
+  }
+
+  /* Hover and keyboard both land on the same readout. The hit area is the
+     whole plot rather than the points themselves — an 8px dot you have to
+     hit dead-centre is not a target on a touchscreen — and the nearest
+     month to the pointer wins. */
+  function wireSparkHover(points, g, local, main) {
+    const plot = document.getElementById("sparkPlot");
+    if (!plot) return;
+    const cross = plot.querySelector(".spark__cross");
+    const dot = plot.querySelector(".spark__hover-dot");
+    const readout = document.querySelector(".spark__readout");
+    const ticks = [...document.querySelectorAll(".spark__tick")];
+    let active = -1;
+
+    function show(i) {
+      if (i < 0 || i >= points.length) return;
+      active = i;
+      const p = points[i];
+      cross.hidden = dot.hidden = false;
+      cross.style.left = g.pctX(i).toFixed(2) + "%";
+      dot.style.left = g.pctX(i).toFixed(2) + "%";
+      dot.style.top = g.pctY(p.rate).toFixed(2) + "%";
+      readout.innerHTML = `${escapeHtml(new Date(p.date + "T00:00:00")
+        .toLocaleDateString(undefined, { month: "short", year: "numeric" }))} · ` +
+        `<b>${escapeHtml(fmtRate(p.rate))}</b> ${escapeHtml(main)}`;
+      readout.hidden = false;
+      ticks.forEach((t) => { t.style.visibility = "hidden"; });
+    }
+    function clear() {
+      active = -1;
+      cross.hidden = dot.hidden = readout.hidden = true;
+      ticks.forEach((t) => { t.style.visibility = ""; });
+    }
+    function nearest(clientX) {
+      const r = plot.getBoundingClientRect();
+      if (!r.width) return 0;
+      const frac = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+      return Math.round(frac * (points.length - 1));
+    }
+
+    plot.addEventListener("pointermove", (e) => show(nearest(e.clientX)));
+    plot.addEventListener("pointerdown", (e) => show(nearest(e.clientX)));
+    plot.addEventListener("pointerleave", clear);
+    plot.addEventListener("blur", clear);
+    plot.addEventListener("focus", () => show(points.length - 1));
+    plot.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      const from = active === -1 ? points.length - 1 : active;
+      show(Math.min(points.length - 1, Math.max(0, from + (e.key === "ArrowRight" ? 1 : -1))));
+    });
   }
 
   async function refreshSpark() {
@@ -841,15 +1018,18 @@
     if (!host) return;
     const local = curASelect.value, main = mainSelect.value;
     const token = ++sparkToken;
-    host.innerHTML = "";
-    if (!local || !main || local === main) return;
+    if (!local || !main || local === main) { host.innerHTML = ""; return; }
+    // Hold whatever is already drawn, dimmed, rather than blanking — a
+    // pair change shouldn't collapse the card and push the page around.
+    const existing = host.querySelector(".spark");
+    if (existing) existing.classList.add("spark--loading");
     try {
       const points = await fetchSeries(local, main);
       if (token !== sparkToken) return; // pair changed while this was in flight
       renderSpark(points, local, main);
     } catch (e) {
       if (token !== sparkToken) return;
-      // Absent rather than apologetic on screen — a missing sparkline costs
+      // Absent rather than apologetic on screen — a missing history costs
       // nothing and the conversion above is unaffected — but not silent in
       // the console, or "the trend isn't working" is unanswerable.
       console.warn(`Rate history unavailable for ${local}->${main}:`, e && e.message);
