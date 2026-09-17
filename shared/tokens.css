@@ -113,7 +113,7 @@
      of them (torrents) without a dark-mode value at all, leaving it at
      2.6:1. Promoted to a real role so there is one place to fix. */
   --md-success: #146c2e;              --md-on-success: #fffaf6;
-  --md-success-container: #b7f2c0;    --md-on-success-container: #002106;
+  --md-success-container: #cbe9c9;    --md-on-success-container: #002106;
 
   /* Surface ladder. Nothing here is pure white — a bright #ffffff panel on
      a warm page reads as a hole punched in it. The lightest step is a soft
@@ -216,11 +216,11 @@
     --md-secondary: #e5bfa9;            --md-on-secondary: #442a1c;
     --md-secondary-container: #5d4032;  --md-on-secondary-container: #ffdbc7;
     --md-tertiary: #d2c86e;             --md-on-tertiary: #343100;
-    --md-tertiary-container: #4b4700;   --md-on-tertiary-container: #efe58b;
+    --md-tertiary-container: #464226;   --md-on-tertiary-container: #efe58b;
     --md-error: #ffb4ab;                --md-on-error: #690005;
-    --md-error-container: #93000a;      --md-on-error-container: #ffdad6;
+    --md-error-container: #6b2a28;      --md-on-error-container: #ffdad6;
     --md-success: #6fdb8f;              --md-on-success: #00390f;
-    --md-success-container: #005321;    --md-on-success-container: #b7f2c0;
+    --md-success-container: #2f5138;    --md-on-success-container: #b7f2c0;
     /* Warm charcoal, not near-black — a #101010 panel next to warm text
        reads as a hole. Every step keeps the terracotta warmth. */
     --md-surface: #201a15;
@@ -248,11 +248,11 @@
   --md-secondary: #e5bfa9;            --md-on-secondary: #442a1c;
   --md-secondary-container: #5d4032;  --md-on-secondary-container: #ffdbc7;
   --md-tertiary: #d2c86e;             --md-on-tertiary: #343100;
-  --md-tertiary-container: #4b4700;   --md-on-tertiary-container: #efe58b;
+  --md-tertiary-container: #464226;   --md-on-tertiary-container: #efe58b;
   --md-error: #ffb4ab;                --md-on-error: #690005;
-  --md-error-container: #93000a;      --md-on-error-container: #ffdad6;
+  --md-error-container: #6b2a28;      --md-on-error-container: #ffdad6;
   --md-success: #6fdb8f;              --md-on-success: #00390f;
-  --md-success-container: #005321;    --md-on-success-container: #b7f2c0;
+  --md-success-container: #2f5138;    --md-on-success-container: #b7f2c0;
   /* Warm charcoal, not near-black — a #101010 panel next to warm text
      reads as a hole. Every step keeps the terracotta warmth. */
   --md-surface: #201a15;
@@ -285,7 +285,7 @@
   --md-error: #ba1a1a;                --md-on-error: #fffaf6;
   --md-error-container: #ffdad6;      --md-on-error-container: #410002;
   --md-success: #146c2e;              --md-on-success: #fffaf6;
-  --md-success-container: #b7f2c0;    --md-on-success-container: #002106;
+  --md-success-container: #cbe9c9;    --md-on-success-container: #002106;
   --md-surface: #fdf6f0;
   --md-surface-container-lowest: #fffaf6;
   --md-surface-container-low: #f9efe6;

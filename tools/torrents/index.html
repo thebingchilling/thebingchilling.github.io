@@ -55,9 +55,9 @@
     .sort-row select {
       min-height: 40px;
       padding: 0 0.85rem;
-      border: 1px solid transparent;
+      border: 1px solid var(--md-outline-variant);
       border-radius: var(--shape-full);
-      background: var(--md-surface-container-lowest);
+      background: var(--surface-raised);
       box-shadow: var(--el1);
       color: var(--text);
       font: var(--type-label-medium);
@@ -66,7 +66,7 @@
       transition: border-color var(--t), box-shadow var(--t);
     }
     .sort-row select:hover { box-shadow: var(--el2); }
-    .sort-row select:focus-visible { border-color: var(--md-primary); box-shadow: var(--el2); }
+    .sort-row select:focus-visible { border-color: var(--md-primary); box-shadow: var(--el2), inset 0 0 0 1px var(--md-primary); }
 
     /* ── Results ── */
     .result-list { display: flex; flex-direction: column; gap: 0.6rem; }

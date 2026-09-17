@@ -518,16 +518,16 @@
       width: 100%;
       min-height: 40px;
       padding: 0 0.7rem;
-      border: 1px solid transparent;
+      border: 1px solid var(--md-outline-variant);
       border-radius: var(--shape-m);
-      background: var(--bg2);
+      background: var(--surface-raised);
       box-shadow: var(--el1);
       color: var(--text);
       font: var(--type-field);
       outline: none;
       transition: border-color var(--t), box-shadow var(--t);
     }
-    .source-form input[type=text]:focus { border-color: var(--md-primary); box-shadow: var(--el2); }
+    .source-form input[type=text]:focus { border-color: var(--md-primary); box-shadow: var(--el2), inset 0 0 0 1px var(--md-primary); }
     .source-form__label {
       display: block;
       margin-bottom: 0.1rem;

@@ -427,12 +427,14 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   color: var(--text-faint);
 }
 
-/* Every text field is one shape: a solid, fully-rounded, raised slab.
-   Not M3's flat bottom-line filled field — that style squares off the
-   bottom corners and draws a hard rule that collides with whatever label
-   follows, which reads as a spacing bug rather than a field. Raised and
-   self-contained is the house style, and it is the same box whether the
-   field holds text, a select, or a password. */
+/* Every text field is one shape: a light, fully-rounded, raised slab with
+   a soft outline. Not M3's flat bottom-line filled field — that style
+   squares off the bottom corners and draws a hard rule that collides with
+   whatever label follows, which reads as a spacing bug rather than a
+   field. The outline is --md-outline-variant rather than the heavier
+   --md-outline: the field's own surface and its elevation already carry
+   the boundary, so the border only has to define the edge, not do all the
+   work. Same box whether it holds text, a select, or a password. */
 .input-row,
 .select-row,
 .password-row,
@@ -442,9 +444,9 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   gap: 0.4rem;
   min-height: 48px;
   padding: 0 0.4rem 0 0.9rem;
-  border: 1px solid transparent;
+  border: 1px solid var(--md-outline-variant);
   border-radius: var(--shape-m);
-  background: var(--bg2);
+  background: var(--surface-raised);
   box-shadow: var(--el1);
   transition: background var(--t), border-color var(--t), box-shadow var(--t);
 }
@@ -459,7 +461,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .password-row:focus-within,
 .field-outlined:focus-within {
   border-color: var(--md-primary);
-  box-shadow: var(--el2);
+  box-shadow: var(--el2), inset 0 0 0 1px var(--md-primary);
 }
 .input-row > input,
 .input-row > select,
@@ -493,28 +495,41 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .field-outlined > .material-icons { flex-shrink: 0; font-size: 20px; color: var(--text-muted); }
 
 /* Stacked halves of one field (a select over an amount, say) read as a
-   single slab: only the outer corners round, and one shadow covers both. */
-.field-stack { border-radius: var(--shape-m); box-shadow: var(--el1); }
-.field-stack > * { box-shadow: none !important; }
-.field-stack > :not(:last-child) { border-radius: var(--shape-m) var(--shape-m) 0 0; }
-.field-stack > :not(:first-child) { border-radius: 0 0 var(--shape-m) var(--shape-m); }
+   single slab: the wrapper carries the outline, the rounding and the one
+   shadow, and the halves inside carry none of the three — otherwise their
+   borders double up along the seam. */
+.field-stack {
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--shape-m);
+  box-shadow: var(--el1);
+  overflow: hidden;
+  transition: border-color var(--t), box-shadow var(--t);
+}
+.field-stack:focus-within { border-color: var(--md-primary); box-shadow: var(--el2), inset 0 0 0 1px var(--md-primary); }
+.field-stack > * {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+/* The seam between the halves stays, as a single hairline. */
+.field-stack > * + * { border-top: 1px solid var(--md-outline-variant) !important; }
 
 /* Multi-line — the same solid raised slab, sized for prose. */
 .textarea {
   width: 100%;
   min-height: 130px;
   padding: 0.7rem 0.85rem;
-  border: 1px solid transparent;
+  border: 1px solid var(--md-outline-variant);
   border-radius: var(--shape-m);
   box-shadow: var(--el1);
-  background: var(--bg2);
+  background: var(--surface-raised);
   color: var(--text);
   font-family: var(--font-mono);
   font-size: 0.78rem;
   line-height: 1.5;
   resize: vertical;
 }
-.textarea:focus { outline: none; border-color: var(--md-primary); box-shadow: var(--el2); }
+.textarea:focus { outline: none; border-color: var(--md-primary); box-shadow: var(--el2), inset 0 0 0 1px var(--md-primary); }
 .textarea::placeholder { color: var(--text-faint); }
 
 /* ── Segmented button (M3) ─────────────────────────────────────────────
