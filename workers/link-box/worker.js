@@ -110,7 +110,10 @@ const $ = (id) => document.getElementById(id);
    ripple, theming and snackbars degrade, but the boxes keep working. */
 const BQ = window.BQChrome || null;
 if (BQ) {
-  BQ.initRipple(".icon-btn, .btn, .link-card, .segmented__item");
+  // Buttons only. Rippling .link-card would fire on every click inside a
+  // box — including each click into its text area — since initRipple
+  // delegates via closest(), and the card isn't clickable anyway.
+  BQ.initRipple(".icon-btn, .btn, .segmented__item");
   BQ.initTheme({});
 }
 function toast(message) {
