@@ -890,17 +890,6 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   word-break: break-word;
 }
 
-/* A one-line status sentence standing in for a result ("Loading rates…",
-   "Rates unavailable."). */
-.caveat-text {
-  margin: 0;
-  padding: 0.5rem 0;
-  text-align: center;
-  font: var(--type-body-medium);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
 .empty-state {
   text-align: center;
   padding: 3rem 1rem 2rem;
@@ -936,6 +925,43 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 }
 
 .action-row { margin-top: 1.1rem; }
+
+/* ── Small status indicator ───────────────────────────────────────────
+   "Searching…", "No playlists imported yet", "Rates unavailable." and the
+   rest. One treatment: a soft pill, so a transient line reads as a
+   deliberate indicator instead of stray text floating under a control.
+   Collapses entirely when empty, which is most of the time, so it costs
+   no layout when there is nothing to say. */
+.status-text,
+.search-status,
+.rates-status,
+.search-scope,
+.quota-note,
+.muted-hint,
+.caveat-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  margin: 0.55rem 0 0.15rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--shape-full);
+  background: var(--md-surface-container);
+  color: var(--text-muted);
+  font: var(--type-body-small);
+  text-align: left;
+}
+.status-text:empty,
+.search-status:empty,
+.rates-status:empty,
+.search-scope:empty,
+.quota-note:empty,
+.caveat-text:empty { display: none; }
+.status-text--error,
+.search-status--error { background: var(--md-error-container); color: var(--md-on-error-container); }
+.status-text--ok { background: var(--md-success-container); color: var(--md-on-success-container); }
+/* Centred inside a card, where it stands in for the whole result. */
+.caveat-text { display: flex; width: fit-content; margin-left: auto; margin-right: auto; }
 
 .status-line {
   display: flex;
@@ -1021,7 +1047,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   /* The sheet itself never scrolls — .sheet__body does. Otherwise the
      title scrolls away and the action row ends up jammed against the
      bottom edge of the screen with no safe-area padding under it. */
-  max-height: min(88vh, 720px);
+  max-height: min(82vh, 640px);
   overflow: hidden;
   border-radius: var(--shape-xl) var(--shape-xl) 0 0;
   background: var(--md-surface-container-low);
@@ -1072,15 +1098,16 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 1.2rem 0.6rem 0.7rem 1.25rem;
+  align-items: center;
+  padding: 0.55rem 0.5rem 0.55rem 1.1rem;
   border-bottom: 1px solid var(--border);
 }
-.dialog__header { padding-top: 1rem; }
+.dialog__header { align-items: center; padding: 0.55rem 0.5rem 0.55rem 1rem; }
 .dialog__title,
 .sheet__title {
   margin: 0;
-  font: var(--type-title-medium);
-  letter-spacing: var(--track-title-medium);
+  font: var(--type-title-small);
+  font-size: 1rem;
   color: var(--text);
 }
 .dialog__sub,
@@ -1097,11 +1124,11 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 1.1rem 1.25rem;
+  padding: 0.2rem 1.1rem 0.9rem;
 }
 /* With no action bar under it, the body itself has to clear the home
    indicator. */
-.sheet__body:last-child { padding-bottom: calc(1.1rem + env(safe-area-inset-bottom)); }
+.sheet__body:last-child { padding-bottom: calc(0.9rem + env(safe-area-inset-bottom)); }
 .dialog__body { padding: 0.75rem 1rem; }
 .dialog__body:last-child { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
 
@@ -1127,14 +1154,12 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .sheet__section {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 0.9rem;
-  padding: 0.95rem 1rem 1.05rem;
-  border-radius: var(--shape-l);
-  background: var(--surface-raised);
-  box-shadow: var(--el1);
+  gap: 0.55rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
 }
-.sheet__section:last-child { margin-bottom: 0; }
+.sheet__section:first-child { padding-top: 0.2rem; }
+.sheet__section:last-child { padding-bottom: 0.2rem; border-bottom: none; }
 .sheet__section-label {
   margin: 0;
   font: var(--type-label-small);
@@ -1400,17 +1425,6 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .search-bar__input::placeholder { color: var(--text-faint); }
 .search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
-.search-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 1.2em;
-  margin-bottom: 0.45rem;
-  font: var(--type-body-small);
-  letter-spacing: var(--track-body-small);
-  color: var(--text-muted);
-}
-.search-status--error { color: var(--md-error); }
 
 /* A link-styled button inside a status line ("Retry"). */
 .retry-link {
