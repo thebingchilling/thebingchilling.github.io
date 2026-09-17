@@ -54,11 +54,11 @@ jobs:
         run: |
           tmp=$(mktemp -d)
           unzip -q downloads/bingqilin-popup-blocker.zip -d "$tmp/from-zip"
-          diff -r "$tmp/from-zip" extension
+          diff -r --exclude=README.md "$tmp/from-zip" extension
           node .github/scripts/crx-unwrap.mjs \
             downloads/bingqilin-popup-blocker.crx "$tmp/inner.zip"
           unzip -q "$tmp/inner.zip" -d "$tmp/from-crx"
-          diff -r "$tmp/from-crx" extension
+          diff -r --exclude=README.md "$tmp/from-crx" extension
           echo "downloads/ is current"
 
       - name: Read the version
@@ -82,10 +82,14 @@ jobs:
       # -X drops the uid/gid and extra-attribute blocks, which are noise
       # that differs between runners and would change the signature for an
       # otherwise identical build.
+      # README.md is left out: it documents the repo's layout and build,
+      # which is nothing a shipped extension needs, and keeping it in meant
+      # editing the docs invalidated every built artifact.
       - name: Zip the extension
         run: |
           cd extension
-          zip -qrX "$GITHUB_WORKSPACE/bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip" . -x '.*'
+          zip -qrX "$GITHUB_WORKSPACE/bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip" . \
+            -x '.*' -x 'README.md'
           cd -
           unzip -Z1 "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip"
 
