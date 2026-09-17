@@ -46,6 +46,21 @@ jobs:
           node --check .github/scripts/pack-crx.mjs
           node -e 'JSON.parse(require("fs").readFileSync("extension/manifest.json","utf8"))'
 
+      # downloads/ is committed so the site can serve it, which means it
+      # can drift from extension/ the moment someone edits one and not the
+      # other. Nothing about a stale build looks wrong, so check rather
+      # than trust: unwrap both and diff them against the source.
+      - name: downloads/ matches extension/
+        run: |
+          tmp=$(mktemp -d)
+          unzip -q downloads/bingqilin-popup-blocker.zip -d "$tmp/from-zip"
+          diff -r "$tmp/from-zip" extension
+          node .github/scripts/crx-unwrap.mjs \
+            downloads/bingqilin-popup-blocker.crx "$tmp/inner.zip"
+          unzip -q "$tmp/inner.zip" -d "$tmp/from-crx"
+          diff -r "$tmp/from-crx" extension
+          echo "downloads/ is current"
+
       - name: Read the version
         id: meta
         run: |

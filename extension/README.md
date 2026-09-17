@@ -90,6 +90,18 @@ cd extension && zip -qrX ../ext.zip . -x '.*' && cd ..
 node .github/scripts/pack-crx.mjs ext.zip key.pem ext.crx
 ```
 
+## downloads/
+
+`/downloads/bingqilin-popup-blocker.{zip,crx}` is what the player's
+Settings sheet links to. It is committed, because the site serves it and a
+GitHub release asset would be a login-walled detour for anyone just
+wanting the thing.
+
+Committed builds rot, so CI diffs both files against `extension/` on every
+run and fails if they differ. **After changing anything in `extension/`,
+rebuild them** with the two commands above, writing to
+`downloads/bingqilin-popup-blocker.zip` and `.crx`.
+
 Note that Chrome on Windows and macOS refuses `.crx` files dragged in by
 hand — off-store installs there need enterprise policy (`ExtensionInstall`
 `Forcelist`/`Allowlist`). On Linux it installs, and **Load unpacked**

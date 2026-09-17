@@ -1200,7 +1200,13 @@ a.btn[href] {
 }
 .sheet__add-btn { align-self: flex-start; }
 /* Inline code in a hint reads as a value, not as a code block. */
-.sheet__hint code {
+/* Inline code in sheet prose. .note-card is in here because the one place
+   a chrome:// URL has to be quoted verbatim is an install note, and a bare
+   <code> there fell back to the browser default — monospace on no
+   background, which next to a styled one two paragraphs up read as a
+   mistake. */
+.sheet__hint code,
+.note-card code {
   padding: 0.05rem 0.3rem;
   border-radius: var(--shape-xs);
   background: var(--bg2);
