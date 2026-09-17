@@ -1,10 +1,6 @@
 name = "bingqilin-links"
-main = "src/worker.js"
+main = "worker.js"
 compatibility_date = "2024-09-23"
-
-[assets]
-directory = "./public"
-binding = "ASSETS"
 
 [[kv_namespaces]]
 binding = "LINKS"
