@@ -144,6 +144,26 @@
       letter-spacing: var(--track-body-small);
       color: var(--text-faint);
     }
+    /* ── Scene-release indicator ──
+       Present only when a scene release actually exists; there is no
+       "not released" state to render, so absence is the other half of the
+       signal. Top-left, opposite the external-search button. ── */
+    .media-card__scene {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      z-index: 2;
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--shape-xs);
+      background: var(--md-tertiary-container);
+      color: var(--md-on-tertiary-container);
+      font: var(--type-label-small);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      box-shadow: var(--el1);
+      pointer-events: none;
+    }
+
     /* "Open on the source site" — sits over the poster art, so it uses the
        inverse surface rather than a page surface token. */
     .media-card__ext-btn {
@@ -1035,6 +1055,147 @@ const tmdbSeason = (id, n, s)=> tmdbFetch(`/tv/${id}/season/${n}`, { language: "
 const tmdbTrending = (s)      => tmdbFetch("/trending/all/week",    { language: "en-US" }, s);
 
 /* ═══════════════════════════════════════════════════════
+   SCENE RELEASE INDICATOR
+   ─────────────────────────────────────────────────────
+   A badge on a movie card when the scene has actually released that film,
+   and nothing at all when it hasn't — absence is the other half of the
+   signal, so there is deliberately no "not released" state to render. That
+   also makes every failure mode correct-looking: a blocked request, a dead
+   API or a rate limit all degrade to exactly what the cards looked like
+   before this existed.
+
+   Only movies are checked. TV is out both because it was asked for that
+   way and because per-episode scene naming doesn't answer "has this been
+   released" at the granularity of a show card.
+
+   Data comes from srrdb, which indexes scene releases and needs no key:
+     GET https://api.srrdb.com/v1/search/<term>/<term>/...
+     -> { results: [ { release, date, hasNFO, hasSRS } ], resultsCount }
+═══════════════════════════════════════════════════════ */
+const SRRDB_SEARCH = "https://api.srrdb.com/v1/search/";
+// Same two proxies the other tools use, in case srrdb sends no CORS header.
+const SCENE_PROXIES = [
+  "https://thebingchilling-github-io.vercel.app/api/proxy?url={url}",
+  "https://bingqilin-cors-proxy.bingqilin.workers.dev/?url={url}",
+];
+
+/* Cached hard, for two reasons: a grid renders a dozen cards at once, and
+   this is somebody else's free API. A positive is effectively permanent —
+   a film does not become un-released — while a negative is worth retrying,
+   since an unreleased film is exactly the one that will flip later. */
+const SCENE_CACHE_KEY = "bq_scene_cache";
+const SCENE_TTL_YES = 30 * 24 * 60 * 60 * 1000;
+const SCENE_TTL_NO  = 12 * 60 * 60 * 1000;
+let sceneCache = {};
+function sceneCacheLoad() {
+  try { sceneCache = JSON.parse(localStorage.getItem(SCENE_CACHE_KEY)) || {}; } catch (e) { sceneCache = {}; }
+}
+function sceneCacheSave() {
+  try { localStorage.setItem(SCENE_CACHE_KEY, JSON.stringify(sceneCache)); } catch (e) {}
+}
+function sceneCacheGet(id) {
+  const hit = sceneCache[id];
+  if (!hit) return undefined;
+  if (Date.now() - hit.ts > (hit.scene ? SCENE_TTL_YES : SCENE_TTL_NO)) { delete sceneCache[id]; return undefined; }
+  return hit.scene;
+}
+function sceneCacheSet(id, scene) { sceneCache[id] = { scene, ts: Date.now() }; sceneCacheSave(); }
+
+/* srrdb takes slash-separated terms and matches them against dot-separated
+   release names, so the title is reduced to bare words. The year is
+   required rather than optional: without it "Up" or "It" match half the
+   database, and with it a hit is meaningful. */
+function sceneQueryPath(title, year) {
+  const words = String(title || "").toLowerCase()
+    .replace(/[^a-z0-9\s]+/g, " ")
+    .split(/\s+/).filter(Boolean).slice(0, 8);
+  if (!words.length || !/^\d{4}$/.test(String(year || ""))) return null;
+  return words.concat(String(year)).map(encodeURIComponent).join("/");
+}
+
+/* srrdb indexes every scene category, so a bare title+year hit can just as
+   easily be the soundtrack, the game tie-in or an ebook. Requiring a
+   video-ish tag in the release name is what makes this mean "the film was
+   released" rather than "something with this name exists". */
+const SCENE_VIDEO_TAG = /(?:^|[.\-_ ])(?:1080p|2160p|720p|480p|bluray|blu-ray|bdrip|brrip|bdremux|remux|web-?dl|web-?rip|hdtv|pdtv|dvdrip|dvdscr|dvd-?r|hdrip|cam|telesync|ts|tc|x264|x265|h ?264|h ?265|hevc|avc|xvid|divx|uhd)(?:$|[.\-_ ])/i;
+
+async function sceneFetchJson(url) {
+  // Direct first — if srrdb allows CORS this costs nothing and keeps the
+  // shared proxies free for the tools that genuinely cannot work without.
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (res.ok) return await res.json();
+  } catch (e) { /* CORS-blocked or unreachable — fall through to the proxies */ }
+  for (const proxy of SCENE_PROXIES) {
+    try {
+      const res = await fetch(proxy.replace("{url}", encodeURIComponent(url)));
+      if (res.ok) return await res.json();
+    } catch (e) { /* try the next one */ }
+  }
+  return null;
+}
+
+async function lookupScene(title, year) {
+  const path = sceneQueryPath(title, year);
+  if (!path) return false;
+  const data = await sceneFetchJson(SRRDB_SEARCH + path);
+  if (!data || !Array.isArray(data.results)) return null; // unknown, not "no"
+  return data.results.some(r => r && SCENE_VIDEO_TAG.test(String(r.release || "")));
+}
+
+/* A small queue rather than firing one request per card the moment a grid
+   renders: twenty parallel requests to a free API is how you get rate
+   limited, and the answers are not urgent. */
+const SCENE_PARALLEL = 3;
+const sceneQueue = [];
+let sceneActive = 0;
+function scenePump() {
+  while (sceneActive < SCENE_PARALLEL && sceneQueue.length) {
+    const job = sceneQueue.shift();
+    sceneActive++;
+    job().catch(() => {}).then(() => { sceneActive--; scenePump(); });
+  }
+}
+
+function showSceneBadge(card) {
+  const wrap = card.querySelector(".media-card__img-wrap");
+  if (!wrap || wrap.querySelector(".media-card__scene")) return;
+  const badge = document.createElement("span");
+  badge.className = "media-card__scene";
+  badge.textContent = "SCENE";
+  badge.title = "A scene release exists for this title";
+  wrap.appendChild(badge);
+  card.setAttribute("aria-label", (card.getAttribute("aria-label") || "") + ", scene release available");
+}
+
+function checkSceneFor(card) {
+  const id = card.dataset.id, title = card.dataset.title, year = card.dataset.year;
+  if (!id || !title || !year) return;
+  const cached = sceneCacheGet(id);
+  if (cached !== undefined) { if (cached) showSceneBadge(card); return; }
+  sceneQueue.push(async () => {
+    const scene = await lookupScene(title, year);
+    if (scene === null) return;            // couldn't tell — don't cache a guess
+    sceneCacheSet(id, scene);
+    if (scene && document.contains(card)) showSceneBadge(card);
+  });
+  scenePump();
+}
+
+/* Checked when a card actually comes into view, so scrolling a long grid
+   costs requests only for what was looked at. */
+const sceneObserver = ("IntersectionObserver" in window)
+  ? new IntersectionObserver((entries, obs) => {
+      entries.forEach(e => { if (e.isIntersecting) { obs.unobserve(e.target); checkSceneFor(e.target); } });
+    }, { rootMargin: "300px" })
+  : null;
+
+function watchSceneCard(card) {
+  if (sceneObserver) sceneObserver.observe(card);
+  else checkSceneFor(card); // no IntersectionObserver — just check it
+}
+
+/* ═══════════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════════ */
 let currentDetail = { mediaType: null, id: null, title: "", seasonNumbers: [], poster: null };
@@ -1656,6 +1817,8 @@ function buildMediaCard({ id, mediaType, title, year, poster, epLabel, resumeHas
   else if (year) { const yr = document.createElement("span"); yr.className="media-card__year"; yr.textContent=year; meta.appendChild(yr); }
   body.appendChild(titleEl); body.appendChild(meta);
   art.appendChild(imgWrap); art.appendChild(body);
+  // Movies only, and only when there's a year to disambiguate the title.
+  if (isMovie && year) watchSceneCard(art);
   return art;
 }
 
@@ -2309,6 +2472,7 @@ try {
 } catch (e) { /* pushState unavailable in this context — leave the URL as-is */ }
 
 (async () => {
+  sceneCacheLoad();
   await initSources();
   await initHistory();
   updateSourceMenuButton();
