@@ -52,8 +52,48 @@ recording no opener and so no match at all.
 2. Turn on **Developer mode**
 3. **Load unpacked** → pick this `extension/` folder
 
+## Building a .crx
+
+`.github/workflows/package-extension.yml` zips this folder and signs it
+into a CRX3 on every push to `main`, and attaches the build to a release
+when you push a tag like `ext-v1.0.0` (the tag has to match the version in
+`manifest.json`, or the run fails rather than shipping a mislabelled
+build). The artifact lands on the run either way.
+
+Signing needs a key, once:
+
+```sh
+openssl genrsa 4096 | gh secret set CRX_PRIVATE_KEY
+```
+
+**Keep a copy somewhere safe.** The extension's ID is the first 16 bytes
+of the SHA-256 of the matching public key, so that one key *is* the
+extension's identity — lose it and the rebuild is a different extension to
+Chrome, not an update to this one. The workflow prints the ID in its run
+summary; if it ever changes, the key changed with it. Without the secret
+the workflow still builds, and uploads the `.zip` alone.
+
+The packer is `.github/scripts/pack-crx.mjs` — about sixty lines against
+`node:crypto` and nothing else. The repo has no `package.json`, and the
+one file an npm dependency would have been trusted to produce here is the
+signed one, so it writes the container directly.
+
+To build locally:
+
+```sh
+cd extension && zip -qrX ../ext.zip . -x '.*' && cd ..
+node .github/scripts/pack-crx.mjs ext.zip key.pem ext.crx
+```
+
+Note that Chrome on Windows and macOS refuses `.crx` files dragged in by
+hand — off-store installs there need enterprise policy (`ExtensionInstall`
+`Forcelist`/`Allowlist`). On Linux it installs, and **Load unpacked**
+works everywhere, which is why that is still listed first above.
+
 ## Files
 
 - `manifest.json` — MV3; `webNavigation` + `storage`, one host permission
 - `background.js` — the three rules
 - `lib/scope.js` — the path allow-list that defines "the player"
+- `../.github/workflows/package-extension.yml` — build and release
+- `../.github/scripts/pack-crx.mjs` — the CRX3 writer

@@ -1,0 +1,138 @@
+# Builds extension/ into a signed .crx.
+#
+# The signing key lives in the CRX_PRIVATE_KEY secret and never in the
+# repository, because it is the extension's identity: its SHA-256 is the
+# extension ID, and whoever holds it can sign something Chrome will accept
+# as an update to an already-installed copy. Without the secret set this
+# workflow still builds and still uploads the .zip — it just says what is
+# missing rather than quietly minting a fresh key, which would produce a
+# different ID every run and an extension nobody could update.
+
+name: Package extension
+
+on:
+  push:
+    branches: [main]
+    # Tag ext-v1.0.0 to cut a release; the tag must match the manifest.
+    tags: ["ext-v*"]
+  workflow_dispatch:
+
+# No `paths:` filter here on purpose. GitHub ANDs the ref filter with the
+# path filter, so adding one would mean a release tag only built when the
+# tagged commit happened to touch extension/ — which is exactly when it
+# usually does not. The build is a zip and a signature; it costs seconds.
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check the source parses
+        run: |
+          node --check extension/background.js
+          node --check extension/lib/scope.js
+          node --check .github/scripts/pack-crx.mjs
+          node -e 'JSON.parse(require("fs").readFileSync("extension/manifest.json","utf8"))'
+
+      - name: Read the version
+        id: meta
+        run: |
+          version=$(node -p 'require("./extension/manifest.json").version')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Manifest version: $version"
+
+      # A release tagged ext-v1.2.3 that ships a manifest saying 1.0.0 is a
+      # release nobody can reason about afterwards, so refuse it here.
+      - name: Tag must match the manifest
+        if: startsWith(github.ref, 'refs/tags/ext-v')
+        run: |
+          tag="${GITHUB_REF_NAME#ext-v}"
+          if [ "$tag" != "${{ steps.meta.outputs.version }}" ]; then
+            echo "::error::tag ext-v$tag does not match manifest version ${{ steps.meta.outputs.version }}"
+            exit 1
+          fi
+
+      # -X drops the uid/gid and extra-attribute blocks, which are noise
+      # that differs between runners and would change the signature for an
+      # otherwise identical build.
+      - name: Zip the extension
+        run: |
+          cd extension
+          zip -qrX "$GITHUB_WORKSPACE/bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip" . -x '.*'
+          cd -
+          unzip -Z1 "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip"
+
+      - name: Sign into a .crx
+        id: crx
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        run: |
+          if [ -z "$CRX_PRIVATE_KEY" ]; then
+            echo "::warning::CRX_PRIVATE_KEY is not set — built the .zip only, no .crx."
+            echo "To enable signing, generate a key and add it as a repository secret:"
+            echo "  openssl genrsa 4096 | gh secret set CRX_PRIVATE_KEY"
+            echo "Keep a copy somewhere safe: losing it means a new extension ID."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          umask 077
+          printf '%s\n' "$CRX_PRIVATE_KEY" > key.pem
+          node .github/scripts/pack-crx.mjs \
+            "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip" \
+            key.pem \
+            "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.crx" \
+            | tee crx.log
+          shred -u key.pem
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+          sed -n 's/^extension id: /id=/p' crx.log >> "$GITHUB_OUTPUT"
+
+      - name: Summarise
+        run: |
+          {
+            echo "### Bingqilin Popup Blocker ${{ steps.meta.outputs.version }}"
+            echo
+            if [ "${{ steps.crx.outputs.signed }}" = "true" ]; then
+              echo "Signed \`.crx\` built. Extension ID: \`${{ steps.crx.outputs.id }}\`"
+              echo
+              echo "If that ID ever changes, the signing key changed with it."
+            else
+              echo "Unsigned. \`.zip\` only — set \`CRX_PRIVATE_KEY\` to get a \`.crx\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bingqilin-popup-blocker-${{ steps.meta.outputs.version }}
+          path: |
+            bingqilin-popup-blocker-*.zip
+            bingqilin-popup-blocker-*.crx
+          if-no-files-found: error
+
+  release:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/ext-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Attach the build to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Popup Blocker ${GITHUB_REF_NAME#ext-v}" \
+            --generate-notes \
+            bingqilin-popup-blocker-*.zip bingqilin-popup-blocker-*.crx
