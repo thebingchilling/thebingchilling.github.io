@@ -45,9 +45,9 @@
     .view { padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
     /* Browse is the only view that shows the bottom nav — reserve room so
        its content never sits under the fixed bar. */
-    #viewBrowse { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+    #viewBrowse { padding-bottom: var(--content-bottom); }
     /* Extra room when the mini-player is stacked above the nav too. */
-    body.has-mini-player #viewBrowse { padding-bottom: calc(4.6rem + 3.6rem + env(safe-area-inset-bottom)); }
+    body.has-mini-player #viewBrowse { padding-bottom: calc(var(--content-bottom) + 3.4rem); }
     /* playerTitle can be a full channel name — let it wrap rather than
        truncating to one ellipsized line as .view-title does by default. */
     #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
@@ -301,7 +301,7 @@
       border: none;
       border-radius: 50%;
       background: color-mix(in srgb, var(--md-scrim) 50%, transparent);
-      color: #fff;
+      color: var(--on-media);
       cursor: pointer;
       transition: background var(--t), transform var(--t);
     }
@@ -311,7 +311,7 @@
     }
     .media-card__pin--active { background: var(--md-primary); color: var(--md-on-primary); }
     .media-card__pin--active:hover { background: var(--md-primary); }
-    .media-card__pin:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .media-card__pin:focus-visible { outline: 2px solid var(--on-media); outline-offset: 2px; }
 
     .grid-section-label {
       grid-column: 1 / -1;
@@ -342,7 +342,7 @@
       padding: 0.1rem 0.35rem;
       border-radius: var(--shape-xs);
       background: color-mix(in srgb, var(--md-scrim) 55%, transparent);
-      color: #fff;
+      color: var(--on-media);
       font: var(--type-label-small);
       letter-spacing: 0.04em;
     }
@@ -594,6 +594,7 @@
       </button>
     </div>
 
+    <div class="sheet__body">
     <!-- Appearance section -->
     <div class="sheet__section">
       <div class="sheet__section-label">Appearance</div>
@@ -618,11 +619,9 @@
         one <code>tv:</code> or <code>radio:</code> line to combine several playlists into one list.
       </p>
       <div class="config-area">
-        <div class="config-textarea-wrap">
-          <textarea id="configTextarea" class="textarea config-textarea"
-            placeholder="tv: https://example.com/tv.m3u8&#10;radio: https://example.com/radio.json&#10;epg: https://example.com/epg.xml"
-            spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
-        </div>
+        <textarea id="configTextarea" class="textarea config-textarea"
+          placeholder="tv: https://example.com/tv.m3u8&#10;radio: https://example.com/radio.json&#10;epg: https://example.com/epg.xml"
+          spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         <div class="config-actions">
           <span id="configFeedback" class="config-feedback" role="status" aria-live="polite"></span>
           <button id="configImportBtn" class="btn btn--primary btn--sm" type="button">
@@ -636,6 +635,7 @@
           </button>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>

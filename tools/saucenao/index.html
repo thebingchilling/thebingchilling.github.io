@@ -125,13 +125,13 @@
       border: none;
       border-radius: 50%;
       background: color-mix(in srgb, #000 55%, transparent);
-      color: #fff;
+      color: var(--on-media);
       cursor: pointer;
       overflow: hidden;
       transition: background var(--t);
     }
     @media (hover: hover) { .gallery-item__download:hover { background: color-mix(in srgb, #000 75%, transparent); } }
-    .gallery-item__download:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .gallery-item__download:focus-visible { outline: 2px solid var(--on-media); outline-offset: 2px; }
     .gallery-item__download svg { width: 16px; height: 16px; }
 
     .quota-note {
@@ -185,13 +185,8 @@
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__lead">
-      <a class="icon-btn" href="/tools/" aria-label="Back to Tools">
-        <span class="material-icons" aria-hidden="true">arrow_back</span>
-      </a>
-      <div class="top-bar__brand">
-        <span class="top-bar__name">🍦 Bingqilin</span>
-      </div>
+    <div class="top-bar__brand">
+      <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div class="top-bar__actions">
       <div class="menu-wrap key-menu-wrap">
@@ -821,10 +816,10 @@
   function sourceIcon(host) {
     const meta = sourceMeta(host);
     if (meta.brand && BRAND_PATHS[meta.brand]) {
-      return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><g transform="translate(3,3) scale(0.417)"><path d="${BRAND_PATHS[meta.brand]}" fill="#fff"/></g></svg>`;
+      return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><g transform="translate(3,3) scale(0.417)"><path d="${BRAND_PATHS[meta.brand]}" fill="#fffaf6"/></g></svg>`;
     }
     const fontSize = meta.l.length > 1 ? 6.5 : 8.5;
-    return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><text x="8" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="'Google Sans', sans-serif" font-size="${fontSize}" font-weight="700" fill="#fff">${escapeHtml(meta.l)}</text></svg>`;
+    return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><text x="8" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="'Google Sans', sans-serif" font-size="${fontSize}" font-weight="700" fill="#fffaf6">${escapeHtml(meta.l)}</text></svg>`;
   }
 
   function renderResults(results) {

@@ -31,7 +31,24 @@ window.BQChrome = (function () {
      rationale. `selector` is page-specific (different pages ripple
      different elements); the spawn mechanism is not. ── */
   function initRipple(selector) {
+    // A .ripple is absolutely positioned, so its host has to establish a
+    // containing block and clip it. When a page adds a selector whose CSS
+    // forgets that, the span escapes to the nearest positioned ancestor
+    // and the ripple appears somewhere unrelated on the screen — which is
+    // what was happening on the PDF tool's option cards and the WARP
+    // tool's Advanced options toggle. Rather than rely on every current
+    // and future ripple target getting its CSS right, guarantee it here,
+    // once per element.
+    const prepared = new WeakSet();
+    function ensureContains(el) {
+      if (prepared.has(el)) return;
+      prepared.add(el);
+      const cs = getComputedStyle(el);
+      if (cs.position === "static") el.style.position = "relative";
+      if (cs.overflow === "visible") el.style.overflow = "hidden";
+    }
     function spawnRipple(el, x, y) {
+      ensureContains(el);
       const rect = el.getBoundingClientRect();
       const size = Math.max(rect.width, rect.height) * 1.8;
       const span = document.createElement("span");

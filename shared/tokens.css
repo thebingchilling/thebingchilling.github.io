@@ -77,6 +77,17 @@
      too tight in a paragraph. */
   --leading-prose: 1.55;
 
+  /* ── App-shell metrics ──────────────────────────────────────────────
+     The bars are deliberately compact. These live here rather than in
+     chrome.css because the scrolling content has to reserve exactly the
+     bottom bar's height — hard-coding that in two files is how content
+     ends up sliding under the nav. */
+  --topbar-h: 56px;
+  --bottomnav-h: 58px;
+  /* What a scroll container pads at the bottom so its last element clears
+     the fixed nav instead of hiding behind it. */
+  --content-bottom: calc(var(--bottomnav-h) + 1rem + env(safe-area-inset-bottom));
+
   /* ── M3 shape scale ─────────────────────────────────────────────────
      Seven steps, replacing the 18 distinct border-radius values. */
   --shape-none: 0;
@@ -88,37 +99,43 @@
   --shape-full: 999px;
 
   /* ── M3 tonal palette (warm terracotta seed), light ──────────────── */
-  --md-primary: #8a4a16;              --md-on-primary: #ffffff;
+  --md-primary: #8a4a16;              --md-on-primary: #fffaf6;
   --md-primary-container: #ffdcbf;    --md-on-primary-container: #2d1600;
-  --md-secondary: #77584a;            --md-on-secondary: #ffffff;
+  --md-secondary: #77584a;            --md-on-secondary: #fffaf6;
   --md-secondary-container: #ffdbc7;  --md-on-secondary-container: #2c160b;
-  --md-tertiary: #66601a;             --md-on-tertiary: #ffffff;
+  --md-tertiary: #66601a;             --md-on-tertiary: #fffaf6;
   --md-tertiary-container: #efe58b;   --md-on-tertiary-container: #1f1c00;
-  --md-error: #ba1a1a;                --md-on-error: #ffffff;
+  --md-error: #ba1a1a;                --md-on-error: #fffaf6;
   --md-error-container: #ffdad6;      --md-on-error-container: #410002;
 
   /* Success is not an M3 baseline role, but five pages had already
      hardcoded the same two greens for "copied" / "done" / seeders — one
      of them (torrents) without a dark-mode value at all, leaving it at
      2.6:1. Promoted to a real role so there is one place to fix. */
-  --md-success: #146c2e;              --md-on-success: #ffffff;
+  --md-success: #146c2e;              --md-on-success: #fffaf6;
   --md-success-container: #b7f2c0;    --md-on-success-container: #002106;
 
-  /* Surface ladder. --md-surface used to be pure #ffffff, the same value
-     as --surface-container-lowest, which put the page background off the
-     tonal ladder entirely: a stark white page behind warm beige bars and
-     cards, with a visible seam under the app bar. Surface is now the
-     warm low tone it should be, and white moves down to `lowest`. */
-  --md-surface: #fff8f4;
-  --md-surface-container-lowest: #ffffff;
-  --md-surface-container-low: #fdf1e6;
-  --md-surface-container: #f7ebdd;
-  --md-surface-container-high: #f1e5d6;
-  --md-surface-container-highest: #ebdfd0;
+  /* Surface ladder. Nothing here is pure white — a bright #ffffff panel on
+     a warm page reads as a hole punched in it. The lightest step is a soft
+     warm off-white, and every step below warms and deepens from there. */
+  --md-surface: #fdf6f0;
+  --md-surface-container-lowest: #fffaf6;
+  --md-surface-container-low: #f9efe6;
+  --md-surface-container: #f4e8db;
+  --md-surface-container-high: #eee1d3;
+  --md-surface-container-highest: #e8dacb;
+  /* The surface a raised element sits on (buttons, chips, the selected
+     segment, a settings section). In light mode that is the lightest
+     step; in dark mode elevation means *lighter*, so it is a step above
+     the containers rather than below them. */
+  --surface-raised: #fffaf6;
   --md-on-surface: #22190f;           --md-on-surface-variant: #52443a;
   --md-outline: #837366;              --md-outline-variant: #d6c5b5;
   --md-inverse-surface: #392e24;      --md-inverse-on-surface: #fdede1;
   --md-scrim: #000000;
+  /* For text and icons drawn over photography, where no surface token
+     applies. Soft warm white rather than #fff, same as everywhere else. */
+  --on-media: #f7f1ec;
 
   /* ── Elevation (M3 shadow tokens) ── */
   --el0: none;
@@ -179,7 +196,7 @@
      one of them, and it is the colour of every hint, note and empty
      state on the site. Darkened to clear 4.5:1 on the worst case
      (--md-surface-container-highest, 4.60:1). */
-  --text-faint: #6f6055;
+  --text-faint: #67584d;
   --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
   --radius: var(--shape-m);
 
@@ -204,18 +221,21 @@
     --md-error-container: #93000a;      --md-on-error-container: #ffdad6;
     --md-success: #6fdb8f;              --md-on-success: #00390f;
     --md-success-container: #005321;    --md-on-success-container: #b7f2c0;
-    --md-surface: #17120d;
-    --md-surface-container-lowest: #100c08;
-    --md-surface-container-low: #201a14;
-    --md-surface-container: #241e18;
-    --md-surface-container-high: #2f2822;
-    --md-surface-container-highest: #3a332c;
+    /* Warm charcoal, not near-black — a #101010 panel next to warm text
+       reads as a hole. Every step keeps the terracotta warmth. */
+    --md-surface: #201a15;
+    --md-surface-container-lowest: #1a1511;
+    --md-surface-container-low: #26201a;
+    --md-surface-container: #2c251e;
+    --md-surface-container-high: #342c25;
+    --md-surface-container-highest: #3f372f;
+    --surface-raised: #373029;
     --md-on-surface: #ede0d3;           --md-on-surface-variant: #d5c4b4;
     --md-outline: #9f8d7c;              --md-outline-variant: #52443a;
     --md-inverse-surface: #ede0d3;      --md-inverse-on-surface: #392e24;
     --primary-dark: #ffcda0;
     /* #a89686 fell to 4.36:1 on --md-surface-container-highest. */
-    --text-faint: #b3a191;
+    --text-faint: #b8a696;
     --el1: 0 1px 2px rgba(0,0,0,0.45), 0 1px 3px 1px rgba(0,0,0,0.30);
     --el2: 0 1px 2px rgba(0,0,0,0.45), 0 2px 6px 2px rgba(0,0,0,0.30);
     --el3: 0 1px 3px rgba(0,0,0,0.45), 0 4px 8px 3px rgba(0,0,0,0.30);
@@ -233,17 +253,20 @@
   --md-error-container: #93000a;      --md-on-error-container: #ffdad6;
   --md-success: #6fdb8f;              --md-on-success: #00390f;
   --md-success-container: #005321;    --md-on-success-container: #b7f2c0;
-  --md-surface: #17120d;
-  --md-surface-container-lowest: #100c08;
-  --md-surface-container-low: #201a14;
-  --md-surface-container: #241e18;
-  --md-surface-container-high: #2f2822;
-  --md-surface-container-highest: #3a332c;
+  /* Warm charcoal, not near-black — a #101010 panel next to warm text
+     reads as a hole. Every step keeps the terracotta warmth. */
+  --md-surface: #201a15;
+  --md-surface-container-lowest: #1a1511;
+  --md-surface-container-low: #26201a;
+  --md-surface-container: #2c251e;
+  --md-surface-container-high: #342c25;
+  --md-surface-container-highest: #3f372f;
+  --surface-raised: #373029;
   --md-on-surface: #ede0d3;           --md-on-surface-variant: #d5c4b4;
   --md-outline: #9f8d7c;              --md-outline-variant: #52443a;
   --md-inverse-surface: #ede0d3;      --md-inverse-on-surface: #392e24;
   --primary-dark: #ffcda0;
-  --text-faint: #b3a191;
+  --text-faint: #b8a696;
   --el1: 0 1px 2px rgba(0,0,0,0.45), 0 1px 3px 1px rgba(0,0,0,0.30);
   --el2: 0 1px 2px rgba(0,0,0,0.45), 0 2px 6px 2px rgba(0,0,0,0.30);
   --el3: 0 1px 3px rgba(0,0,0,0.45), 0 4px 8px 3px rgba(0,0,0,0.30);
@@ -253,27 +276,28 @@
    the :root defaults above, so this only needs to restate what the dark
    blocks changed. */
 :root[data-theme="light"] {
-  --md-primary: #8a4a16;              --md-on-primary: #ffffff;
+  --md-primary: #8a4a16;              --md-on-primary: #fffaf6;
   --md-primary-container: #ffdcbf;    --md-on-primary-container: #2d1600;
-  --md-secondary: #77584a;            --md-on-secondary: #ffffff;
+  --md-secondary: #77584a;            --md-on-secondary: #fffaf6;
   --md-secondary-container: #ffdbc7;  --md-on-secondary-container: #2c160b;
-  --md-tertiary: #66601a;             --md-on-tertiary: #ffffff;
+  --md-tertiary: #66601a;             --md-on-tertiary: #fffaf6;
   --md-tertiary-container: #efe58b;   --md-on-tertiary-container: #1f1c00;
-  --md-error: #ba1a1a;                --md-on-error: #ffffff;
+  --md-error: #ba1a1a;                --md-on-error: #fffaf6;
   --md-error-container: #ffdad6;      --md-on-error-container: #410002;
-  --md-success: #146c2e;              --md-on-success: #ffffff;
+  --md-success: #146c2e;              --md-on-success: #fffaf6;
   --md-success-container: #b7f2c0;    --md-on-success-container: #002106;
-  --md-surface: #fff8f4;
-  --md-surface-container-lowest: #ffffff;
-  --md-surface-container-low: #fdf1e6;
-  --md-surface-container: #f7ebdd;
-  --md-surface-container-high: #f1e5d6;
-  --md-surface-container-highest: #ebdfd0;
+  --md-surface: #fdf6f0;
+  --md-surface-container-lowest: #fffaf6;
+  --md-surface-container-low: #f9efe6;
+  --md-surface-container: #f4e8db;
+  --md-surface-container-high: #eee1d3;
+  --md-surface-container-highest: #e8dacb;
+  --surface-raised: #fffaf6;
   --md-on-surface: #22190f;           --md-on-surface-variant: #52443a;
   --md-outline: #837366;              --md-outline-variant: #d6c5b5;
   --md-inverse-surface: #392e24;      --md-inverse-on-surface: #fdede1;
   --primary-dark: #632f00;
-  --text-faint: #6f6055;
+  --text-faint: #67584d;
   --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
   --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
   --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);

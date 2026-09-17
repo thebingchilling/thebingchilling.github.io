@@ -52,14 +52,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  min-height: 64px;
+  min-height: calc(var(--topbar-h) + env(safe-area-inset-top));
   padding:
     env(safe-area-inset-top)
-    calc(0.5rem + env(safe-area-inset-right))
+    calc(0.35rem + env(safe-area-inset-right))
     0
-    calc(0.5rem + env(safe-area-inset-left));
-  background: color-mix(in srgb, var(--md-surface-container) 92%, transparent);
-  backdrop-filter: blur(12px);
+    calc(0.35rem + env(safe-area-inset-left));
+  /* Solid, not a translucent blur — content scrolling underneath used to
+     ghost through the bar. */
+  background: var(--md-surface-container);
   border-bottom: 1px solid var(--border);
 }
 .top-bar__lead { display: flex; align-items: center; gap: 0.15rem; min-width: 0; }
@@ -74,6 +75,9 @@
    and does not need its own leading inset. */
 .top-bar__lead .icon-btn + .top-bar__brand { padding-left: 0; }
 .top-bar__actions { display: flex; align-items: center; gap: 0.1rem; }
+/* The bar is 56px; a 48dp icon button fits with 4px either side. */
+.top-bar .icon-btn { width: 44px; height: 44px; }
+.top-bar .icon-btn::before { width: 40px; height: 40px; }
 
 /* ── Ripple ────────────────────────────────────────────────────────────
    Material's touch feedback. The state layers in ui.css cover hover,
@@ -121,13 +125,13 @@
   display: flex;
   align-items: stretch;
   justify-content: space-around;
+  min-height: var(--bottomnav-h);
   padding:
-    0.75rem
+    0.25rem
     calc(0.5rem + env(safe-area-inset-right))
-    calc(1rem + env(safe-area-inset-bottom))
+    calc(0.25rem + env(safe-area-inset-bottom))
     calc(0.5rem + env(safe-area-inset-left));
-  background: color-mix(in srgb, var(--md-surface-container) 96%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--md-surface-container);
   border-top: 1px solid var(--border);
 }
 .bottom-nav__item {
@@ -138,7 +142,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   padding: 0;
   border: none;
   background: none;
@@ -157,8 +161,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 32px;
+  width: 56px;
+  height: 28px;
   border-radius: var(--shape-l);
   transition: background var(--t), color var(--t);
 }
@@ -177,7 +181,7 @@
   .bottom-nav__item:hover .bottom-nav__icon-wrap::before { opacity: var(--state-hover); }
 }
 .bottom-nav__item:active .bottom-nav__icon-wrap::before { opacity: var(--state-press); }
-.bottom-nav__icon-wrap .material-icons { font-size: 24px; }
+.bottom-nav__icon-wrap .material-icons { font-size: 22px; }
 
 .bottom-nav__label {
   font: var(--type-label-medium);

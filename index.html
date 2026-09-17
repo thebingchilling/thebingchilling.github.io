@@ -53,7 +53,7 @@
 
     /* Search is the only view that shows the bottom nav — reserve room so
        its content never sits under the fixed bar. */
-    #viewSearch { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+    #viewSearch { padding-bottom: var(--content-bottom); }
     /* playerTitle can be a full movie or show name — let it wrap rather
        than truncating to one ellipsized line that hides most of it. */
     #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
@@ -677,6 +677,7 @@
       </button>
     </div>
 
+    <div class="sheet__body">
     <!-- Appearance section -->
     <div class="sheet__section">
       <div class="sheet__section-label">Appearance</div>
@@ -697,11 +698,9 @@
     <div class="sheet__section">
       <div class="sheet__section-label">Sources</div>
       <div id="sourceList" class="source-list"></div>
-      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.2rem;">
-        <button id="addSourceBtn" class="btn btn--ghost btn--sm" type="button">
-          <span class="material-icons" aria-hidden="true">add</span>Add source
-        </button>
-      </div>
+      <button id="addSourceBtn" class="btn btn--ghost btn--sm sheet__add-btn" type="button">
+        <span class="material-icons" aria-hidden="true">add</span>Add source
+      </button>
       <div id="sourceForm" class="source-form hidden">
         <p class="source-form__title" id="sourceFormTitle">Add source</p>
         <div>
@@ -730,11 +729,9 @@
       <div class="sheet__section-label">Import / Export</div>
       <p class="sheet__hint">Paste a config here to import sources in bulk, or export your current ones to back up or share.</p>
       <div class="config-area">
-        <div class="config-textarea-wrap">
-          <textarea id="configTextarea" class="textarea config-textarea"
-            placeholder="name: vid&#10;movie: https://example.com/embed/movie/{tmdb}&#10;tv: https://example.com/embed/tv/{tmdb}/{season}/{episode}"
-            spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
-        </div>
+        <textarea id="configTextarea" class="textarea config-textarea"
+          placeholder="name: vid&#10;movie: https://example.com/embed/movie/{tmdb}&#10;tv: https://example.com/embed/tv/{tmdb}/{season}/{episode}"
+          spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         <div class="config-actions">
           <span id="configFeedback" class="config-feedback" role="status" aria-live="polite"></span>
           <button id="configImportBtn" class="btn btn--primary btn--sm" type="button">
@@ -745,6 +742,7 @@
           </button>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>

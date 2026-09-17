@@ -52,15 +52,16 @@
 
     /* ── QR ── */
     .qr-box { display: flex; justify-content: center; padding: 0.5rem 0 0.3rem; }
-    /* Hardcoded white rather than a surface token on purpose: a QR code
-       needs a true-white quiet zone to scan reliably, in dark mode too. */
+    /* A fixed light quiet zone rather than a surface token: a QR needs a
+       light background to scan in dark mode too. Warm off-white, not a
+       clinical #fff slab — still ~19:1 against the black modules. */
     .qr-box img {
       display: block;
       width: 220px;
       height: 220px;
       padding: 0.75rem;
       border-radius: var(--shape-m);
-      background: #fff;
+      background: #fffaf6;
       box-shadow: var(--el1);
       image-rendering: pixelated;
     }
@@ -93,13 +94,8 @@
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__lead">
-      <a class="icon-btn" href="/tools/" aria-label="Back to Tools">
-        <span class="material-icons" aria-hidden="true">arrow_back</span>
-      </a>
-      <div class="top-bar__brand">
-        <span class="top-bar__name">🍦 Bingqilin</span>
-      </div>
+    <div class="top-bar__brand">
+      <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div class="top-bar__actions">
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
