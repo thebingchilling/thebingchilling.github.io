@@ -112,7 +112,14 @@
 
     <div class="card hidden" id="statusCard"></div>
 
-    <div class="card hidden" id="familyCard">
+    <div class="card hidden" id="previewCard">
+    <label class="section-hint" for="previewText" style="display:block;margin:0 0 0.4rem;">Preview text</label>
+    <div class="input-row">
+      <input id="previewText" type="text" autocomplete="off" placeholder="Type to preview these fonts…" />
+    </div>
+  </div>
+
+  <div class="card hidden" id="familyCard">
       <div class="family-header">
         <div>
           <h2 class="family-name" id="familyName"></h2>
@@ -312,11 +319,22 @@
       familyBy.classList.add("hidden");
     }
     familyCard.classList.remove("hidden");
+    $("previewCard").classList.remove("hidden");
     statusCard.classList.add("hidden");
 
+    renderFontCards();
+  }
+
+  /* Split out so typing in the preview box re-renders just the cards. The
+     @font-face rules and the family header are untouched, so nothing
+     reloads and the fonts don't flash. */
+  function renderFontCards() {
+    const family = currentFamily;
+    if (!family) return;
+    const custom = ($("previewText").value || "").trim();
     fontGrid.innerHTML = family.fonts.map((f, i) =>
       '<div class="font-card">' +
-        '<div class="font-card__sample" style="font-family:\'' + f.cssFamily + '\';">' + escapeHtml(family.sampleText || f.name) + "</div>" +
+        '<div class="font-card__sample" style="font-family:\'' + f.cssFamily + '\';">' + escapeHtml(custom || family.sampleText || f.name) + "</div>" +
         '<div class="font-card__footer">' +
           '<div><div class="font-card__name">' + escapeHtml(f.name) + '</div><div class="font-card__style">' + escapeHtml(f.style || "") + "</div></div>" +
           '<button type="button" class="icon-btn font-card__dl" data-index="' + i + '" aria-label="Download ' + escapeHtml(f.name) + '"><span class="material-icons" aria-hidden="true">download</span></button>' +
@@ -324,6 +342,8 @@
       "</div>"
     ).join("");
   }
+
+  $("previewText").addEventListener("input", renderFontCards);
 
   urlInput.addEventListener("input", debounce(runSearch, 600));
   urlInput.addEventListener("keydown", (e) => {
@@ -348,6 +368,7 @@
     if (!raw) return;
     hideError();
     familyCard.classList.add("hidden");
+    $("previewCard").classList.add("hidden");
     fontGrid.innerHTML = "";
     statusCard.classList.remove("hidden");
     statusCard.innerHTML = '<p class="caveat-text">Loading…</p>';

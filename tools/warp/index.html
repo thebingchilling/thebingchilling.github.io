@@ -89,6 +89,10 @@
       overflow: auto;
       resize: vertical;
     }
+    /* ── Option presets ── */
+    .preset-bar { margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+    .preset-bar__row { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.4rem; }
+    .preset-bar__row select { flex: 1; min-width: 0; }
   </style>
 </head>
 <body>
@@ -147,6 +151,27 @@
         <div>
           <label class="field-label" for="optLocale">Locale</label>
           <div class="input-row"><input id="optLocale" type="text" value="en_US" /></div>
+        </div>
+
+        <div class="preset-bar">
+          <label class="section-hint" for="presetSelect" style="margin:0;">Presets</label>
+          <div class="preset-bar__row">
+            <select id="presetSelect" aria-label="Saved option presets">
+              <option value="">Custom…</option>
+            </select>
+            <button id="presetSaveBtn" class="btn btn--ghost btn--sm" type="button" aria-label="Save these options as a preset">
+              <span class="material-icons" aria-hidden="true">bookmark_add</span>Save
+            </button>
+            <button id="presetDeleteBtn" class="icon-btn icon-btn--sm hidden" type="button" aria-label="Delete this preset">
+              <span class="material-icons" aria-hidden="true">delete_outline</span>
+            </button>
+          </div>
+          <div class="preset-bar__row hidden" id="presetNameRow">
+            <input id="presetName" type="text" autocomplete="off" placeholder="Name this preset" aria-label="Preset name" />
+            <button id="presetConfirmBtn" class="btn btn--primary btn--sm" type="button">Save</button>
+            <button id="presetCancelBtn" class="btn btn--ghost btn--sm" type="button">Cancel</button>
+          </div>
+          <p id="presetFeedback" class="section-hint" role="status" aria-live="polite" style="margin:0.35rem 0 0;"></p>
         </div>
       </div>
 
@@ -374,6 +399,98 @@
     }
     return config;
   }
+
+  /* ═══════════════ Option presets ═══════════════
+     The advanced options are six fields that people who touch them at all
+     tend to want in a couple of fixed combinations — a low MTU for a
+     tethered connection, split-tunnel AllowedIPs, a keepalive for a NAT
+     that drops idle peers. Retyping them each time is the whole problem;
+     this stores named sets locally. Nothing here touches the generated
+     config or the API, it only fills in the form. */
+  const PRESET_KEY = "bq_warp_presets";
+  const OPT_IDS = ["optDns", "optMtu", "optAllowedIps", "optKeepalive", "optDeviceType", "optLocale"];
+  const presetSelect = $("presetSelect"), presetFeedback = $("presetFeedback");
+  const presetNameRow = $("presetNameRow"), presetName = $("presetName");
+
+  function loadPresets() {
+    try {
+      const p = JSON.parse(localStorage.getItem(PRESET_KEY) || "{}");
+      return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+    } catch (e) { return {}; }
+  }
+  function storePresets(p) {
+    try { localStorage.setItem(PRESET_KEY, JSON.stringify(p)); return true; } catch (e) { return false; }
+  }
+  function setPresetFeedback(msg) {
+    presetFeedback.textContent = msg || "";
+    if (msg) setTimeout(() => { presetFeedback.textContent = ""; }, 3000);
+  }
+  function currentOptions() {
+    const out = {};
+    OPT_IDS.forEach((id) => { out[id] = $(id).value; });
+    return out;
+  }
+  function renderPresets(selected) {
+    const presets = loadPresets();
+    const names = Object.keys(presets).sort((a, b) => a.localeCompare(b));
+    presetSelect.innerHTML = '<option value="">Custom…</option>' +
+      names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+    presetSelect.value = selected && presets[selected] ? selected : "";
+    $("presetDeleteBtn").classList.toggle("hidden", !presetSelect.value);
+  }
+  // Small local escape — this tool has no shared one, and these names come
+  // from the person using it but still end up in innerHTML.
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  presetSelect.addEventListener("change", () => {
+    const name = presetSelect.value;
+    $("presetDeleteBtn").classList.toggle("hidden", !name);
+    if (!name) return;
+    const preset = loadPresets()[name];
+    if (!preset) return;
+    OPT_IDS.forEach((id) => { if (preset[id] !== undefined) $(id).value = preset[id]; });
+    setPresetFeedback(`Loaded "${name}".`);
+  });
+
+  $("presetSaveBtn").addEventListener("click", () => {
+    presetNameRow.classList.remove("hidden");
+    presetName.value = presetSelect.value || "";
+    presetName.focus();
+    presetName.select();
+  });
+  $("presetCancelBtn").addEventListener("click", () => { presetNameRow.classList.add("hidden"); presetName.value = ""; });
+  function confirmPreset() {
+    const name = presetName.value.trim();
+    if (!name) { presetName.focus(); return; }
+    const presets = loadPresets();
+    presets[name] = currentOptions();
+    if (!storePresets(presets)) { setPresetFeedback("Couldn't save — storage is unavailable."); return; }
+    presetNameRow.classList.add("hidden");
+    presetName.value = "";
+    renderPresets(name);
+    setPresetFeedback(`Saved "${name}".`);
+  }
+  $("presetConfirmBtn").addEventListener("click", confirmPreset);
+  presetName.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); confirmPreset(); } });
+
+  $("presetDeleteBtn").addEventListener("click", async () => {
+    const name = presetSelect.value;
+    if (!name) return;
+    const ok = await BQChrome.confirm({
+      title: `Delete "${name}"?`, body: "This only removes the saved options, nothing else.",
+      confirmLabel: "Delete", danger: true,
+    });
+    if (!ok) return;
+    const presets = loadPresets();
+    delete presets[name];
+    storePresets(presets);
+    renderPresets("");
+    setPresetFeedback(`Deleted "${name}".`);
+  });
+
+  renderPresets("");
 
   generateBtn.addEventListener("click", async () => {
     hideError();
