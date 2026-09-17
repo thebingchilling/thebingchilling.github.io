@@ -55,17 +55,18 @@
     .sort-row select {
       min-height: 40px;
       padding: 0 0.85rem;
-      border: 1px solid var(--md-outline);
+      border: 1px solid transparent;
       border-radius: var(--shape-full);
-      background: var(--surface);
+      background: var(--md-surface-container-lowest);
+      box-shadow: var(--el1);
       color: var(--text);
-      font: var(--type-label-large);
-      letter-spacing: var(--track-label-large);
+      font: var(--type-label-medium);
       cursor: pointer;
       outline: none;
       transition: border-color var(--t), box-shadow var(--t);
     }
-    .sort-row select:focus-visible { border-color: var(--md-primary); box-shadow: 0 0 0 1px var(--md-primary); }
+    .sort-row select:hover { box-shadow: var(--el2); }
+    .sort-row select:focus-visible { border-color: var(--md-primary); box-shadow: var(--el2); }
 
     /* ── Results ── */
     .result-list { display: flex; flex-direction: column; gap: 0.6rem; }

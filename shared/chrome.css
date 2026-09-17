@@ -181,7 +181,8 @@
 
 .bottom-nav__label {
   font: var(--type-label-medium);
-  letter-spacing: var(--track-label-medium);
+  font-size: 0.68rem;
+  letter-spacing: 0.01em;
 }
 
 .bottom-nav__item--active,

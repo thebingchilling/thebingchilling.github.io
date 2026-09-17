@@ -512,20 +512,22 @@
       letter-spacing: var(--track-title-small);
       color: var(--text);
     }
+    /* Same solid raised slab as every other field, just denser — it sits
+       inside an already-nested form in the settings sheet. */
     .source-form input[type=text] {
       width: 100%;
       min-height: 40px;
-      padding: 0 0.65rem;
-      border: 1px solid var(--md-outline);
-      border-radius: var(--shape-s);
-      background: var(--surface);
+      padding: 0 0.7rem;
+      border: 1px solid transparent;
+      border-radius: var(--shape-m);
+      background: var(--bg2);
+      box-shadow: var(--el1);
       color: var(--text);
-      font: var(--type-body-medium);
-      letter-spacing: var(--track-body-medium);
+      font: var(--type-field);
       outline: none;
       transition: border-color var(--t), box-shadow var(--t);
     }
-    .source-form input[type=text]:focus { border-color: var(--md-primary); box-shadow: 0 0 0 1px var(--md-primary); }
+    .source-form input[type=text]:focus { border-color: var(--md-primary); box-shadow: var(--el2); }
     .source-form__label {
       display: block;
       margin-bottom: 0.1rem;

@@ -132,6 +132,12 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   -webkit-touch-callout: none;
   user-select: none;
   transition: background var(--t), box-shadow var(--t), border-color var(--t);
+  /* Defaults, so a .btn written without a colour variant still looks like
+     one of ours rather than the browser's grey. Every variant below
+     overrides these; they come later in the file, so they win. */
+  background: var(--md-surface-container-lowest);
+  color: var(--primary-dark);
+  box-shadow: var(--el1);
 }
 .btn::before {
   content: "";
@@ -151,41 +157,56 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
 .btn .material-icons { font-size: 20px; }
 
-/* Filled — the high-emphasis action. `--primary` is the name every page
+/* Every button with a container is raised and solid — elevation, not a
+   border, is what separates it from the surface underneath. Only
+   .btn--text is deliberately flat, for the one case where a button has
+   to recede (a dialog's Cancel next to its confirm).
+
+   Filled — the high-emphasis action. `--primary` is the name every page
    already uses; `--filled` is the M3 name, kept as an alias. */
 .btn--primary,
-.btn--filled { background: var(--md-primary); color: var(--md-on-primary); box-shadow: var(--el0); }
+.btn--filled { background: var(--md-primary); color: var(--md-on-primary); box-shadow: var(--el1); }
 @media (hover: hover) {
   .btn--primary:hover:not(:disabled),
-  .btn--filled:hover:not(:disabled) { box-shadow: var(--el1); }
+  .btn--filled:hover:not(:disabled) { box-shadow: var(--el2); }
 }
+.btn--primary:active:not(:disabled),
+.btn--filled:active:not(:disabled) { box-shadow: var(--el1); }
 
 /* Tonal — medium emphasis, for a secondary action next to a filled one. */
-.btn--tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.btn--tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); box-shadow: var(--el1); }
+@media (hover: hover) { .btn--tonal:hover:not(:disabled) { box-shadow: var(--el2); } }
 
-/* Outlined — `--ghost` is the existing name. It has always had a border,
-   which makes it M3's Outlined button rather than a text button. */
+/* The general-purpose secondary button. `--ghost` is the existing name
+   and it was transparent-with-a-border; it is a solid raised surface now,
+   so a row of Export / Import reads as two real buttons rather than two
+   outlines. `--outlined` stays as an alias so no page has to change. */
 .btn--ghost,
 .btn--outlined {
-  background: transparent;
-  color: var(--md-primary);
-  border: 1px solid var(--md-outline);
+  background: var(--md-surface-container-lowest);
+  color: var(--primary-dark);
+  border: 1px solid transparent;
+  box-shadow: var(--el1);
 }
+@media (hover: hover) { .btn--ghost:hover:not(:disabled), .btn--outlined:hover:not(:disabled) { box-shadow: var(--el2); } }
 .btn--ghost:focus-visible,
 .btn--outlined:focus-visible { border-color: var(--md-primary); }
 
-/* Text — the genuinely borderless low-emphasis button. */
-.btn--text { background: transparent; color: var(--md-primary); padding: 0 0.75rem; }
+/* Text — the one intentionally flat button, for an action that should
+   recede (a dialog's Cancel). */
+.btn--text { background: transparent; color: var(--md-primary); padding: 0 0.75rem; box-shadow: none; }
 
-.btn--danger { background: var(--md-error-container); color: var(--md-on-error-container); }
+.btn--danger { background: var(--md-error-container); color: var(--md-on-error-container); box-shadow: var(--el1); }
+@media (hover: hover) { .btn--danger:hover:not(:disabled) { box-shadow: var(--el2); } }
 
 /* An action sitting inside an error container inherits that container's
    colour rather than the page's primary, which would otherwise put a
    brown label and grey-brown border on a pink surface. */
 .error-banner .btn--ghost,
 .error-banner .btn--outlined {
+  background: color-mix(in srgb, var(--md-on-error-container) 10%, var(--md-error-container));
   color: var(--md-on-error-container);
-  border-color: color-mix(in srgb, var(--md-on-error-container) 45%, transparent);
+  border-color: transparent;
 }
 
 /* M3 extra-small, 32dp. Previously undefined on currency, pdf, typerip
@@ -334,8 +355,8 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .hero__sub {
   margin: 0;
   font: var(--type-body-medium);
-  letter-spacing: var(--track-body-medium);
-  line-height: var(--leading-prose);
+  font-size: 0.9rem;
+  line-height: 1.5;
   color: var(--text-muted);
 }
 
@@ -394,8 +415,8 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .field-label {
   display: block;
   margin: 1rem 0 0.4rem;
-  font: var(--type-label-medium);
-  letter-spacing: var(--track-label-medium);
+  font: var(--type-body-small);
+  font-weight: 500;
   color: var(--text-muted);
 }
 .field-label:first-child { margin-top: 0; }
@@ -406,63 +427,44 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   color: var(--text-faint);
 }
 
+/* Every text field is one shape: a solid, fully-rounded, raised slab.
+   Not M3's flat bottom-line filled field — that style squares off the
+   bottom corners and draws a hard rule that collides with whatever label
+   follows, which reads as a spacing bug rather than a field. Raised and
+   self-contained is the house style, and it is the same box whether the
+   field holds text, a select, or a password. */
 .input-row,
 .select-row,
-.password-row {
+.password-row,
+.field-outlined {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   min-height: 48px;
-  padding: 0 0.3rem 0 0.9rem;
-  border-radius: var(--shape-s) var(--shape-s) 0 0;
-  background: var(--md-surface-container-highest);
-  border-bottom: 1px solid var(--md-outline);
-  transition: background var(--t), border-color var(--t);
+  padding: 0 0.4rem 0 0.9rem;
+  border: 1px solid transparent;
+  border-radius: var(--shape-m);
+  background: var(--bg2);
+  box-shadow: var(--el1);
+  transition: background var(--t), border-color var(--t), box-shadow var(--t);
 }
-.input-row:hover,
-.select-row:hover,
-.password-row:hover { background: color-mix(in srgb, var(--md-on-surface) 4%, var(--md-surface-container-highest)); }
+@media (hover: hover) {
+  .input-row:hover,
+  .select-row:hover,
+  .password-row:hover,
+  .field-outlined:hover { box-shadow: var(--el2); }
+}
 .input-row:focus-within,
 .select-row:focus-within,
-.password-row:focus-within {
-  border-bottom-color: var(--md-primary);
-  box-shadow: inset 0 -1px 0 0 var(--md-primary);
+.password-row:focus-within,
+.field-outlined:focus-within {
+  border-color: var(--md-primary);
+  box-shadow: var(--el2);
 }
 .input-row > input,
 .input-row > select,
 .select-row > select,
-.password-row > input {
-  flex: 1;
-  min-width: 0;
-  padding: 0.7rem 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  font: var(--type-body-large);
-  letter-spacing: var(--track-body-large);
-}
-.input-row > input::placeholder,
-.password-row > input::placeholder { color: var(--text-faint); text-overflow: ellipsis; }
-.input-row > select,
-.select-row > select { padding-right: 0.5rem; cursor: pointer; }
-.input-row > .icon-btn,
-.password-row > .icon-btn { flex-shrink: 0; }
-
-/* Outlined variant, for a field that sits directly on the page rather
-   than inside a filled card (the search rows). */
-.field-outlined {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 48px;
-  padding: 0 0.5rem 0 1rem;
-  border: 1px solid var(--md-outline);
-  border-radius: var(--shape-full);
-  background: transparent;
-  transition: border-color var(--t), box-shadow var(--t);
-}
-.field-outlined:focus-within { border-color: var(--md-primary); box-shadow: 0 0 0 1px var(--md-primary); }
+.password-row > input,
 .field-outlined > input {
   flex: 1;
   min-width: 0;
@@ -471,40 +473,55 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   outline: none;
   background: transparent;
   color: var(--text);
-  font: var(--type-body-large);
-  letter-spacing: var(--track-body-large);
+  font: var(--type-field);
 }
-.field-outlined > input::placeholder { color: var(--text-faint); }
+.input-row > input::placeholder,
+.password-row > input::placeholder,
+.field-outlined > input::placeholder { color: var(--text-faint); text-overflow: ellipsis; }
+.input-row > select,
+.select-row > select { padding-right: 0.5rem; cursor: pointer; }
+.input-row > .icon-btn,
+.password-row > .icon-btn,
+.field-outlined > .icon-btn { flex-shrink: 0; }
+/* Two fields in a row with no label between them still need air. */
+.input-row + .input-row,
+.select-row + .select-row,
+.password-row + .password-row { margin-top: 0.6rem; }
 .field-outlined > input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+/* The search rows read as one pill rather than a boxy field. */
+.field-outlined { border-radius: var(--shape-full); padding-left: 1rem; }
+.field-outlined > .material-icons { flex-shrink: 0; font-size: 20px; color: var(--text-muted); }
 
-/* Multi-line. */
-/* Stacked halves of a single filled field (a select over an amount, say)
-   share one outline: only the last one draws the indicator line. */
-.field-stack > :not(:last-child) { border-bottom: none; border-radius: var(--shape-s) var(--shape-s) 0 0; }
-.field-stack > :not(:first-child) { border-radius: 0 0 var(--shape-s) var(--shape-s); }
+/* Stacked halves of one field (a select over an amount, say) read as a
+   single slab: only the outer corners round, and one shadow covers both. */
+.field-stack { border-radius: var(--shape-m); box-shadow: var(--el1); }
+.field-stack > * { box-shadow: none !important; }
+.field-stack > :not(:last-child) { border-radius: var(--shape-m) var(--shape-m) 0 0; }
+.field-stack > :not(:first-child) { border-radius: 0 0 var(--shape-m) var(--shape-m); }
 
+/* Multi-line — the same solid raised slab, sized for prose. */
 .textarea {
   width: 100%;
   min-height: 130px;
   padding: 0.7rem 0.85rem;
-  border: 1px solid var(--md-outline);
-  border-radius: var(--shape-s);
-  background: var(--md-surface-container-lowest);
+  border: 1px solid transparent;
+  border-radius: var(--shape-m);
+  box-shadow: var(--el1);
+  background: var(--bg2);
   color: var(--text);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: 0.78rem;
   line-height: 1.5;
   resize: vertical;
 }
-.textarea:focus { outline: none; border-color: var(--md-primary); box-shadow: 0 0 0 1px var(--md-primary); }
+.textarea:focus { outline: none; border-color: var(--md-primary); box-shadow: var(--el2); }
 .textarea::placeholder { color: var(--text-faint); }
 
 /* ── Segmented button (M3) ─────────────────────────────────────────────
    One component for what were four: .segmented (index, live settings),
    .tab-bar/.tab-btn (live), .add-tabs/.add-tab (authenticator) and
-   .tabs/.tab (saucenao) — three of which raised the selected item on its
-   own elevated pill, which is an iOS segmented control, not M3. M3 marks
-   selection with the secondary container and no elevation change. */
+   .tabs/.tab (saucenao). The selected item rides on its own raised pill,
+   which is what three of the four already did. */
 .segmented {
   display: flex;
   gap: 4px;
@@ -512,6 +529,9 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   border-radius: var(--shape-full);
   background: var(--md-surface-container-high);
 }
+/* Only when it is a tab strip — the settings radiogroup sits in a
+   gap-spaced column and would double up. */
+.segmented[role="tablist"] { margin-bottom: 1rem; }
 .segmented__item {
   position: relative;
   overflow: hidden;
@@ -551,8 +571,10 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .segmented__item--active,
 .segmented__item[aria-selected="true"],
 .segmented__item[aria-checked="true"] {
-  background: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
+  background: var(--md-surface-container-lowest);
+  color: var(--primary-dark);
+  font-weight: 600;
+  box-shadow: var(--el1);
 }
 .segmented__count {
   font: var(--type-label-medium);
@@ -570,9 +592,10 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   gap: 0.35rem;
   min-height: 32px;
   padding: 0 0.85rem;
-  border: 1px solid var(--md-outline);
+  border: 1px solid transparent;
   border-radius: var(--shape-s);
-  background: transparent;
+  background: var(--md-surface-container-lowest);
+  box-shadow: var(--el1);
   color: var(--text-muted);
   font: var(--type-label-large);
   letter-spacing: var(--track-label-large);
@@ -598,6 +621,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   background: var(--md-secondary-container);
   color: var(--md-on-secondary-container);
   border-color: transparent;
+  box-shadow: var(--el1);
 }
 .chip .material-icons { font-size: 18px; }
 
@@ -648,7 +672,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .dropzone > .material-icons { font-size: 34px; color: var(--md-primary); }
 .dropzone__title {
   font: var(--type-title-small);
-  letter-spacing: var(--track-title-small);
+  font-size: 0.92rem;
   color: var(--text);
   overflow-wrap: anywhere;
   max-width: 100%;
@@ -666,6 +690,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   align-items: center;
   gap: 0.3rem;
   min-height: 48px;
+  margin-top: 0.35rem;
   padding: 0 0.1rem;
   border: none;
   border-radius: var(--shape-s);
@@ -679,7 +704,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .adv-toggle .material-icons { font-size: 18px; transition: transform var(--t); }
 .adv-toggle--open .material-icons,
 .adv-toggle[aria-expanded="true"] .material-icons { transform: rotate(180deg); }
-.adv-grid { display: none; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 0.7rem; }
+.adv-grid { display: none; grid-template-columns: 1fr 1fr; gap: 0.9rem 0.7rem; margin-top: 0.7rem; }
 .adv-grid--open { display: grid; }
 .adv-grid .field-label { margin: 0 0 0.35rem; }
 /* A hint that introduces the whole grid rather than one field in it. */
@@ -702,12 +727,13 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .error-banner__title {
   margin: 0 0 0.15rem;
   font: var(--type-title-small);
-  letter-spacing: var(--track-title-small);
+  font-size: 0.86rem;
+  font-weight: 600;
 }
 .error-banner__body {
   margin: 0;
   font: var(--type-body-medium);
-  letter-spacing: var(--track-body-medium);
+  font-size: 0.8rem;
   line-height: 1.4;
 }
 .error-banner__details {
@@ -850,7 +876,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   padding: 0.5rem 0;
   text-align: center;
   font: var(--type-body-medium);
-  letter-spacing: var(--track-body-medium);
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
@@ -864,16 +890,20 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .empty-state__title {
   margin: 0 0 0.35rem;
   font: var(--type-title-medium);
-  letter-spacing: var(--track-title-medium);
+  font-size: 1.1rem;
+  font-weight: 500;
   color: var(--text-muted);
 }
 .empty-state__sub {
   margin: 0;
   font: var(--type-body-medium);
-  letter-spacing: var(--track-body-medium);
+  font-size: 0.82rem;
   line-height: var(--leading-prose);
 }
 .empty-state__action { margin-top: 1rem; }
+/* Inside a card it is a panel, not a whole screen. */
+.card > .empty-state { padding: 1.5rem 1rem; }
+.card > .empty-state .empty-state__icon { font-size: 32px; margin-bottom: 0.4rem; }
 
 /* An inline "working…" / "nothing found" panel inside a results area. */
 .state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
@@ -904,6 +934,7 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
   display: flex;
   gap: 0.7rem;
   padding: 0.25rem 0.5rem;
+  margin-top: 0.25rem;
   background: transparent;
   box-shadow: none;
 }
@@ -1042,8 +1073,8 @@ button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-high
 .sheet__section:last-child { margin-bottom: 0; }
 .sheet__section-label {
   margin-bottom: 0.1rem;
-  font: var(--type-label-medium);
-  letter-spacing: 0.07em;
+  font: var(--type-label-small);
+  letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
   color: var(--text-faint);
 }
