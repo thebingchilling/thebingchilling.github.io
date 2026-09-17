@@ -237,6 +237,7 @@
         <span class="material-icons">expand_more</span>Advanced options
       </button>
       <div class="adv-grid" id="advGrid">
+        <p class="section-hint" style="grid-column: 1 / -1; margin: 0 0 0.2rem;">Standard WireGuard connection settings — the defaults match Cloudflare's own app, so most people can leave these alone.</p>
         <div>
           <label class="field-label" for="optDns">DNS servers</label>
           <div class="input-row"><input id="optDns" type="text" value="1.1.1.1, 1.0.0.1, 2606:4700:4700::1111, 2606:4700:4700::1001" /></div>
@@ -304,7 +305,7 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>WARP is Cloudflare's WireGuard-based VPN, paired with the 1.1.1.1 resolver. Only the public key (Curve25519) ever needs to leave this device, so the private key stays here. Registration hits <code>api.cloudflareclient.com</code> — the same endpoint the official app uses — via a CORS proxy, since it's built for native clients, not browser JS.</p>
+        <p>WARP is Cloudflare's VPN, built on the WireGuard protocol. This page generates a private/public keypair right here — Cloudflare's server only ever sees the public half, which is how it can register a device for you without learning your private key.</p>
         <p>Based on <a href="https://github.com/lanrat/wireguard-warp-generator" target="_blank" rel="noopener">lanrat/wireguard-warp-generator</a>.</p>
       </div>
     </div>

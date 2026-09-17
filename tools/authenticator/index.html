@@ -191,6 +191,7 @@
     .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
     .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 1rem 0 0.4rem; }
+    .section-hint { margin: -0.5rem 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
     .field-label:first-child { margin-top: 0; }
     .field-hint { font-size: 0.72rem; color: var(--text-faint); margin: 0.3rem 0 0; }
     .input-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
@@ -337,6 +338,7 @@
               <span class="material-icons">expand_more</span>Advanced options
             </button>
             <div class="adv-grid" id="manualAdvGrid">
+              <p class="section-hint" style="grid-column: 1 / -1; margin: 0 0 0.2rem;">How the account generates codes — almost every service uses the defaults below.</p>
               <div>
                 <label class="field-label" for="manualAlgo">Algorithm</label>
                 <div class="input-row">
@@ -398,7 +400,7 @@
 
     <div class="card note-card">
       <span class="material-icons">shield</span>
-      <p>Codes are standard TOTP (RFC 6238) — an HMAC of your secret and the time, via the browser's Web Crypto API. QR setup codes are decoded locally with <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a>. No network requests happen at all, but accounts sit unencrypted in localStorage.</p>
+      <p>Codes come from combining your secret key with the current time (the TOTP standard) — no server round-trip needed to check them. QR setup codes are scanned and decoded locally with <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a>. Accounts are saved as plain, unencrypted text in your browser, so treat this device's storage like you would a password file.</p>
     </div>
   </main>
 

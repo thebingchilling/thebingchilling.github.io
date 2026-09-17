@@ -263,7 +263,7 @@
     <div class="card note-card">
       <span class="material-icons">shield</span>
       <div>
-        <p>The family/collection page embeds a JSON blob listing every style, read via a CORS proxy since fonts.adobe.com doesn't send browser-friendly CORS headers. Fonts themselves come from Typekit's preview endpoint — the same one Adobe's own site uses for live specimens, not domain-restricted like a normal embed.</p>
+        <p>Reads the family's font list through a proxy, since Adobe's site blocks direct browser requests. Downloads come from Typekit's own preview endpoint, the same one the Adobe Fonts site uses to show live previews.</p>
         <p>Based on <a href="https://github.com/beemilkz/typerip" target="_blank" rel="noopener">beemilkz/typerip</a> (originally by Jeremy Clark).</p>
       </div>
     </div>
