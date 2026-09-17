@@ -16,5 +16,14 @@
 
   "permissions": ["webNavigation", "storage"],
 
-  "host_permissions": ["https://thebingchilling.github.io/*"]
+  "host_permissions": ["https://thebingchilling.github.io/*"],
+
+  "content_scripts": [
+    {
+      "matches": ["https://thebingchilling.github.io/*"],
+      "exclude_matches": ["https://thebingchilling.github.io/tools/*"],
+      "js": ["content/keepalive.js"],
+      "run_at": "document_start"
+    }
+  ]
 }

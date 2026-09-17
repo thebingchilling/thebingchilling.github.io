@@ -22,6 +22,29 @@ iframe sandbox (deliberately not used here) or a content script in every
 frame of every site, which would mean read-and-change access to all
 websites for a blocker meant to touch one.
 
+Closing rather than preventing is also what keeps this invisible to the
+source. A source that refuses to play under a sandbox is detecting that
+`window.open` failed — here it does not fail. The embed gets a real window
+back and nothing looks wrong to it; the window is taken away afterwards.
+
+### Keeping the flash short
+
+Two things used to sit between the popup appearing and it being closed,
+and both are gone:
+
+- **A round trip.** The close waited on `chrome.tabs.get` just to ask
+  whether the opener was a player tab. That answer is now held in memory,
+  so the hot path is a `Map` lookup and a `remove` with no `await` in
+  front of it.
+- **A cold start.** A service worker is evicted after ~30s idle, so the
+  popup was often what woke it — and Chrome had to start the worker before
+  anything could close anything. `content/keepalive.js` holds a port open
+  while a player tab is open, which keeps the worker resident.
+
+That content script runs in the isolated world, adds no DOM and defines no
+globals. It opens a port and goes quiet, so neither the page nor the embed
+inside it can see that it is there.
+
 ## Where it runs
 
 `https://thebingchilling.github.io/`, `/index`, `/index.html`, `/live` and
@@ -129,6 +152,7 @@ works everywhere, which is why that is still listed first above.
 
 - `manifest.json` — MV3; `webNavigation` + `storage`, one host permission
 - `background.js` — the three rules
+- `content/keepalive.js` — keeps the worker resident while the player is open
 - `lib/scope.js` — the path allow-list that defines "the player"
 - `../.github/workflows/package-extension.yml` — build and release
 - `../.github/scripts/pack-crx.mjs` — the CRX3 writer

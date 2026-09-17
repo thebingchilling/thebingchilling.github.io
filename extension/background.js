@@ -29,21 +29,74 @@ import { isPlayerUrl } from "./lib/scope.js";
 
 const TOP_FRAME = 0;
 
+/* ── How long the popup is on screen ───────────────────────────────────
+   Everything between Chrome creating the popup and this closing it is
+   time the popup is visible, so the close path is built to have nothing
+   in front of it.
+
+   It used to await chrome.tabs.get on every popup, purely to ask whether
+   the opener was a player tab — a message to the browser process and back
+   before the close could even be requested. And because a service worker
+   is evicted after ~30s idle, the popup was frequently what *woke* it, so
+   a cold start was on the clock too.
+
+   So the answer is kept here instead, in memory, in a worker that a port
+   from content/keepalive.js keeps resident while a player tab is open.
+   The hot path is now a Map lookup and a remove, with no await before it.
+
+   The slow path stays for the case the fast one cannot cover: a worker
+   that started without the port (an update, a crash) and has not yet
+   heard from the tab. It is the old behaviour, used as a fallback. */
+
+const playerTabs = new Map(); // tabId -> the player URL it is on
+const noteKey = (tabId) => `player:${tabId}`;
+
+function remember(tabId, url) {
+  playerTabs.set(tabId, url);
+  chrome.storage.session.set({ [noteKey(tabId)]: url });
+}
+
+function forget(tabId) {
+  playerTabs.delete(tabId);
+  chrome.storage.session.remove(noteKey(tabId));
+}
+
+/* A restarted worker has an empty Map but session storage survives, so
+   refill from it. Racing a popup that arrives first is fine — that one
+   takes the slow path and is closed a few milliseconds later. */
+chrome.storage.session.get(null).then((all) => {
+  for (const [key, url] of Object.entries(all)) {
+    if (!key.startsWith("player:")) continue;
+    const tabId = Number(key.slice("player:".length));
+    if (Number.isInteger(tabId) && !playerTabs.has(tabId)) playerTabs.set(tabId, url);
+  }
+}).catch(() => { /* nothing cached yet */ });
+
+/* The content script on each player page. Its port is what keeps this
+   worker resident; its sender is what identifies the tab. */
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== "player-tab") return;
+  const tab = port.sender?.tab;
+  if (!tab || tab.id === undefined || !isPlayerUrl(tab.url)) return;
+  remember(tab.id, tab.url);
+  port.onDisconnect.addListener(() => forget(tab.id));
+});
+
+/* Fire and forget: awaiting the removal only delays the next one. */
+function close(tabId) {
+  chrome.tabs.remove(tabId).catch(() => {
+    /* It closed itself first. The job is done either way. */
+  });
+}
+
 async function isPlayerTab(tabId) {
   if (tabId === undefined || tabId === chrome.tabs.TAB_ID_NONE) return false;
+  if (playerTabs.has(tabId)) return true;
   try {
     const tab = await chrome.tabs.get(tabId);
     return isPlayerUrl(tab.url || tab.pendingUrl);
   } catch {
     return false; // tab is already gone
-  }
-}
-
-async function close(tabId) {
-  try {
-    await chrome.tabs.remove(tabId);
-  } catch {
-    /* It closed itself first. The job is done either way. */
   }
 }
 
@@ -57,10 +110,16 @@ async function close(tabId) {
    tabs alive — today that is a middle-clicked bottom-nav link, and it
    would cover a first-party window.open too. Skipping frame 0 costs the
    blocking nothing, because no embed can ask from there. */
-chrome.webNavigation.onCreatedNavigationTarget.addListener(async (details) => {
+chrome.webNavigation.onCreatedNavigationTarget.addListener((details) => {
   if (details.sourceFrameId === TOP_FRAME) return;
-  if (!(await isPlayerTab(details.sourceTabId))) return;
-  await close(details.tabId);
+
+  // Deliberately not an async listener: an await here, even one that
+  // resolves immediately, puts the close a task later than it needs to be.
+  if (playerTabs.has(details.sourceTabId)) {
+    close(details.tabId);
+    return;
+  }
+  isPlayerTab(details.sourceTabId).then((yes) => { if (yes) close(details.tabId); });
 });
 
 /* ── Popups that do not ────────────────────────────────────────────────
@@ -76,7 +135,7 @@ chrome.webNavigation.onCreatedNavigationTarget.addListener(async (details) => {
    does, this is the rule that needs the frame test back — most cheaply by
    having the page pass "noopener", which leaves Chrome recording no opener
    and so no match here at all. */
-chrome.tabs.onCreated.addListener(async (tab) => {
+chrome.tabs.onCreated.addListener((tab) => {
   if (tab.id === undefined || tab.openerTabId === undefined) return;
 
   /* Only blank targets. A tab with a real URL in it is the listener
@@ -85,8 +144,11 @@ chrome.tabs.onCreated.addListener(async (tab) => {
   const target = tab.pendingUrl || tab.url || "";
   if (target !== "" && target !== "about:blank") return;
 
-  if (!(await isPlayerTab(tab.openerTabId))) return;
-  await close(tab.id);
+  if (playerTabs.has(tab.openerTabId)) {
+    close(tab.id);
+    return;
+  }
+  isPlayerTab(tab.openerTabId).then((yes) => { if (yes) close(tab.id); });
 });
 
 /* ── Tab-unders ────────────────────────────────────────────────────────
@@ -105,20 +167,18 @@ chrome.tabs.onCreated.addListener(async (tab) => {
    script started. A link the user actually clicked commits without it, as
    does the address bar — so neither can be undone by this. */
 
-const noteKey = (tabId) => `player:${tabId}`;
-
 chrome.webNavigation.onCommitted.addListener(async (details) => {
   const { tabId, frameId, url, transitionQualifiers } = details;
   if (frameId !== TOP_FRAME) return;
 
   if (isPlayerUrl(url)) {
-    await chrome.storage.session.set({ [noteKey(tabId)]: url });
+    remember(tabId, url);
     return;
   }
 
   const key = noteKey(tabId);
-  const cameFrom = (await chrome.storage.session.get(key))[key];
-  await chrome.storage.session.remove(key);
+  const cameFrom = playerTabs.get(tabId) ?? (await chrome.storage.session.get(key))[key];
+  forget(tabId);
   if (!cameFrom) return;
   if (!(transitionQualifiers || []).includes("client_redirect")) return;
 
@@ -132,6 +192,4 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
   }
 });
 
-chrome.tabs.onRemoved.addListener((tabId) => {
-  chrome.storage.session.remove(noteKey(tabId));
-});
+chrome.tabs.onRemoved.addListener((tabId) => forget(tabId));
