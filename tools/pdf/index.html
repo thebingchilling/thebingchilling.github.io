@@ -15,280 +15,123 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
+  <link rel="stylesheet" href="/shared/tokens.css" />
   <link rel="stylesheet" href="/shared/chrome.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
   <style>
-    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
-       token set to index.html / live.html, so this page is visually part of
-       the same app rather than a bolted-on tool. ── */
-    :root {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+    /* Page-specific only. Colour, type, shape and motion come from
+       /shared/tokens.css; the app shell from /shared/chrome.css;
+       buttons, cards, fields, dialogs and the rest from
+       /shared/ui.css. */
 
-      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
-      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
-      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+    .app-main { --content-max: 560px; }
 
-      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
-      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
-      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
-      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
-      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
-      --radius: 12px;
-      --t: 0.2s cubic-bezier(0.2,0,0,1);
+    .dropzone { padding: 2.2rem 1rem; }
+
+    /* The chosen file, shown in place of the dropzone's prompt. */
+    .file-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-top: 0.9rem;
+      padding: 0.6rem 0.6rem 0.6rem 0.8rem;
+      border-radius: var(--shape-m);
+      background: var(--bg2);
     }
-    :root { color-scheme: light dark; }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --md-primary: #ffb77c; --md-on-primary: #4a2800;
-        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-        --md-error: #ffb4ab; --md-on-error: #690005;
-        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-        --md-surface: #17120d;
-        --md-surface-container-lowest: #100c08;
-        --md-surface-container-low: #201a14;
-        --md-surface-container: #241e18;
-        --md-surface-container-high: #2f2822;
-        --md-surface-container-highest: #3a332c;
-        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-        --primary-dark: #ffcda0;
-        --text-faint: #a89686;
-      }
-    }
-    :root[data-theme="dark"] {
-      --md-primary: #ffb77c; --md-on-primary: #4a2800;
-      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-      --md-error: #ffb4ab; --md-on-error: #690005;
-      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-      --md-surface: #17120d;
-      --md-surface-container-lowest: #100c08;
-      --md-surface-container-low: #201a14;
-      --md-surface-container: #241e18;
-      --md-surface-container-high: #2f2822;
-      --md-surface-container-highest: #3a332c;
-      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-      --primary-dark: #ffcda0;
-      --text-faint: #a89686;
-    }
-    :root[data-theme="light"] {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
-      --primary-dark: #632f00;
-      --text-faint: #8a7a6d;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; }
-
-    body { -webkit-tap-highlight-color: transparent; }
-    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    button, .btn, .dropzone { -webkit-touch-callout: none; user-select: none; }
-
-    .btn, .dropzone, .file-chip__remove, .mode-tab { position: relative; overflow: hidden; }
-
-    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
-    html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
-    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    body { scrollbar-width: none; }
-    body::-webkit-scrollbar { display: none; }
-
-    .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
-    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
-    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
-    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
-    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
-    .btn--primary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
-    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
-    .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .btn--block { width: 100%; }
-    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
-
-    /* ── Page content ── */
-    /* Bottom padding reserves room for the fixed bottom nav so content
-       never sits underneath it. Horizontal padding (not max-width +
-       margin: 0 auto) does the content-column centering: .app-main is
-       the scrolling element, so a max-width on it would leave its
-       scrollbar stranded at the edge of the narrow column instead of
-       the actual window edge on a wide desktop viewport. */
-    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem max(1rem, calc((100% - 560px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
-    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
-    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
-    .hero__icon .material-icons { font-size: 30px; }
-    .hero__title { margin: 0 0 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
-    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
-
-    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
-
-    /* ── Operation choice cards (M3 selection-card shape) — pick one or
-       both qpdf operations to run on the file below, instead of a mode
-       switch that picked exactly one. Same card-selection language as
-       the main app's source list (index.html's .source-card): a bordered
-       card that fills with the primary tint when selected, whole card
-       tappable via the wrapping <label> rather than just a tiny box. */
-    .option-card { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.75rem 0.85rem; border-radius: 14px; border: 1px solid var(--md-outline-variant); background: var(--surface); cursor: pointer; transition: border-color var(--t), background var(--t); margin-bottom: 0.6rem; }
-    .option-card:last-of-type { margin-bottom: 0; }
-    .option-card:hover { background: var(--surface2); }
-    .option-card:has(input:checked) { border-color: var(--primary); background: var(--md-primary-container); }
-    /* Visually hidden but still a real, focusable, tabbable control — not
-       just opacity:0 in place, since that needs a positioned ancestor to
-       land exactly on .option-card__box and would otherwise sit wherever
-       the nearest positioned ancestor happens to be, invisibly eating
-       clicks meant for something else on the page. */
-    .option-card input[type="checkbox"] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-    .option-card__box { position: relative; width: 18px; height: 18px; margin-top: 0.15rem; border-radius: 3px; border: 2px solid var(--md-outline); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background var(--t), border-color var(--t); }
-    .option-card__box .material-icons { font-size: 14px; color: var(--on-primary); opacity: 0; transform: scale(0.6); transition: opacity var(--t), transform var(--t); }
-    .option-card:has(input:checked) .option-card__box { background: var(--primary); border-color: var(--primary); }
-    .option-card:has(input:checked) .option-card__box .material-icons { opacity: 1; transform: scale(1); }
-    .option-card:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .option-card__body { min-width: 0; }
-    .option-card__title { display: block; font-size: 0.88rem; font-weight: 500; color: var(--text); }
-    .option-card:has(input:checked) .option-card__title { color: var(--md-on-primary-container); }
-    .option-card p { margin: 0.15rem 0 0; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
-    .option-card:has(input:checked) p { color: var(--md-on-primary-container); }
-
-    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 16px; padding: 2.2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
-    .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
-    .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
-    .dropzone .material-icons { font-size: 34px; color: var(--primary); }
-    .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
-    .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
-    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-
-    .file-chip { display: flex; align-items: center; gap: 0.7rem; background: var(--bg2); border-radius: 14px; padding: 0.7rem 0.8rem; margin-top: 0.9rem; }
-    .file-chip.hidden { display: none; }
-    .file-chip .material-icons { color: var(--primary); flex-shrink: 0; }
+    .file-chip > .material-icons { flex-shrink: 0; color: var(--md-primary); }
     .file-chip__body { flex: 1; min-width: 0; }
-    .file-chip__name { font-size: 0.86rem; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-chip__meta { font-size: 0.74rem; color: var(--text-faint); }
-    .file-chip__remove { border: none; background: none; color: var(--text-muted); cursor: pointer; width: 32px; height: 32px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .file-chip__remove:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
+    .file-chip__name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
+    .file-chip__meta {
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
 
-    .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 1rem 0 0.4rem; }
-    .field-hint { font-size: 0.72rem; color: var(--text-faint); margin: 0.3rem 0 0; }
-    .password-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
-    .password-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
-    .password-row input::placeholder { color: var(--text-faint); }
-
-    .action-row { margin-top: 1.1rem; }
-    .status-line { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 0.9rem; min-height: 1.2em; }
-    .status-line.hidden { display: none; }
-
-    .result-card { text-align: center; }
-    .result-card.hidden { display: none; }
-    .result-card__icon { width: 52px; height: 52px; border-radius: 999px; background: color-mix(in srgb, #146c2e 16%, transparent); color: #146c2e; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.7rem; }
-    :root[data-theme="dark"] .result-card__icon { background: color-mix(in srgb, #6fdb8f 18%, transparent); color: #6fdb8f; }
-    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .result-card__icon { background: color-mix(in srgb, #6fdb8f 18%, transparent); color: #6fdb8f; } }
-    .result-card__icon .material-icons { font-size: 28px; }
-    .result-card__title { font-family: 'Google Sans', sans-serif; font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 0.3rem; }
-    .result-card__sub { font-size: 0.84rem; color: var(--text-muted); margin: 0 0 1.1rem; }
-    .result-card__actions { display: flex; flex-direction: column; gap: 0.55rem; }
-
-    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
-    .error-banner.hidden { display: none; }
-    .error-banner .material-icons { flex-shrink: 0; }
-    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
-    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
-    .error-banner__details { margin-top: 0.5rem; font-size: 0.72rem; opacity: 0.85; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, monospace; }
-
-    .info-banner { display: flex; gap: 0.7rem; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
-    .info-banner.hidden { display: none; }
-    .info-banner .material-icons { flex-shrink: 0; }
-    .info-banner p { margin: 0; font-size: 0.82rem; line-height: 1.45; }
-
-    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
-    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
-    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
-    .note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
+    /* ── Result ── */
+    .done-card { text-align: center; }
+    .done-card__icon {
+      width: 52px;
+      height: 52px;
+      margin-bottom: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--shape-full);
+      background: var(--md-success-container);
+      color: var(--md-on-success-container);
+    }
+    .done-card__icon .material-icons { font-size: 28px; }
+    .done-card__title {
+      margin: 0 0 0.3rem;
+      font: var(--type-title-large);
+      letter-spacing: var(--track-title-large);
+      color: var(--text);
+    }
+    .done-card__sub {
+      margin: 0 0 1.1rem;
+      font: var(--type-body-medium);
+      letter-spacing: var(--track-body-medium);
+      line-height: var(--leading-prose);
+      color: var(--text-muted);
+    }
+    .done-card__actions { display: flex; flex-direction: column; gap: 0.55rem; }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__brand">
-      <span class="top-bar__name">🍦 Bingqilin</span>
+    <div class="top-bar__lead">
+      <a class="icon-btn" href="/tools/" aria-label="Back to Tools">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+      </a>
+      <div class="top-bar__brand">
+        <span class="top-bar__name">🍦 Bingqilin</span>
+      </div>
     </div>
     <div class="top-bar__actions">
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
-        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+        <span class="material-icons" aria-hidden="true" id="themeToggleIcon">brightness_auto</span>
       </button>
     </div>
   </header>
 
   <main class="app-main">
     <div class="hero">
-      <div class="hero__icon"><span class="material-icons">lock_open</span></div>
+      <div class="hero__icon"><span class="material-icons" aria-hidden="true">lock_open</span></div>
       <h1 class="hero__title">Unlock a PDF</h1>
       <p class="hero__sub">Remove password restrictions, a certification signature, or both from a PDF.</p>
     </div>
 
     <div class="card">
       <label class="dropzone" id="dropzone" for="fileInput">
-        <span class="material-icons">picture_as_pdf</span>
+        <span class="material-icons" aria-hidden="true">picture_as_pdf</span>
         <span class="dropzone__title" id="dropzoneTitle">Drop a PDF here, or tap to choose</span>
         <span class="dropzone__sub">Processed locally in your browser</span>
         <input id="fileInput" type="file" accept=".pdf,application/pdf" aria-label="Choose a PDF file" />
       </label>
 
       <div class="file-chip hidden" id="fileChip">
-        <span class="material-icons">description</span>
+        <span class="material-icons" aria-hidden="true">description</span>
         <div class="file-chip__body">
           <div class="file-chip__name" id="fileChipName"></div>
           <div class="file-chip__meta" id="fileChipMeta"></div>
         </div>
-        <button class="file-chip__remove" id="fileChipRemove" type="button" aria-label="Remove file">
-          <span class="material-icons">close</span>
+        <button class="icon-btn icon-btn--sm" id="fileChipRemove" type="button" aria-label="Remove file">
+          <span class="material-icons" aria-hidden="true">close</span>
         </button>
       </div>
 
       <label class="field-label" style="margin-top: 1.1rem;">What to remove</label>
       <label class="option-card" for="optRestrictions">
         <input type="checkbox" id="optRestrictions" checked />
-        <span class="option-card__box"><span class="material-icons">check</span></span>
+        <span class="option-card__box"><span class="material-icons" aria-hidden="true">check</span></span>
         <span class="option-card__body">
           <span class="option-card__title">Remove restrictions</span>
           <p>Clears the owner-password flag that blocks printing, copying, or editing.</p>
@@ -296,7 +139,7 @@
       </label>
       <label class="option-card" for="optSignature">
         <input type="checkbox" id="optSignature" />
-        <span class="option-card__box"><span class="material-icons">check</span></span>
+        <span class="option-card__box"><span class="material-icons" aria-hidden="true">check</span></span>
         <span class="option-card__body">
           <span class="option-card__title">Remove signature</span>
           <p>Strips a certification signature (DocMDP) that blocks edits, even without a password.</p>
@@ -305,22 +148,22 @@
 
       <label class="field-label" for="passwordInput">Password (only if the file asks for one to open)</label>
       <div class="password-row">
-        <input id="passwordInput" type="password" placeholder="Leave blank for most restricted PDFs" autocomplete="off" />
+        <input id="passwordInput" type="password" placeholder="Usually blank" autocomplete="off" />
         <button class="icon-btn" id="togglePasswordBtn" type="button" aria-label="Show password">
-          <span class="material-icons" id="togglePasswordIcon">visibility</span>
+          <span class="material-icons" aria-hidden="true" id="togglePasswordIcon">visibility</span>
         </button>
       </div>
 
       <div class="action-row">
         <button class="btn btn--primary btn--block" id="actionBtn" type="button" disabled>
-          <span class="material-icons" id="actionBtnIcon">lock_open</span>
+          <span class="material-icons" aria-hidden="true" id="actionBtnIcon">lock_open</span>
           <span id="actionBtnLabel">Choose a PDF first</span>
         </button>
         <p class="status-line hidden" id="statusLine" role="status" aria-live="polite"></p>
       </div>
 
       <div class="error-banner hidden" id="errorBanner" role="alert">
-        <span class="material-icons">error_outline</span>
+        <span class="material-icons" aria-hidden="true">error_outline</span>
         <div>
           <p class="error-banner__title" id="errorTitle">Couldn't unlock this PDF</p>
           <p class="error-banner__body" id="errorBody"></p>
@@ -329,25 +172,25 @@
       </div>
 
       <div class="info-banner hidden" id="infoBanner" role="status">
-        <span class="material-icons">info</span>
+        <span class="material-icons" aria-hidden="true">info</span>
         <p id="infoBody"></p>
       </div>
     </div>
 
-    <div class="card result-card hidden" id="resultCard">
-      <div class="result-card__icon"><span class="material-icons">task_alt</span></div>
-      <h2 class="result-card__title" id="resultTitle">Restrictions removed</h2>
-      <p class="result-card__sub" id="resultSub"></p>
-      <div class="result-card__actions">
+    <div class="card done-card hidden" id="resultCard">
+      <div class="done-card__icon"><span class="material-icons" aria-hidden="true">task_alt</span></div>
+      <h2 class="done-card__title" id="resultTitle">Restrictions removed</h2>
+      <p class="done-card__sub" id="resultSub"></p>
+      <div class="done-card__actions">
         <a class="btn btn--primary btn--block" id="downloadBtn" href="#" download>
-          <span class="material-icons">download</span><span id="downloadBtnLabel">Download unlocked PDF</span>
+          <span class="material-icons" aria-hidden="true">download</span><span id="downloadBtnLabel">Download unlocked PDF</span>
         </a>
         <button class="btn btn--ghost btn--block" id="resetBtn" type="button">Process another file</button>
       </div>
     </div>
 
     <div class="card note-card">
-      <span class="material-icons">shield</span>
+      <span class="material-icons" aria-hidden="true">shield</span>
       <p>Runs via <a href="https://qpdf.readthedocs.io/" target="_blank" rel="noopener">QPDF</a> compiled to WebAssembly, entirely in your browser. A PDF can restrict printing/copying/editing without a password (the "owner password" flag), and separately carry a certification signature (DocMDP) that blocks edits — this clears either or both, but won't open a file that actually needs a password to view.</p>
     </div>
   </main>
@@ -356,16 +199,16 @@
        every Bingqilin page. -->
   <div class="bottom-dock">
     <nav class="bottom-nav" aria-label="Primary">
-      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+      <a class="bottom-nav__item" href="/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">video_library</span></span>
         <span class="bottom-nav__label">Media</span>
       </a>
-      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+      <a class="bottom-nav__item" href="/live">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">live_tv</span></span>
         <span class="bottom-nav__label">Live</span>
       </a>
-      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+      <a class="bottom-nav__item bottom-nav__item--active" aria-current="page" href="/tools/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">construction</span></span>
         <span class="bottom-nav__label">Tools</span>
       </a>
     </nav>
@@ -379,7 +222,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
 
-  BQChrome.initRipple(".icon-btn, .btn, .dropzone, .file-chip__remove, .bottom-nav__item, .mode-tab");
+  BQChrome.initRipple(".icon-btn, .btn, .dropzone, .option-card, .bottom-nav__item");
   BQChrome.initTheme();
 
   /* ── qpdf (WebAssembly) engine ──────────────────────────────────────────

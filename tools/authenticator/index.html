@@ -15,274 +15,134 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
+  <link rel="stylesheet" href="/shared/tokens.css" />
   <link rel="stylesheet" href="/shared/chrome.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
   <style>
-    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
-       token set to /pdf, so this tool is visually consistent with it. ── */
-    :root {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+    /* Page-specific only. Colour, type, shape and motion come from
+       /shared/tokens.css; the app shell from /shared/chrome.css;
+       buttons, cards, fields, dialogs and the rest from
+       /shared/ui.css. */
 
-      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
-      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
-      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
+    .app-main { --content-max: 560px; }
 
-      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
-      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
-      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
-      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
-      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
-      --radius: 12px;
-      --t: 0.2s cubic-bezier(0.2,0,0,1);
-    }
-    :root { color-scheme: light dark; }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --md-primary: #ffb77c; --md-on-primary: #4a2800;
-        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-        --md-error: #ffb4ab; --md-on-error: #690005;
-        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-        --md-surface: #17120d;
-        --md-surface-container-lowest: #100c08;
-        --md-surface-container-low: #201a14;
-        --md-surface-container: #241e18;
-        --md-surface-container-high: #2f2822;
-        --md-surface-container-highest: #3a332c;
-        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-        --primary-dark: #ffcda0;
-        --text-faint: #a89686;
-      }
-    }
-    :root[data-theme="dark"] {
-      --md-primary: #ffb77c; --md-on-primary: #4a2800;
-      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-      --md-error: #ffb4ab; --md-on-error: #690005;
-      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-      --md-surface: #17120d;
-      --md-surface-container-lowest: #100c08;
-      --md-surface-container-low: #201a14;
-      --md-surface-container: #241e18;
-      --md-surface-container-high: #2f2822;
-      --md-surface-container-highest: #3a332c;
-      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-      --primary-dark: #ffcda0;
-      --text-faint: #a89686;
-    }
-    :root[data-theme="light"] {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
-      --primary-dark: #632f00;
-      --text-faint: #8a7a6d;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; }
-
-    body { -webkit-tap-highlight-color: transparent; }
-    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    button, .btn, .dropzone, .account-card { -webkit-touch-callout: none; user-select: none; }
-
-    .btn, .dropzone, .account-card, .add-tab { position: relative; overflow: hidden; }
-
-    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
-    html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
-    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    body { scrollbar-width: none; }
-    body::-webkit-scrollbar { display: none; }
-
-    .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
-    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
-    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
-    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
-    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
-    .btn--primary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
-    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
-    .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .btn--sm { padding: 0.4rem 0.85rem; font-size: 0.8rem; }
-    .btn--block { width: 100%; }
-    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
-
-    /* ── Page content ── */
-    /* Bottom padding reserves room for the fixed bottom nav so content
-       never sits underneath it. Horizontal padding (not max-width +
-       margin: 0 auto) does the content-column centering: .app-main is
-       the scrolling element, so a max-width on it would leave its
-       scrollbar stranded at the edge of the narrow column instead of
-       the actual window edge on a wide desktop viewport. */
-    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem max(1rem, calc((100% - 560px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
-    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
-    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
-    .hero__icon .material-icons { font-size: 30px; }
-    .hero__title { margin: 0 0 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
-    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
-
-    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
-    .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; }
-    .section-title h2 { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
-    /* Collapsed-by-default "Add an account" toggle — same idea as .adv-toggle,
-       just styled to sit as a card's clickable header row instead of a plain
-       button, so "Your accounts" reads as the primary content of the page. */
-    .section-title--toggle { width: 100%; border: none; background: none; padding: 0; margin: 0; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .section-title--toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 8px; }
-    .section-title__chevron { color: var(--text-muted); transition: transform var(--t); }
-    .section-title--toggle[aria-expanded="true"] .section-title__chevron { transform: rotate(180deg); }
-    .section-title--toggle[aria-expanded="false"] { margin-bottom: 0; }
     .add-body { margin-top: 0.85rem; }
-
-    /* ── Add-account entry points ── */
-    .add-tabs { display: flex; gap: 0.4rem; background: var(--bg2); border-radius: 999px; padding: 0.25rem; margin-bottom: 1rem; }
-    .add-tab { flex: 1; border: none; background: none; border-radius: 999px; padding: 0.5rem 0.5rem; font-family: 'Google Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
-    .add-tab--active { background: var(--md-surface-container-low); color: var(--primary-dark); box-shadow: var(--el1); }
     .add-panel { display: none; }
     .add-panel--active { display: block; }
 
-    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; text-align: center; border: 1.5px dashed var(--md-outline); border-radius: 16px; padding: 2rem 1rem; cursor: pointer; transition: background var(--t), border-color var(--t); }
-    .dropzone:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
-    .dropzone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .dropzone--drag { background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
-    .dropzone .material-icons { font-size: 34px; color: var(--primary); }
-    .dropzone__title { font-size: 0.92rem; font-weight: 500; color: var(--text); }
-    .dropzone__sub { font-size: 0.78rem; color: var(--text-faint); }
-    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-
-    .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 1rem 0 0.4rem; }
-    .section-hint { margin: -0.5rem 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
-    .field-label:first-child { margin-top: 0; }
-    .field-hint { font-size: 0.72rem; color: var(--text-faint); margin: 0.3rem 0 0; }
-    .input-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
-    .input-row input, .input-row select { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
-    .input-row input::placeholder { color: var(--text-faint); }
-    .input-row select { padding-right: 0.5rem; cursor: pointer; }
-
-    .adv-toggle { display: flex; align-items: center; gap: 0.3rem; border: none; background: none; color: var(--text-muted); font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; padding: 0.6rem 0.1rem 0; }
-    .adv-toggle .material-icons { font-size: 18px; transition: transform var(--t); }
-    .adv-toggle--open .material-icons { transform: rotate(180deg); }
-    .adv-grid { display: none; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 0.7rem; }
-    .adv-grid--open { display: grid; }
-    .adv-grid .field-label { margin: 0 0 0.35rem; }
-
-    .action-row { margin-top: 1.1rem; }
-    .status-line { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 0.9rem; min-height: 1.2em; }
-    .status-line.hidden { display: none; }
-
-    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
-    .error-banner.hidden { display: none; }
-    .error-banner .material-icons { flex-shrink: 0; }
-    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
-    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
-
     /* ── Accounts list ── */
-    .accounts-empty { text-align: center; padding: 2rem 1rem; color: var(--text-faint); }
-    .accounts-empty .material-icons { font-size: 32px; margin-bottom: 0.5rem; }
-    .accounts-empty p { margin: 0; font-size: 0.85rem; }
-    .accounts-empty.hidden { display: none; }
-
-    .account-card { display: flex; align-items: center; gap: 0.85rem; background: var(--md-surface-container-low); border-radius: 18px; padding: 0.9rem 1rem; box-shadow: var(--el1); margin-bottom: 0.7rem; cursor: pointer; }
+    .account-card {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 0.7rem;
+      padding: 0.9rem 0.6rem 0.9rem 1rem;
+      border-radius: var(--shape-l);
+      background: var(--md-surface-container-low);
+      box-shadow: var(--el1);
+      cursor: pointer;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
     .account-card__ring { flex-shrink: 0; width: 38px; height: 38px; }
     .account-card__ring circle { fill: none; stroke-width: 3; }
     .account-card__ring .track { stroke: var(--bg2); }
-    .account-card__ring .prog { stroke: var(--primary); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+    .account-card__ring .prog {
+      stroke: var(--md-primary);
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
     .account-card__ring--warn .prog { stroke: var(--md-error); }
     .account-card__body { flex: 1; min-width: 0; }
-    .account-card__label { font-size: 0.86rem; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .account-card__issuer { font-size: 0.74rem; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .account-card__code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1.35rem; font-weight: 500; color: var(--primary-dark); letter-spacing: 0.03em; margin-top: 0.1rem; }
+    .account-card__label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
+    .account-card__issuer {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
+    /* The code itself is the reason the page exists — tabular monospace so
+       the digits do not shift as they change each period. */
+    .account-card__code {
+      margin-top: 0.1rem;
+      font-family: var(--font-mono);
+      font-size: 1.375rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      color: var(--primary-dark);
+      font-variant-numeric: tabular-nums;
+    }
     .account-card__actions { display: flex; align-items: center; gap: 0.1rem; flex-shrink: 0; }
-    .account-card__copied { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 0.4rem; background: var(--md-surface-container-low); color: #146c2e; font-size: 0.85rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
-    :root[data-theme="dark"] .account-card__copied { color: #6fdb8f; }
-    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .account-card__copied { color: #6fdb8f; } }
+    /* Covers the card on copy. Uses the success role, which carries its own
+       dark-mode value — this used to be two hardcoded greens plus a pair of
+       overrides to switch between them. */
+    .account-card__copied {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      background: var(--md-surface-container-low);
+      color: var(--md-success);
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
     .account-card__copied--show { opacity: 1; }
     .account-card__copied .material-icons { font-size: 18px; }
 
-    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
-    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
-    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
-    .note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
-
     .data-actions { display: flex; gap: 0.6rem; }
     .data-actions .btn { flex: 1; }
-    input[type="file"].visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
-
-    /* ── Modal (edit account) ── */
-    .modal-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
-    .modal-scrim.hidden { display: none; }
-    .modal-sheet { width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; background: var(--md-surface-container-low); border-radius: 20px 20px 0 0; padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); box-shadow: var(--el3); }
-    @media (min-width: 620px) {
-      .modal-scrim { align-items: center; }
-      .modal-sheet { border-radius: 20px; max-height: 85vh; }
-    }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__brand">
-      <span class="top-bar__name">🍦 Bingqilin</span>
+    <div class="top-bar__lead">
+      <a class="icon-btn" href="/tools/" aria-label="Back to Tools">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+      </a>
+      <div class="top-bar__brand">
+        <span class="top-bar__name">🍦 Bingqilin</span>
+      </div>
     </div>
     <div class="top-bar__actions">
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
-        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+        <span class="material-icons" aria-hidden="true" id="themeToggleIcon">brightness_auto</span>
       </button>
     </div>
   </header>
 
   <main class="app-main">
     <div class="hero">
-      <div class="hero__icon"><span class="material-icons">verified_user</span></div>
+      <div class="hero__icon"><span class="material-icons" aria-hidden="true">verified_user</span></div>
       <h1 class="hero__title">Authenticator</h1>
       <p class="hero__sub">Generate two-factor authentication codes for your accounts.</p>
     </div>
 
     <div class="card">
       <div class="section-title"><h2>Your accounts</h2></div>
-      <div class="accounts-empty" id="accountsEmpty">
-        <div class="material-icons">shield</div>
-        <p>Add an account below to get started.</p>
+      <div class="empty-state" id="accountsEmpty">
+        <div class="material-icons empty-state__icon" aria-hidden="true">shield</div>
+        <p class="empty-state__sub">Add an account below to get started.</p>
       </div>
       <div id="accountsList"></div>
     </div>
@@ -290,26 +150,26 @@
     <div class="card">
       <button class="section-title section-title--toggle" id="addToggle" type="button" aria-expanded="false" aria-controls="addBody">
         <h2>Add an account</h2>
-        <span class="material-icons section-title__chevron" id="addToggleIcon">expand_more</span>
+        <span class="material-icons section-title__chevron" aria-hidden="true" id="addToggleIcon">expand_more</span>
       </button>
 
       <div class="add-body" id="addBody" hidden>
-        <div class="add-tabs" role="tablist">
-          <button class="add-tab add-tab--active" id="tabQr" type="button" role="tab" aria-selected="true">Scan QR</button>
-          <button class="add-tab" id="tabUri" type="button" role="tab" aria-selected="false">Paste URI</button>
-          <button class="add-tab" id="tabManual" type="button" role="tab" aria-selected="false">Manual</button>
+        <div class="segmented" id="addTabs" role="tablist" aria-label="How to add an account">
+          <button class="segmented__item segmented__item--active" id="tabQr" type="button" role="tab" aria-selected="true" aria-controls="panelQr" data-panel="qr">Scan QR</button>
+          <button class="segmented__item" id="tabUri" type="button" role="tab" aria-selected="false" aria-controls="panelUri" data-panel="uri">Paste URI</button>
+          <button class="segmented__item" id="tabManual" type="button" role="tab" aria-selected="false" aria-controls="panelManual" data-panel="manual">Manual</button>
         </div>
 
-        <div class="add-panel add-panel--active" id="panelQr">
+        <div class="add-panel add-panel--active" id="panelQr" role="tabpanel" aria-labelledby="tabQr">
           <label class="dropzone" id="dropzone" for="qrFileInput">
-            <span class="material-icons">qr_code_scanner</span>
+            <span class="material-icons" aria-hidden="true">qr_code_scanner</span>
             <span class="dropzone__title">Drop a QR code image here, or tap to choose</span>
             <span class="dropzone__sub">Decoded locally — the image is never uploaded</span>
             <input id="qrFileInput" type="file" accept="image/*" aria-label="Choose a QR code image" />
           </label>
         </div>
 
-        <div class="add-panel" id="panelUri">
+        <div class="add-panel" id="panelUri" role="tabpanel" aria-labelledby="tabUri">
           <label class="field-label" for="uriInput">otpauth:// setup URI</label>
           <div class="input-row">
             <input id="uriInput" type="text" placeholder="otpauth://totp/Example:you@example.com?secret=..." autocomplete="off" autocapitalize="off" spellcheck="false" />
@@ -319,7 +179,7 @@
           </div>
         </div>
 
-        <div class="add-panel" id="panelManual">
+        <div class="add-panel" id="panelManual" role="tabpanel" aria-labelledby="tabManual">
           <form id="manualForm">
             <label class="field-label" for="manualSecret">Secret key</label>
             <div class="input-row">
@@ -335,10 +195,10 @@
             </div>
 
             <button type="button" class="adv-toggle" id="manualAdvToggle">
-              <span class="material-icons">expand_more</span>Advanced options
+              <span class="material-icons" aria-hidden="true">expand_more</span>Advanced options
             </button>
             <div class="adv-grid" id="manualAdvGrid">
-              <p class="section-hint" style="grid-column: 1 / -1; margin: 0 0 0.2rem;">How the account generates codes — almost every service uses the defaults below.</p>
+              <p class="section-hint">How the account generates codes — almost every service uses the defaults below.</p>
               <div>
                 <label class="field-label" for="manualAlgo">Algorithm</label>
                 <div class="input-row">
@@ -374,7 +234,7 @@
         </div>
 
         <div class="error-banner hidden" id="addError" role="alert">
-          <span class="material-icons">error_outline</span>
+          <span class="material-icons" aria-hidden="true">error_outline</span>
           <div>
             <p class="error-banner__title">Couldn't add this account</p>
             <p class="error-banner__body" id="addErrorBody"></p>
@@ -389,17 +249,17 @@
       <p class="field-hint" style="margin: 0 0 0.8rem;">Export your accounts to a file, or restore from one. This is the only way to recover them if you clear browser data.</p>
       <div class="data-actions">
         <button class="btn btn--ghost" id="exportBtn" type="button">
-          <span class="material-icons" style="font-size:18px;">download</span>Export
+          <span class="material-icons" aria-hidden="true">download</span>Export
         </button>
         <button class="btn btn--ghost" id="importBtn" type="button">
-          <span class="material-icons" style="font-size:18px;">upload</span>Import
+          <span class="material-icons" aria-hidden="true">upload</span>Import
         </button>
       </div>
       <input type="file" id="importFileInput" class="visually-hidden" accept="application/json,.json" />
     </div>
 
     <div class="card note-card">
-      <span class="material-icons">shield</span>
+      <span class="material-icons" aria-hidden="true">shield</span>
       <p>Codes come from combining your secret key with the current time (the TOTP standard) — no server round-trip needed to check them. QR setup codes are scanned and decoded locally with <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener">jsQR</a>. Accounts are saved as plain, unencrypted text in your browser, so treat this device's storage like you would a password file.</p>
     </div>
   </main>
@@ -408,25 +268,25 @@
        every Bingqilin page. -->
   <div class="bottom-dock">
     <nav class="bottom-nav" aria-label="Primary">
-      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+      <a class="bottom-nav__item" href="/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">video_library</span></span>
         <span class="bottom-nav__label">Media</span>
       </a>
-      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+      <a class="bottom-nav__item" href="/live">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">live_tv</span></span>
         <span class="bottom-nav__label">Live</span>
       </a>
-      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+      <a class="bottom-nav__item bottom-nav__item--active" aria-current="page" href="/tools/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">construction</span></span>
         <span class="bottom-nav__label">Tools</span>
       </a>
     </nav>
   </div>
 </div>
 
-<div class="modal-scrim hidden" id="editScrim">
-  <div class="modal-sheet">
-    <div class="section-title"><h2>Edit account</h2></div>
+<div class="scrim scrim--bottom hidden" id="editScrim" role="dialog" aria-modal="true" aria-labelledby="editSheetTitle" aria-hidden="true">
+  <div class="sheet">
+    <div class="sheet__header"><h2 class="sheet__title" id="editSheetTitle">Edit account</h2></div>
     <form id="editForm">
       <label class="field-label" for="editLabel">Account name</label>
       <div class="input-row"><input id="editLabel" type="text" autocomplete="off" /></div>
@@ -434,7 +294,7 @@
       <div class="input-row"><input id="editIssuer" type="text" autocomplete="off" /></div>
 
       <button type="button" class="adv-toggle" id="editAdvToggle">
-        <span class="material-icons">expand_more</span>Advanced options
+        <span class="material-icons" aria-hidden="true">expand_more</span>Advanced options
       </button>
       <div class="adv-grid" id="editAdvGrid">
         <div>
@@ -470,7 +330,7 @@
     </form>
     <div class="action-row">
       <button type="button" class="btn btn--ghost btn--block" id="editDeleteBtn" style="color: var(--md-error);">
-        <span class="material-icons" style="font-size:18px;">delete</span>Delete this account
+        <span class="material-icons" aria-hidden="true">delete</span>Delete this account
       </button>
     </div>
   </div>
@@ -483,7 +343,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
 
-  BQChrome.initRipple(".icon-btn, .btn, .dropzone, .add-tab, .account-card, .bottom-nav__item");
+  BQChrome.initRipple(".icon-btn, .btn, .dropzone, .segmented__item, .account-card, .bottom-nav__item");
   BQChrome.initTheme();
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -591,20 +451,15 @@
   }
   addToggle.addEventListener("click", () => setAddBodyOpen(addBody.hidden));
 
-  /* ── UI: add-account tabs ── */
-  const tabs = { qr: $("tabQr"), uri: $("tabUri"), manual: $("tabManual") };
+  /* ── UI: add-account tabs ──
+     BQChrome.initTabs owns aria-selected, the roving tabindex and
+     Left/Right/Home/End; this only has to swap the panel. */
   const panels = { qr: $("panelQr"), uri: $("panelUri"), manual: $("panelManual") };
-  function selectTab(name) {
-    Object.keys(tabs).forEach((k) => {
-      tabs[k].classList.toggle("add-tab--active", k === name);
-      tabs[k].setAttribute("aria-selected", String(k === name));
-      panels[k].classList.toggle("add-panel--active", k === name);
-    });
+  BQChrome.initTabs($("addTabs"), (tab) => {
+    const name = tab.dataset.panel;
+    Object.keys(panels).forEach((k) => panels[k].classList.toggle("add-panel--active", k === name));
     hideAddError();
-  }
-  tabs.qr.addEventListener("click", () => selectTab("qr"));
-  tabs.uri.addEventListener("click", () => selectTab("uri"));
-  tabs.manual.addEventListener("click", () => selectTab("manual"));
+  });
 
   const addError = $("addError"), addErrorBody = $("addErrorBody");
   const addStatus = $("addStatus");
@@ -766,9 +621,9 @@
           '<div class="account-card__code">······</div>' +
         '</div>' +
         '<div class="account-card__actions">' +
-          '<button class="icon-btn" type="button" data-action="edit" aria-label="Edit ' + escapeHtml(account.label) + '"><span class="material-icons">edit</span></button>' +
+          '<button class="icon-btn" type="button" data-action="edit" aria-label="Edit ' + escapeHtml(account.label) + '"><span class="material-icons" aria-hidden="true">edit</span></button>' +
         '</div>' +
-        '<div class="account-card__copied"><span class="material-icons">check</span>Copied</div>';
+        '<div class="account-card__copied"><span class="material-icons" aria-hidden="true">check</span>Copied</div>';
       card.addEventListener("click", (e) => {
         if (e.target.closest('[data-action="edit"]')) { openEdit(account.id); return; }
         copyCode(card, account);
@@ -846,6 +701,12 @@
     editAdvToggle.classList.toggle("adv-toggle--open", open);
   });
   let editingId = null;
+  // BQChrome.dialog supplies the Escape key, the focus trap, focus
+  // restore, the background scroll lock and dismiss-on-scrim-click.
+  const editDialog = BQChrome.dialog(editScrim, {
+    initialFocus: () => $("editLabel"),
+    onClose: () => { editingId = null; },
+  });
   function openEdit(id) {
     const account = accounts.find((a) => a.id === id);
     if (!account) return;
@@ -857,11 +718,10 @@
     $("editPeriod").value = String(account.period);
     editAdvGrid.classList.remove("adv-grid--open");
     editAdvToggle.classList.remove("adv-toggle--open");
-    editScrim.classList.remove("hidden");
+    editDialog.open();
   }
-  function closeEdit() { editScrim.classList.add("hidden"); editingId = null; }
+  function closeEdit() { editDialog.close(); }
   $("editCancelBtn").addEventListener("click", closeEdit);
-  editScrim.addEventListener("click", (e) => { if (e.target === editScrim) closeEdit(); });
 
   editForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -878,13 +738,19 @@
     closeEdit();
   });
 
-  $("editDeleteBtn").addEventListener("click", () => {
+  $("editDeleteBtn").addEventListener("click", async () => {
     if (!editingId) return;
     const account = accounts.find((a) => a.id === editingId);
     if (!account) return;
-    const ok = confirm('Delete "' + account.label + '"? If you no longer have the original QR code or secret, you won\'t be able to add it back.');
+    const deletingId = editingId;
+    const ok = await BQChrome.confirm({
+      title: 'Delete "' + account.label + '"?',
+      body: "If you no longer have the original QR code or secret, you won't be able to add it back.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
     if (!ok) return;
-    accounts = accounts.filter((a) => a.id !== editingId);
+    accounts = accounts.filter((a) => a.id !== deletingId);
     saveAccounts(accounts);
     renderAccounts();
     closeEdit();
@@ -892,7 +758,7 @@
 
   /* ── Export / import backup ── */
   $("exportBtn").addEventListener("click", () => {
-    if (accounts.length === 0) { alert("No accounts to export yet."); return; }
+    if (accounts.length === 0) { BQChrome.snackbar("No accounts to export yet."); return; }
     const blob = new Blob([JSON.stringify({ accounts }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -934,9 +800,11 @@
       }
       saveAccounts(accounts);
       renderAccounts();
-      alert(added > 0 ? "Imported " + added + " account" + (added === 1 ? "" : "s") + "." : "Nothing new to import — all accounts in that file are already here.");
+      BQChrome.snackbar(added > 0
+        ? "Imported " + added + " account" + (added === 1 ? "" : "s") + "."
+        : "Nothing new to import — all accounts in that file are already here.");
     } catch (err) {
-      alert("Couldn't import that file: " + String((err && err.message) || err));
+      BQChrome.snackbar("Couldn't import that file: " + String((err && err.message) || err), { duration: 6000 });
     }
   });
 

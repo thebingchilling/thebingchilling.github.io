@@ -15,228 +15,99 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
+  <link rel="stylesheet" href="/shared/tokens.css" />
   <link rel="stylesheet" href="/shared/chrome.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
   <style>
-    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
-       token set to the rest of the toolbox. ── */
-    :root {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+    /* Page-specific only. Colour, type, shape and motion come from
+       /shared/tokens.css; the app shell from /shared/chrome.css;
+       buttons, cards, fields, dialogs and the rest from
+       /shared/ui.css. */
 
-      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
-      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
-      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
-
-      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
-      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
-      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
-      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
-      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
-      --radius: 12px;
-      --t: 0.2s cubic-bezier(0.2,0,0,1);
-    }
-    :root { color-scheme: light dark; }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --md-primary: #ffb77c; --md-on-primary: #4a2800;
-        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-        --md-error: #ffb4ab; --md-on-error: #690005;
-        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-        --md-surface: #17120d;
-        --md-surface-container-lowest: #100c08;
-        --md-surface-container-low: #201a14;
-        --md-surface-container: #241e18;
-        --md-surface-container-high: #2f2822;
-        --md-surface-container-highest: #3a332c;
-        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-        --primary-dark: #ffcda0;
-        --text-faint: #a89686;
-      }
-    }
-    :root[data-theme="dark"] {
-      --md-primary: #ffb77c; --md-on-primary: #4a2800;
-      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-      --md-error: #ffb4ab; --md-on-error: #690005;
-      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-      --md-surface: #17120d;
-      --md-surface-container-lowest: #100c08;
-      --md-surface-container-low: #201a14;
-      --md-surface-container: #241e18;
-      --md-surface-container-high: #2f2822;
-      --md-surface-container-highest: #3a332c;
-      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-      --primary-dark: #ffcda0;
-      --text-faint: #a89686;
-    }
-    :root[data-theme="light"] {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
-      --primary-dark: #632f00;
-      --text-faint: #8a7a6d;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; }
-
-    body { -webkit-tap-highlight-color: transparent; }
-    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    button, .btn { -webkit-touch-callout: none; user-select: none; }
-    .btn { position: relative; overflow: hidden; }
-
-    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
-    html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
-    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    body { scrollbar-width: none; }
-    body::-webkit-scrollbar { display: none; }
-
-    .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.01em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.65rem 1.3rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
-    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
-    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
-    .btn--primary:active:not(:disabled) { box-shadow: none; filter: brightness(0.94); }
-    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
-    .btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
-    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
-    .btn--block { width: 100%; }
-    .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
-
-    .icon-btn { border: none; background: none; color: var(--text-muted); cursor: pointer; padding: 0.4rem; border-radius: 999px; display: inline-flex; }
-    .icon-btn:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); color: var(--primary); }
-    .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ── Page content ── */
-    .app-main { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem max(1rem, calc((100% - 720px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
-    .hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
-    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
-    .hero__icon .material-icons { font-size: 30px; }
-    .hero__title { margin: 0 0 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
-    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
-
-    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
-    .section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.85rem; gap: 0.5rem; }
-    .section-title h2 { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
-    .section-hint { margin: -0.5rem 0 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
-
-    .field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin: 0 0 0.4rem; }
-    .input-row { display: flex; align-items: center; gap: 0.4rem; background: var(--bg2); border-radius: 12px; padding: 0.1rem 0.2rem 0.1rem 0.9rem; }
-    .input-row input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; color: var(--text); padding: 0.65rem 0; }
-    .input-row input::placeholder { color: var(--text-faint); }
-    .input-row .icon-btn { flex-shrink: 0; }
-
-    .error-banner { display: flex; gap: 0.7rem; background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.9rem; }
-    .error-banner .material-icons { flex-shrink: 0; }
-    .error-banner__title { font-size: 0.86rem; font-weight: 600; margin: 0 0 0.15rem; }
-    .error-banner__body { font-size: 0.8rem; line-height: 1.4; margin: 0; }
-
-    .caveat-text { margin: 0; font-size: 0.8rem; color: var(--text-faint); text-align: center; padding: 0.5rem 0; }
+    .app-main { --content-max: 560px; }
 
     /* ── Family result ── */
     .family-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
     .family-header .btn { flex-shrink: 0; }
-    .family-name { margin: 0 0 0.2rem; font-family: 'Google Sans', sans-serif; font-size: 1.2rem; font-weight: 600; color: var(--text); }
-    .family-by { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+    .family-name {
+      margin: 0 0 0.2rem;
+      font: var(--type-title-large);
+      letter-spacing: var(--track-title-large);
+      color: var(--text);
+    }
+    .family-by {
+      margin: 0;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-muted);
+    }
     .family-by a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
-    .checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.9rem; }
-    .checkbox-row input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
-    .checkbox-row label { cursor: pointer; }
 
     /* ── Font grid ── */
     .font-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
-    .font-card { background: var(--bg2); border-radius: 16px; padding: 1rem 1rem 0.9rem; display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
-    .font-card__sample { font-size: 1.9rem; line-height: 1.3; color: var(--text); word-break: break-word; }
+    .font-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      min-width: 0;
+      padding: 1rem 1rem 0.9rem;
+      border-radius: var(--shape-l);
+      background: var(--bg2);
+    }
+    /* The whole point of the card: the family rendered in its own face. */
+    .font-card__sample { font-size: 1.875rem; line-height: 1.3; color: var(--text); word-break: break-word; }
     .font-card__footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.6rem; }
-    .font-card__name { font-size: 0.82rem; font-weight: 600; color: var(--text); word-break: break-word; }
-    .font-card__style { font-size: 0.72rem; color: var(--text-faint); }
+    .font-card__name {
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+      word-break: break-word;
+    }
+    .font-card__style {
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
     .font-card__dl { flex-shrink: 0; }
-    .font-card__dl .material-icons { font-size: 20px; }
-
-    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
-    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
-    .note-card p { margin: 0 0 0.6rem; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
-    .note-card p:last-child { margin-bottom: 0; }
-    .note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
-
-    /* Last so it wins the cascade over any other single-class rule
-       (.error-banner, .card, .family-by) an element combines it with. */
-    .hidden { display: none; }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__brand">
-      <span class="top-bar__name">🍦 Bingqilin</span>
+    <div class="top-bar__lead">
+      <a class="icon-btn" href="/tools/" aria-label="Back to Tools">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+      </a>
+      <div class="top-bar__brand">
+        <span class="top-bar__name">🍦 Bingqilin</span>
+      </div>
     </div>
     <div class="top-bar__actions">
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
-        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+        <span class="material-icons" aria-hidden="true" id="themeToggleIcon">brightness_auto</span>
       </button>
     </div>
   </header>
 
   <main class="app-main">
     <div class="hero">
-      <div class="hero__icon"><span class="material-icons">font_download</span></div>
+      <div class="hero__icon"><span class="material-icons" aria-hidden="true">font_download</span></div>
       <h1 class="hero__title">Font ripper</h1>
       <p class="hero__sub">Download every style from an Adobe Fonts family or collection page.</p>
     </div>
 
     <div class="card">
-      <div class="section-title"><h2><span class="material-icons">search</span>Find a family</h2></div>
+      <div class="section-title"><h2><span class="material-icons" aria-hidden="true">search</span>Find a family</h2></div>
       <label class="field-label" for="urlInput">Adobe Fonts URL</label>
       <div class="input-row">
         <input id="urlInput" type="text" placeholder="https://fonts.adobe.com/fonts/..." autocomplete="off" autocapitalize="off" spellcheck="false" />
         <button type="button" class="icon-btn" id="pasteBtn" aria-label="Paste from clipboard">
-          <span class="material-icons">content_paste</span>
+          <span class="material-icons" aria-hidden="true">content_paste</span>
         </button>
       </div>
 
       <div class="error-banner hidden" id="errorBanner" role="alert">
-        <span class="material-icons">error_outline</span>
+        <span class="material-icons" aria-hidden="true">error_outline</span>
         <div>
           <p class="error-banner__title">Couldn't load that URL</p>
           <p class="error-banner__body" id="errorBody"></p>
@@ -253,7 +124,7 @@
           <p class="family-by hidden" id="familyBy"></p>
         </div>
         <button type="button" class="btn btn--primary" id="downloadAllBtn">
-          <span class="material-icons" style="font-size:18px;">download</span>Download all
+          <span class="material-icons" aria-hidden="true">download</span>Download all
         </button>
       </div>
     </div>
@@ -261,7 +132,7 @@
     <div class="font-grid" id="fontGrid"></div>
 
     <div class="card note-card">
-      <span class="material-icons">shield</span>
+      <span class="material-icons" aria-hidden="true">shield</span>
       <div>
         <p>Reads the family's font list through a proxy, since Adobe's site blocks direct browser requests. Downloads come from Typekit's own preview endpoint, the same one the Adobe Fonts site uses to show live previews.</p>
         <p>Based on <a href="https://github.com/beemilkz/typerip" target="_blank" rel="noopener">beemilkz/typerip</a> (originally by Jeremy Clark).</p>
@@ -271,16 +142,16 @@
 
   <div class="bottom-dock">
     <nav class="bottom-nav" aria-label="Primary">
-      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+      <a class="bottom-nav__item" href="/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">video_library</span></span>
         <span class="bottom-nav__label">Media</span>
       </a>
-      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+      <a class="bottom-nav__item" href="/live">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">live_tv</span></span>
         <span class="bottom-nav__label">Live</span>
       </a>
-      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+      <a class="bottom-nav__item bottom-nav__item--active" aria-current="page" href="/tools/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">construction</span></span>
         <span class="bottom-nav__label">Tools</span>
       </a>
     </nav>
@@ -453,7 +324,7 @@
         '<div class="font-card__sample" style="font-family:\'' + f.cssFamily + '\';">' + escapeHtml(family.sampleText || f.name) + "</div>" +
         '<div class="font-card__footer">' +
           '<div><div class="font-card__name">' + escapeHtml(f.name) + '</div><div class="font-card__style">' + escapeHtml(f.style || "") + "</div></div>" +
-          '<button type="button" class="icon-btn font-card__dl" data-index="' + i + '" aria-label="Download ' + escapeHtml(f.name) + '"><span class="material-icons">download</span></button>' +
+          '<button type="button" class="icon-btn font-card__dl" data-index="' + i + '" aria-label="Download ' + escapeHtml(f.name) + '"><span class="material-icons" aria-hidden="true">download</span></button>' +
         "</div>" +
       "</div>"
     ).join("");

@@ -1,0 +1,1393 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Bingqilin shared components — one definition each, to Material 3 spec.
+
+   Load order on every page:  tokens.css → chrome.css → ui.css
+   (tokens declares the custom properties; chrome owns the top app bar and
+   bottom navigation; this file owns everything else that paints.)
+
+   Before this file existed, 164 selectors were defined on more than one
+   page and 47 of them disagreed: .btn rendered at three different heights,
+   .btn--sm was undefined on four pages so it silently did nothing, and
+   .card meant a 12px-radius poster tile on two pages and a 20px-radius
+   padded container on the other seven. Anything a second page might ever
+   want belongs here, not in a page's own <style> block.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Base ──────────────────────────────────────────────────────────────
+   The native-app shell layer: no blue/grey tap flash on touch, no callout
+   or selection popovers on chrome controls, and the standard iOS/Android
+   tap delay removed via touch-action. Real content (prose, inputs,
+   results) stays selectable. Vertical overscroll is left alone so the
+   browser's native pull-to-refresh still works. */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; height: 100%; }
+
+body {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  -webkit-tap-highlight-color: transparent;
+  scrollbar-width: none;
+}
+body::-webkit-scrollbar { display: none; }
+
+button, a, [role="button"], label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+.app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+/* The scrolling element. Horizontal padding (rather than max-width +
+   margin: 0 auto) does the content-column centering: .app-main is what
+   scrolls, so a max-width on it would strand its scrollbar at the edge of
+   the narrow column instead of the window edge on a wide viewport.
+   --content-max is per-page; the bottom padding clears the fixed nav. */
+.app-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding:
+    1.25rem
+    max(1rem, calc((100% - var(--content-max, 640px)) / 2))
+    calc(4.6rem + env(safe-area-inset-bottom));
+}
+.app-main::-webkit-scrollbar { display: none; }
+
+/* ── Icons ─────────────────────────────────────────────────────────────
+   The glyph font itself is declared in chrome.css. M3's icon sizes are
+   20 / 24 / 40 / 48; pages had been overriding this inline at 11, 12, 14,
+   15, 16, 17, 18, 20, 22 and 34px. */
+.material-icons {
+  display: inline-block;
+  font-size: 24px;
+  line-height: 1;
+  vertical-align: middle;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+}
+.material-icons.icon--xs { font-size: 16px; }
+.material-icons.icon--sm { font-size: 20px; }
+.material-icons.icon--md { font-size: 24px; }
+.material-icons.icon--lg { font-size: 40px; }
+
+/* ── State layer ───────────────────────────────────────────────────────
+   M3 signals hover / focus / press by overlaying the component's own
+   content colour at a fixed opacity. Components used to fake this with
+   `filter: brightness()`, which tints the label along with the container
+   and does nothing at all on a transparent background.
+
+   Drawn on ::before so it paints *under* the .ripple span that
+   chrome.js appends as a child, letting the two compose rather than the
+   layer washing out the ripple. */
+.state-layer { position: relative; overflow: hidden; isolation: isolate; }
+.state-layer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t);
+}
+@media (hover: hover) {
+  .state-layer:hover:not(:disabled):not([aria-disabled="true"])::before { opacity: var(--state-hover); }
+}
+.state-layer:focus-visible::before { opacity: var(--state-focus); }
+.state-layer:active:not(:disabled):not([aria-disabled="true"])::before { opacity: var(--state-press); }
+
+/* One focus ring for the whole app. Pages had been mixing 2px/3px offsets
+   and three different ring colours. */
+.state-layer:focus-visible,
+.focus-ring:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* ── Buttons (M3 common buttons) ───────────────────────────────────────
+   Height is M3's 40dp small button; .btn--sm is the 32dp extra-small.
+   Both were previously three and four different sizes respectively. */
+.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0 1.5rem;
+  border: none;
+  border-radius: var(--shape-full);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition: background var(--t), box-shadow var(--t), border-color var(--t);
+}
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t);
+}
+@media (hover: hover) {
+  .btn:hover:not(:disabled)::before { opacity: var(--state-hover); }
+}
+.btn:focus-visible::before { opacity: var(--state-focus); }
+.btn:active:not(:disabled)::before { opacity: var(--state-press); }
+.btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.btn .material-icons { font-size: 20px; }
+
+/* Filled — the high-emphasis action. `--primary` is the name every page
+   already uses; `--filled` is the M3 name, kept as an alias. */
+.btn--primary,
+.btn--filled { background: var(--md-primary); color: var(--md-on-primary); box-shadow: var(--el0); }
+@media (hover: hover) {
+  .btn--primary:hover:not(:disabled),
+  .btn--filled:hover:not(:disabled) { box-shadow: var(--el1); }
+}
+
+/* Tonal — medium emphasis, for a secondary action next to a filled one. */
+.btn--tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+
+/* Outlined — `--ghost` is the existing name. It has always had a border,
+   which makes it M3's Outlined button rather than a text button. */
+.btn--ghost,
+.btn--outlined {
+  background: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+}
+.btn--ghost:focus-visible,
+.btn--outlined:focus-visible { border-color: var(--md-primary); }
+
+/* Text — the genuinely borderless low-emphasis button. */
+.btn--text { background: transparent; color: var(--md-primary); padding: 0 0.75rem; }
+
+.btn--danger { background: var(--md-error-container); color: var(--md-on-error-container); }
+
+/* An action sitting inside an error container inherits that container's
+   colour rather than the page's primary, which would otherwise put a
+   brown label and grey-brown border on a pink surface. */
+.error-banner .btn--ghost,
+.error-banner .btn--outlined {
+  color: var(--md-on-error-container);
+  border-color: color-mix(in srgb, var(--md-on-error-container) 45%, transparent);
+}
+
+/* M3 extra-small, 32dp. Previously undefined on currency, pdf, typerip
+   and warp, so `class="btn btn--sm"` silently rendered full size there. */
+.btn--sm {
+  min-height: 32px;
+  padding: 0 1rem;
+  gap: 0.35rem;
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+.btn--sm .material-icons { font-size: 16px; }
+
+.btn--block { width: 100%; }
+
+/* M3 disabled: the container drops to 12% on-surface and the label to
+   38%, instead of fading the brand colour — which reads as an enabled
+   but muted button rather than a disabled one. */
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--md-on-surface) calc(var(--disabled-container) * 100%), transparent);
+  color: color-mix(in srgb, var(--md-on-surface) calc(var(--disabled-content) * 100%), transparent);
+  border-color: transparent;
+}
+.btn--ghost:disabled,
+.btn--outlined:disabled,
+.btn--text:disabled {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--md-on-surface) calc(var(--disabled-container) * 100%), transparent);
+}
+.btn:disabled::before { opacity: 0; }
+
+/* ── Icon button (M3) ──────────────────────────────────────────────────
+   48dp touch target with the 40dp state-layer shape drawn inside it, which
+   is how M3 reconciles the two. It used to be a flat 40×40, below the
+   minimum target on every page. */
+.icon-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: var(--shape-full);
+  background: transparent;
+  color: var(--text-muted);
+  /* It can be an <a> (the tool pages' back button), which would otherwise
+     draw a link underline through the glyph. */
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition: color var(--t);
+}
+.icon-btn::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--shape-full);
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t);
+}
+@media (hover: hover) {
+  .icon-btn:hover:not(:disabled) { color: var(--text); }
+  .icon-btn:hover:not(:disabled)::before { opacity: var(--state-hover); }
+}
+.icon-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: -2px; }
+.icon-btn:focus-visible::before { opacity: var(--state-focus); }
+.icon-btn:active:not(:disabled)::before { opacity: var(--state-press); }
+.icon-btn:disabled { cursor: not-allowed; color: color-mix(in srgb, var(--md-on-surface) calc(var(--disabled-content) * 100%), transparent); }
+.icon-btn .material-icons { font-size: 24px; }
+.icon-btn--sm { width: 40px; height: 40px; }
+.icon-btn--sm::before { width: 32px; height: 32px; }
+.icon-btn--sm .material-icons { font-size: 20px; }
+
+/* ── Card (M3 filled card) ─────────────────────────────────────────────
+   This is the padded container the seven tool pages mean by `.card`.
+   index.html and live.html used the same class name for their poster
+   tile; that is now `.media-card`, below. */
+.card {
+  background: var(--md-surface-container-low);
+  border-radius: var(--shape-l);
+  padding: 1.25rem;
+  box-shadow: var(--el1);
+  margin-bottom: 1rem;
+}
+.card:last-child { margin-bottom: 0; }
+
+/* The poster / channel tile. Interactive, so it carries a state layer. */
+.media-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  border: none;
+  border-radius: var(--shape-m);
+  background: var(--surface);
+  box-shadow: var(--el1);
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition: transform var(--t), box-shadow var(--t), background var(--t);
+}
+@media (hover: hover) {
+  .media-card:hover { transform: translateY(-2px); box-shadow: var(--el2); background: var(--surface2); }
+}
+.media-card:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+
+/* ── Hero ──────────────────────────────────────────────────────────── */
+.hero { text-align: center; padding: 0.5rem 0.5rem 1.5rem; }
+.hero__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--shape-l);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.9rem;
+}
+.hero__icon .material-icons { font-size: 30px; }
+.hero__title {
+  margin: 0 0 0.4rem;
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline);
+  color: var(--text);
+}
+/* A link inside the hero subtitle reads as part of the sentence, not as a
+   separate action — underline only, no colour change. */
+.hero__link { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.hero__sub {
+  margin: 0;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  line-height: var(--leading-prose);
+  color: var(--text-muted);
+}
+
+/* ── Section heading ───────────────────────────────────────────────── */
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+}
+.section-title h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+  color: var(--text);
+}
+.section-title h2 .material-icons { font-size: 20px; }
+
+/* A section heading that collapses its own body. The <button> used to be
+   only as tall as its text (24px), so the tap target was a sliver across
+   the middle of a card that looks entirely tappable. */
+.section-title--toggle {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--shape-s);
+}
+.section-title--toggle:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.section-title__chevron { color: var(--text-muted); transition: transform var(--t); }
+.section-title--toggle[aria-expanded="true"] .section-title__chevron { transform: rotate(180deg); }
+
+.section-hint {
+  margin: -0.35rem 0 0.9rem;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  line-height: var(--leading-prose);
+  color: var(--text-muted);
+}
+
+/* ── Text fields (M3 filled) ───────────────────────────────────────────
+   One treatment, replacing five: .input-row, .select-row, .password-row,
+   .search-row and the bare .source-form input. The wrapper carries the
+   focus indicator — the inner <input> sets `outline: none`, so without
+   :focus-within there was no keyboard focus signal at all on five pages. */
+.field-label {
+  display: block;
+  margin: 1rem 0 0.4rem;
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+  color: var(--text-muted);
+}
+.field-label:first-child { margin-top: 0; }
+.field-hint {
+  margin: 0.3rem 0 0;
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  color: var(--text-faint);
+}
+
+.input-row,
+.select-row,
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: 0 0.3rem 0 0.9rem;
+  border-radius: var(--shape-s) var(--shape-s) 0 0;
+  background: var(--md-surface-container-highest);
+  border-bottom: 1px solid var(--md-outline);
+  transition: background var(--t), border-color var(--t);
+}
+.input-row:hover,
+.select-row:hover,
+.password-row:hover { background: color-mix(in srgb, var(--md-on-surface) 4%, var(--md-surface-container-highest)); }
+.input-row:focus-within,
+.select-row:focus-within,
+.password-row:focus-within {
+  border-bottom-color: var(--md-primary);
+  box-shadow: inset 0 -1px 0 0 var(--md-primary);
+}
+.input-row > input,
+.input-row > select,
+.select-row > select,
+.password-row > input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.7rem 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-body-large);
+  letter-spacing: var(--track-body-large);
+}
+.input-row > input::placeholder,
+.password-row > input::placeholder { color: var(--text-faint); text-overflow: ellipsis; }
+.input-row > select,
+.select-row > select { padding-right: 0.5rem; cursor: pointer; }
+.input-row > .icon-btn,
+.password-row > .icon-btn { flex-shrink: 0; }
+
+/* Outlined variant, for a field that sits directly on the page rather
+   than inside a filled card (the search rows). */
+.field-outlined {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 0.5rem 0 1rem;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--shape-full);
+  background: transparent;
+  transition: border-color var(--t), box-shadow var(--t);
+}
+.field-outlined:focus-within { border-color: var(--md-primary); box-shadow: 0 0 0 1px var(--md-primary); }
+.field-outlined > input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.7rem 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-body-large);
+  letter-spacing: var(--track-body-large);
+}
+.field-outlined > input::placeholder { color: var(--text-faint); }
+.field-outlined > input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
+/* Multi-line. */
+/* Stacked halves of a single filled field (a select over an amount, say)
+   share one outline: only the last one draws the indicator line. */
+.field-stack > :not(:last-child) { border-bottom: none; border-radius: var(--shape-s) var(--shape-s) 0 0; }
+.field-stack > :not(:first-child) { border-radius: 0 0 var(--shape-s) var(--shape-s); }
+
+.textarea {
+  width: 100%;
+  min-height: 130px;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--shape-s);
+  background: var(--md-surface-container-lowest);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.textarea:focus { outline: none; border-color: var(--md-primary); box-shadow: 0 0 0 1px var(--md-primary); }
+.textarea::placeholder { color: var(--text-faint); }
+
+/* ── Segmented button (M3) ─────────────────────────────────────────────
+   One component for what were four: .segmented (index, live settings),
+   .tab-bar/.tab-btn (live), .add-tabs/.add-tab (authenticator) and
+   .tabs/.tab (saucenao) — three of which raised the selected item on its
+   own elevated pill, which is an iOS segmented control, not M3. M3 marks
+   selection with the secondary container and no elevation change. */
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--shape-full);
+  background: var(--md-surface-container-high);
+}
+.segmented__item {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0 0.6rem;
+  border: none;
+  border-radius: var(--shape-full);
+  background: none;
+  color: var(--text-muted);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition: background var(--t), color var(--t);
+}
+.segmented__item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t);
+}
+@media (hover: hover) { .segmented__item:hover::before { opacity: var(--state-hover); } }
+.segmented__item:active::before { opacity: var(--state-press); }
+.segmented__item:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.segmented__item .material-icons { font-size: 18px; }
+.segmented__item--active,
+.segmented__item[aria-selected="true"],
+.segmented__item[aria-checked="true"] {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+.segmented__count {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+  opacity: 0.75;
+}
+
+/* ── Chip (M3 filter chip) ─────────────────────────────────────────── */
+.chip {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 32px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--shape-s);
+  background: transparent;
+  color: var(--text-muted);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition: background var(--t), color var(--t), border-color var(--t);
+}
+.chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t);
+}
+@media (hover: hover) { .chip:hover::before { opacity: var(--state-hover); } }
+.chip:active::before { opacity: var(--state-press); }
+.chip:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.chip--selected,
+.chip[aria-pressed="true"] {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border-color: transparent;
+}
+.chip .material-icons { font-size: 18px; }
+
+/* A non-interactive label pill (status, similarity score, rate quality).
+   Shares the chip's shape vocabulary without any of its affordances. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--shape-full);
+  background: var(--md-surface-container-high);
+  color: var(--text-muted);
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge--muted { background: var(--bg2); color: var(--text-muted); }
+.badge--good { background: var(--md-success-container); color: var(--md-on-success-container); }
+.badge--warn { background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); }
+.badge--error { background: var(--md-error-container); color: var(--md-on-error-container); }
+.badge--primary { background: var(--md-primary-container); color: var(--md-on-primary-container); }
+
+/* ── Dropzone ──────────────────────────────────────────────────────── */
+.dropzone {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  border: 1.5px dashed var(--md-outline);
+  border-radius: var(--shape-l);
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition: background var(--t), border-color var(--t);
+}
+@media (hover: hover) { .dropzone:hover { background: color-mix(in srgb, var(--md-primary) 6%, transparent); } }
+.dropzone:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.dropzone--drag { background: color-mix(in srgb, var(--md-primary) 10%, transparent); border-color: var(--md-primary); }
+.dropzone--filled { padding: 1rem; }
+.dropzone > .material-icons { font-size: 34px; color: var(--md-primary); }
+.dropzone__title {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+  color: var(--text);
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.dropzone__sub {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  color: var(--text-faint);
+}
+.dropzone input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+/* ── Disclosure ("Advanced options") ───────────────────────────────── */
+.adv-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 48px;
+  padding: 0 0.1rem;
+  border: none;
+  border-radius: var(--shape-s);
+  background: none;
+  color: var(--text-muted);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  cursor: pointer;
+}
+.adv-toggle:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.adv-toggle .material-icons { font-size: 18px; transition: transform var(--t); }
+.adv-toggle--open .material-icons,
+.adv-toggle[aria-expanded="true"] .material-icons { transform: rotate(180deg); }
+.adv-grid { display: none; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 0.7rem; }
+.adv-grid--open { display: grid; }
+.adv-grid .field-label { margin: 0 0 0.35rem; }
+/* A hint that introduces the whole grid rather than one field in it. */
+.adv-grid > .section-hint { grid-column: 1 / -1; margin: 0 0 0.2rem; }
+
+/* ── Feedback ──────────────────────────────────────────────────────────
+   .error-banner was defined on five pages and .source-error on two more,
+   for the same job. .empty-state, .state-panel and .accounts-empty were
+   three renderings of "nothing here yet". One of each now. */
+.error-banner {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.85rem 0.9rem;
+  margin-top: 0.9rem;
+  border-radius: var(--shape-m);
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+.error-banner > .material-icons { flex-shrink: 0; font-size: 20px; }
+.error-banner__title {
+  margin: 0 0 0.15rem;
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+.error-banner__body {
+  margin: 0;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  line-height: 1.4;
+}
+.error-banner__details {
+  margin-top: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  opacity: 0.85;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.error-banner__actions { margin-top: 0.6rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Same shape as .error-banner, for information rather than failure. */
+.info-banner {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.85rem 0.9rem;
+  margin-top: 0.9rem;
+  border-radius: var(--shape-m);
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+.info-banner > .material-icons { flex-shrink: 0; font-size: 20px; }
+.info-banner p {
+  margin: 0;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  line-height: 1.45;
+}
+
+/* ── Selection card ────────────────────────────────────────────────────
+   A checkbox or radio whose whole card is the target, rather than a
+   14px box next to some text. The real control stays in the DOM,
+   focusable and tabbable — visually hidden with the clip technique, not
+   opacity:0 in place, which would need a positioned ancestor to land on
+   the drawn box and would otherwise sit wherever the nearest positioned
+   ancestor happens to be, invisibly eating clicks meant for something
+   else on the page. */
+.option-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--shape-m);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color var(--t), background var(--t);
+}
+.option-card:last-of-type { margin-bottom: 0; }
+@media (hover: hover) { .option-card:hover { background: var(--surface2); } }
+.option-card input[type="checkbox"],
+.option-card input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.option-card__box {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--md-outline);
+  border-radius: var(--shape-xs);
+  transition: background var(--t), border-color var(--t);
+}
+.option-card__box--radio { border-radius: 50%; }
+.option-card__box .material-icons {
+  font-size: 14px;
+  color: var(--md-on-primary);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity var(--t), transform var(--t);
+}
+.option-card:has(input:checked) { border-color: var(--md-primary); background: var(--md-primary-container); }
+.option-card:has(input:checked) .option-card__box { background: var(--md-primary); border-color: var(--md-primary); }
+.option-card:has(input:checked) .option-card__box .material-icons { opacity: 1; transform: scale(1); }
+.option-card:has(input:focus-visible) { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.option-card__body { min-width: 0; }
+.option-card__title {
+  display: block;
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+  color: var(--text);
+}
+.option-card p {
+  margin: 0.15rem 0 0;
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.option-card:has(input:checked) .option-card__title,
+.option-card:has(input:checked) p { color: var(--md-on-primary-container); }
+
+.source-error {
+  margin-bottom: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--shape-m);
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  line-height: 1.45;
+}
+.source-error strong { font-weight: 600; }
+.source-error__detail { margin-top: 0.4rem; }
+.source-error__detail summary {
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.source-error__detail summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: var(--shape-xs); }
+.source-error__detail pre {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* A one-line status sentence standing in for a result ("Loading rates…",
+   "Rates unavailable."). */
+.caveat-text {
+  margin: 0;
+  padding: 0.5rem 0;
+  text-align: center;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  color: var(--text-muted);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+  color: var(--text-faint);
+  user-select: none;
+}
+.empty-state__icon { font-size: 48px; margin-bottom: 0.6rem; opacity: 0.6; }
+.empty-state__title {
+  margin: 0 0 0.35rem;
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+  color: var(--text-muted);
+}
+.empty-state__sub {
+  margin: 0;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  line-height: var(--leading-prose);
+}
+.empty-state__action { margin-top: 1rem; }
+
+/* An inline "working…" / "nothing found" panel inside a results area. */
+.state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
+.state-panel p {
+  margin: 0.6rem 0 0;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  line-height: var(--leading-prose);
+}
+
+.action-row { margin-top: 1.1rem; }
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.2em;
+  margin-top: 0.9rem;
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  color: var(--text-muted);
+}
+.status-line--error { color: var(--md-error); }
+
+/* Explanatory footnote under a tool. Not a card despite the name — it is
+   deliberately flat, sitting on the page rather than on a surface. */
+.note-card {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  box-shadow: none;
+}
+.note-card > .material-icons { flex-shrink: 0; margin-top: 0.1rem; font-size: 20px; color: var(--text-faint); }
+.note-card p {
+  margin: 0 0 0.6rem;
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  line-height: var(--leading-prose);
+  color: var(--text-faint);
+}
+.note-card p:last-child { margin-bottom: 0; }
+.note-card a { color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── Progress ──────────────────────────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.spinner--sm { width: 14px; height: 14px; border-width: 2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.skel { background: var(--bg2); border-radius: var(--shape-s); animation: skel-pulse 1.4s ease-in-out infinite; }
+@keyframes skel-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 1.4s; }
+  .skel { animation: none; }
+}
+
+/* ── Dialog & bottom sheet (M3) ────────────────────────────────────────
+   One scrim and two containers, replacing .settings/.settings__panel,
+   .modal-overlay/.modal-panel and .modal-scrim/.modal-sheet — which used
+   three radii, three z-index scales and four different scrim colours, and
+   only some of which trapped focus or closed on Escape. The behaviour
+   half lives in chrome.js (BQChrome.dialog). */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-scrim);
+  display: flex;
+  justify-content: center;
+  background: var(--scrim);
+  animation: scrim-in var(--dur-medium) var(--ease-emphasized);
+}
+.scrim--bottom { align-items: flex-end; }
+.scrim--center { align-items: center; padding: 1rem; }
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+
+.sheet {
+  position: relative;
+  z-index: var(--z-dialog);
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 1.5rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+  border-radius: var(--shape-xl) var(--shape-xl) 0 0;
+  background: var(--md-surface-container-low);
+  box-shadow: var(--el3);
+  animation: sheet-in var(--dur-medium) var(--ease-emphasized);
+}
+/* The drag handle M3 puts on a bottom sheet. */
+.sheet::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 4px;
+  border-radius: var(--shape-full);
+  background: var(--md-outline-variant);
+}
+@keyframes sheet-in { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.dialog {
+  position: relative;
+  z-index: var(--z-dialog);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  max-height: 82vh;
+  border-radius: var(--shape-xl);
+  background: var(--md-surface-container-high);
+  box-shadow: var(--el3);
+  animation: sheet-in var(--dur-medium) var(--ease-emphasized);
+}
+
+@media (min-width: 620px) {
+  .scrim--bottom { align-items: center; padding: 1rem; }
+  .scrim--bottom .sheet { border-radius: var(--shape-xl); max-height: 85vh; }
+  .scrim--bottom .sheet::before { display: none; }
+}
+
+.dialog__header,
+.sheet__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+.dialog__header { padding: 1.25rem 1rem 0.5rem; margin-bottom: 0; }
+.dialog__title,
+.sheet__title {
+  margin: 0;
+  font: var(--type-title-large);
+  letter-spacing: var(--track-title-large);
+  color: var(--text);
+}
+.dialog__sub,
+.sheet__sub {
+  margin: 0.15rem 0 0;
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  color: var(--text-faint);
+}
+.dialog__body { overflow-y: auto; padding: 0 1rem 0.5rem; }
+.dialog__actions,
+.sheet__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+}
+.sheet__actions { padding: 1rem 0 0; }
+.sheet__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+.sheet__section:last-child { margin-bottom: 0; }
+.sheet__section-label {
+  margin-bottom: 0.1rem;
+  font: var(--type-label-medium);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.sheet__hint {
+  margin: 0;
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  line-height: var(--leading-prose);
+  color: var(--text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim, .sheet, .dialog { animation: none; }
+}
+
+/* ── Snackbar (M3) ─────────────────────────────────────────────────────
+   The app had no transient-feedback component at all, which is why three
+   pages reached for window.alert(). Driven by BQChrome.snackbar(). */
+.snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(5.2rem + env(safe-area-inset-bottom));
+  z-index: var(--z-snackbar);
+  transform: translate(-50%, 0);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 2rem));
+  padding: 0.9rem 1rem;
+  border-radius: var(--shape-xs);
+  background: var(--md-inverse-surface);
+  color: var(--md-inverse-on-surface);
+  box-shadow: var(--el3);
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  animation: snackbar-in var(--dur-medium) var(--ease-emphasized);
+}
+.snackbar--leaving { animation: snackbar-out var(--dur-medium) var(--ease-emphasized) forwards; }
+.snackbar__text { flex: 1; min-width: 0; }
+.snackbar__action {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 0.5rem;
+  border: none;
+  border-radius: var(--shape-xs);
+  background: none;
+  color: var(--md-primary);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  cursor: pointer;
+}
+.snackbar__action:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+@keyframes snackbar-in  { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes snackbar-out { to { opacity: 0; transform: translate(-50%, 12px); } }
+@media (prefers-reduced-motion: reduce) {
+  .snackbar, .snackbar--leaving { animation: none; }
+}
+
+/* ── Menu (M3) — a dropdown anchored under a top-bar icon button ────── */
+.menu-wrap { position: relative; }
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--z-menu);
+  min-width: 190px;
+  max-width: 280px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0.35rem;
+  border-radius: var(--shape-m);
+  background: var(--md-surface-container-low);
+  box-shadow: var(--el3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.menu__item {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 0.6rem;
+  border: none;
+  border-radius: var(--shape-s);
+  background: none;
+  color: var(--text);
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  text-align: left;
+  cursor: pointer;
+}
+.menu__item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t);
+}
+@media (hover: hover) { .menu__item:hover::before { opacity: var(--state-hover); } }
+.menu__item:focus-visible { outline: 2px solid var(--md-primary); outline-offset: -2px; }
+.menu__item--active { color: var(--primary-dark); font-weight: 600; }
+.menu__item .material-icons { flex-shrink: 0; font-size: 18px; visibility: hidden; }
+.menu__item--active .material-icons { visibility: visible; }
+.menu__item span:not(.material-icons) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Utilities ─────────────────────────────────────────────────────────
+   .hidden carries !important on purpose: it is toggled from JS on
+   elements whose own rule sets `display: flex`, and without it the
+   outcome depends on which rule happens to come last in the stylesheet.
+   typerip was the one page that omitted it and worked only by accident
+   of source order. */
+.hidden { display: none !important; }
+
+.sr-only,
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Media shell — the browse/detail/player surfaces shared by index.html
+   (Movies & TV) and live.html (Live TV & Radio). These two pages had
+   grown near-identical copies of everything below; where the copies had
+   drifted apart the differences are now page-local overrides, next to the
+   markup that needs them.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Views ─────────────────────────────────────────────────────────────
+   Both pages stack full-screen views inside one <main> and swap them,
+   rather than navigating. */
+.app-main--views { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0; }
+.view {
+  position: relative;
+  display: none;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding:
+    0.75rem
+    calc(0.9rem + env(safe-area-inset-right))
+    calc(1.5rem + env(safe-area-inset-bottom))
+    calc(0.9rem + env(safe-area-inset-left));
+}
+.view::-webkit-scrollbar { display: none; }
+.view--active { display: block; }
+.view-title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+  color: var(--text);
+}
+.view-meta {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  color: var(--text-faint);
+}
+
+.player-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+.player-header-right { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
+
+/* Back out of the player / detail view. A text button with a leading
+   icon, so it gets the same 40dp height and state layer as any other. */
+.player-back {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 0.75rem 0 0.5rem;
+  border: none;
+  border-radius: var(--shape-full);
+  background: none;
+  color: var(--text-muted);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  cursor: pointer;
+  transition: color var(--t);
+}
+.player-back::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t);
+}
+@media (hover: hover) {
+  .player-back:hover { color: var(--text); }
+  .player-back:hover::before { opacity: var(--state-hover); }
+}
+.player-back:active::before { opacity: var(--state-press); }
+.player-back:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.player-back .material-icons { font-size: 20px; }
+
+/* ── Search bar (M3 search field) ───────────────────────────────────── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 56px;
+  padding: 0 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--shape-xl);
+  background: var(--md-surface-container-high);
+  transition: background var(--t), box-shadow var(--t);
+}
+.search-bar:focus-within { background: var(--md-surface-container-highest); box-shadow: var(--el1); }
+.search-bar__icon { flex-shrink: 0; font-size: 22px; color: var(--md-on-surface-variant); }
+.search-bar__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-body-large);
+  letter-spacing: var(--track-body-large);
+}
+.search-bar__input::placeholder { color: var(--text-faint); }
+.search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
+.search-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.2em;
+  margin-bottom: 0.45rem;
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  color: var(--text-muted);
+}
+.search-status--error { color: var(--md-error); }
+
+/* A link-styled button inside a status line ("Retry"). */
+.retry-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--md-primary);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.retry-link:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; border-radius: var(--shape-xs); }
+
+/* ── Media card internals ──────────────────────────────────────────────
+   The .media-card block itself is defined with the other cards above;
+   these are the parts index.html and live.html render identically. */
+.media-card__img-wrap { position: relative; overflow: hidden; background: var(--bg2); }
+.media-card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.media-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 2rem;
+}
+.media-card__body { padding: 0.45rem 0.55rem 0.55rem; }
+.media-card__title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+  line-height: 1.3;
+  color: var(--text);
+}
+
+/* ── Player ────────────────────────────────────────────────────────── */
+.player-wrap {
+  position: relative;
+  margin-top: 0.35rem;
+  padding-top: 56.25%;
+  border-radius: var(--shape-l);
+  overflow: hidden;
+  /* Letterbox bars belong to the video, not the theme — always black. */
+  background: #000;
+  box-shadow: var(--el2);
+}
+.player-wrap iframe,
+.player-wrap video { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+.player-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #111;
+  color: rgba(255, 255, 255, 0.5);
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+  transition: opacity var(--t);
+}
+.player-overlay.hidden { display: flex !important; opacity: 0; pointer-events: none; }
+.player-overlay .material-icons { font-size: 40px; opacity: 0.35; }
+
+/* ── Config import / export (Settings sheet) ───────────────────────── */
+.config-area { display: flex; flex-direction: column; gap: 0.5rem; }
+.config-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.config-feedback {
+  flex: 1;
+  min-width: 0;
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+/* Was a hardcoded hex plus three overrides to swap it per theme. */
+.config-feedback--ok  { color: var(--md-success); }
+.config-feedback--err { color: var(--md-error); }

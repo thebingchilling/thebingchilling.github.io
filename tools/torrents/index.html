@@ -15,214 +15,138 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
+  <link rel="stylesheet" href="/shared/tokens.css" />
   <link rel="stylesheet" href="/shared/chrome.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
   <style>
-    /* ── Material Design 3 tonal palette (warm terracotta seed) — identical
-       token set to the rest of the toolbox. ── */
-    :root {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+    /* Page-specific only. Colour, type, shape and motion come from
+       /shared/tokens.css; the app shell from /shared/chrome.css;
+       buttons, cards, fields, dialogs and the rest from
+       /shared/ui.css. */
 
-      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
-      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
-      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
-
-      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
-      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
-      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
-      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
-      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
-      --radius: 12px;
-      --t: 0.2s cubic-bezier(0.2,0,0,1);
-    }
-    :root { color-scheme: light dark; }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --md-primary: #ffb77c; --md-on-primary: #4a2800;
-        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-        --md-error: #ffb4ab; --md-on-error: #690005;
-        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-        --md-surface: #17120d;
-        --md-surface-container-lowest: #100c08;
-        --md-surface-container-low: #201a14;
-        --md-surface-container: #241e18;
-        --md-surface-container-high: #2f2822;
-        --md-surface-container-highest: #3a332c;
-        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-        --primary-dark: #ffcda0;
-        --text-faint: #a89686;
-      }
-    }
-    :root[data-theme="dark"] {
-      --md-primary: #ffb77c; --md-on-primary: #4a2800;
-      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-      --md-error: #ffb4ab; --md-on-error: #690005;
-      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-      --md-surface: #17120d;
-      --md-surface-container-lowest: #100c08;
-      --md-surface-container-low: #201a14;
-      --md-surface-container: #241e18;
-      --md-surface-container-high: #2f2822;
-      --md-surface-container-highest: #3a332c;
-      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-      --primary-dark: #ffcda0;
-      --text-faint: #a89686;
-    }
-    :root[data-theme="light"] {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
-      --primary-dark: #632f00;
-      --text-faint: #8a7a6d;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; }
-    body { -webkit-tap-highlight-color: transparent; }
-    button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    button, .btn { -webkit-touch-callout: none; user-select: none; }
-    .btn { position: relative; overflow: hidden; }
-
-    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
-    html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
-    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    body { scrollbar-width: none; }
-    body::-webkit-scrollbar { display: none; }
-
-    /* ── Page content ──
-       Horizontal padding (not max-width + margin: 0 auto) does the
-       content-column centering: main.app-main is the scrolling element, so
-       a max-width on it would leave its scrollbar stranded at the edge of
-       the narrow column instead of the actual window edge on a wide
-       desktop viewport. */
-    main.app-main { flex: 1; overflow-y: auto; min-height: 0; padding: 1.25rem max(1rem, calc((100% - 640px) / 2)) calc(4.6rem + env(safe-area-inset-bottom)); }
-    .hero { text-align: center; padding: 0.5rem 0.5rem 1.25rem; }
-    .hero__icon { width: 56px; height: 56px; border-radius: 16px; background: var(--md-primary-container); color: var(--md-on-primary-container); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.9rem; }
-    .hero__icon .material-icons { font-size: 30px; }
-    .hero__title { margin: 0 0 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
-    .hero__sub { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
-
-    /* ── Buttons ── */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 999px; border: none; padding: 0.6rem 1.1rem; font-family: 'Google Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: box-shadow var(--t), filter var(--t), background var(--t); }
-    .btn--sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
-    .btn--primary { background: var(--primary); color: var(--on-primary); }
-    .btn--primary:hover:not(:disabled) { box-shadow: var(--el1); filter: brightness(1.06); }
-    .btn--primary:disabled { opacity: 0.55; cursor: not-allowed; }
-    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
-    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .app-main { --content-max: 640px; }
 
     /* ── Search card ── */
-    .search-card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1rem; box-shadow: var(--el1); margin-bottom: 1rem; }
+    .search-card {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: var(--shape-l);
+      background: var(--md-surface-container-low);
+      box-shadow: var(--el1);
+    }
     .search-row { display: flex; gap: 0.5rem; }
-    .search-row input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.65rem 1rem; font-size: 0.92rem; font-family: 'Google Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
-    .search-row input[type=text]:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+    .search-row .field-outlined { flex: 1; min-width: 0; }
     .search-row .btn { flex-shrink: 0; }
-    .search-scope { margin-top: 0.65rem; font-size: 0.78rem; color: var(--text-faint); }
-    .sort-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.65rem; font-size: 0.78rem; color: var(--text-faint); }
-    .sort-row select { border: 1px solid var(--md-outline); border-radius: 999px; padding: 0.3rem 0.6rem; font-size: 0.78rem; font-family: 'Google Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
-    .sort-row select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+    .search-scope {
+      margin-top: 0.65rem;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
+    .sort-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.65rem;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-muted);
+    }
+    .sort-row select {
+      min-height: 40px;
+      padding: 0 0.85rem;
+      border: 1px solid var(--md-outline);
+      border-radius: var(--shape-full);
+      background: var(--surface);
+      color: var(--text);
+      font: var(--type-label-large);
+      letter-spacing: var(--track-label-large);
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    .sort-row select:focus-visible { border-color: var(--md-primary); box-shadow: 0 0 0 1px var(--md-primary); }
 
     /* ── Results ── */
     .result-list { display: flex; flex-direction: column; gap: 0.6rem; }
-    .result-card { background: var(--md-surface-container-low); border-radius: 16px; padding: 0.85rem 1rem; box-shadow: var(--el1); }
-    .result-card__title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin: 0 0 0.3rem; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
-    .result-card__meta { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.6rem; }
+    .result-card {
+      padding: 0.85rem 1rem;
+      border-radius: var(--shape-l);
+      background: var(--md-surface-container-low);
+      box-shadow: var(--el1);
+    }
+    .result-card__title {
+      margin: 0 0 0.3rem;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      line-height: 1.35;
+      color: var(--text);
+      overflow-wrap: anywhere;
+    }
+    .result-card__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.8rem;
+      margin-bottom: 0.6rem;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-muted);
+    }
     .result-card__meta span { display: inline-flex; align-items: center; gap: 0.25rem; }
     .result-card__meta .material-icons { font-size: 14px; }
-    .result-card__meta .seed { color: #146c2e; }
+    /* Both were hardcoded hex. The seeder green had no dark-mode value at
+       all, leaving it at 2.6:1 on the dark surface. */
+    .result-card__meta .seed { color: var(--md-success); }
     .result-card__meta .leech { color: var(--md-error); }
-    /* Seeders, leechers and the source tag move as one unit — the source
-       tag never wraps off onto its own line separately from the stats it
-       identifies. */
+    /* Seeders, leechers and the source tag move as one unit, so the source
+       tag never wraps onto its own line away from the stats it labels. */
     .result-card__stats { display: inline-flex; align-items: center; gap: 0.5rem 0.8rem; flex-wrap: nowrap; }
     .result-card__actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-    .muted-hint { font-size: 0.72rem; color: var(--text-faint); }
 
-    .state-panel { padding: 2rem 1rem; text-align: center; color: var(--text-faint); }
-    .state-panel p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
+    .muted-hint {
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
 
-    .source-error { background: var(--md-error-container); color: var(--md-on-error-container); border-radius: 12px; padding: 0.55rem 0.8rem; font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.5rem; }
-    .source-error strong { font-weight: 600; }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; border-radius: 50%; animation: spin 0.7s linear infinite; }
-
-    /* ── Footer note ── */
-    .card { background: var(--md-surface-container-low); border-radius: 20px; padding: 1.25rem; box-shadow: var(--el1); margin-bottom: 1rem; }
-    .note-card { display: flex; gap: 0.7rem; background: transparent; box-shadow: none; padding: 0.25rem 0.5rem; }
-    .note-card .material-icons { color: var(--text-faint); flex-shrink: 0; margin-top: 0.1rem; }
-    .note-card p { margin: 0; font-size: 0.78rem; line-height: 1.55; color: var(--text-faint); }
   </style>
 </head>
 <body>
 <div class="app">
   <header class="top-bar">
-    <div class="top-bar__brand">
-      <span class="top-bar__name">🍦 Bingqilin</span>
+    <div class="top-bar__lead">
+      <a class="icon-btn" href="/tools/" aria-label="Back to Tools">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+      </a>
+      <div class="top-bar__brand">
+        <span class="top-bar__name">🍦 Bingqilin</span>
+      </div>
     </div>
     <div class="top-bar__actions">
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
-        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+        <span class="material-icons" aria-hidden="true" id="themeToggleIcon">brightness_auto</span>
       </button>
     </div>
   </header>
 
   <main class="app-main">
     <div class="hero">
-      <div class="hero__icon"><span class="material-icons">travel_explore</span></div>
+      <div class="hero__icon"><span class="material-icons" aria-hidden="true">travel_explore</span></div>
       <h1 class="hero__title">Torrent search</h1>
       <p class="hero__sub">Search torrent sources for a magnet or .torrent link.</p>
     </div>
 
     <div class="search-card">
       <div class="search-row">
-        <input type="text" id="queryInput" placeholder="Search…" autocomplete="off" aria-label="Search query" />
+        <div class="field-outlined">
+          <span class="material-icons" aria-hidden="true">search</span>
+          <input type="text" id="queryInput" placeholder="Search…" autocomplete="off" aria-label="Search query" />
+        </div>
       </div>
       <div class="search-scope" id="searchScope"></div>
       <div class="sort-row">
         <label for="sortSelect">Sort by</label>
-        <select id="sortSelect" aria-label="Sort results by">
+        <select id="sortSelect">
           <option value="seeders">Seeders</option>
           <option value="size">File size</option>
           <option value="ratio">Seed/leech ratio</option>
@@ -233,7 +157,7 @@
     <div id="resultsArea"></div>
 
     <div class="card note-card">
-      <span class="material-icons">shield</span>
+      <span class="material-icons" aria-hidden="true">shield</span>
       <div>
         <p>Searches Internet Archive directly, and The Pirate Bay's apibay.org through a proxy — apibay doesn't allow direct browser requests. Nothing is downloaded by this page — results just give you a magnet or .torrent link to open in your own client.</p>
       </div>
@@ -242,16 +166,16 @@
 
   <div class="bottom-dock" id="bottomDock">
     <nav class="bottom-nav" aria-label="Primary">
-      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+      <a class="bottom-nav__item" href="/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">video_library</span></span>
         <span class="bottom-nav__label">Media</span>
       </a>
-      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+      <a class="bottom-nav__item" href="/live">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">live_tv</span></span>
         <span class="bottom-nav__label">Live</span>
       </a>
-      <a class="bottom-nav__item bottom-nav__item--active" href="/tools/" aria-label="Tools">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+      <a class="bottom-nav__item bottom-nav__item--active" aria-current="page" href="/tools/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">construction</span></span>
         <span class="bottom-nav__label">Tools</span>
       </a>
     </nav>
@@ -513,21 +437,21 @@
   function resultCardHtml(r) {
     const size = formatSize(r.size);
     const stats = [];
-    if (r.seeders !== undefined && r.seeders !== null && r.seeders !== "") stats.push(`<span class="seed"><span class="material-icons">arrow_upward</span>${r.seeders}</span>`);
-    if (r.leechers !== undefined && r.leechers !== null && r.leechers !== "") stats.push(`<span class="leech"><span class="material-icons">arrow_downward</span>${r.leechers}</span>`);
+    if (r.seeders !== undefined && r.seeders !== null && r.seeders !== "") stats.push(`<span class="seed"><span class="material-icons" aria-hidden="true">arrow_upward</span>${r.seeders}</span>`);
+    if (r.leechers !== undefined && r.leechers !== null && r.leechers !== "") stats.push(`<span class="leech"><span class="material-icons" aria-hidden="true">arrow_downward</span>${r.leechers}</span>`);
 
     const meta = [];
-    if (size) meta.push(`<span><span class="material-icons">save</span>${size}</span>`);
+    if (size) meta.push(`<span><span class="material-icons" aria-hidden="true">save</span>${size}</span>`);
     meta.push(`<span class="result-card__stats">${stats.join("")}</span>`);
-    if (r.added) meta.push(`<span><span class="material-icons">event</span>${escapeHtml(String(r.added).slice(0, 10))}</span>`);
+    if (r.added) meta.push(`<span><span class="material-icons" aria-hidden="true">event</span>${escapeHtml(String(r.added).slice(0, 10))}</span>`);
 
     const actions = [];
     if (r.magnet) {
-      actions.push(`<a class="btn btn--primary btn--sm" href="${escapeHtml(r.magnet)}"><span class="material-icons" style="font-size:15px;">link</span>Open magnet</a>`);
-      actions.push(`<button class="btn btn--ghost btn--sm" data-copy="${escapeHtml(r.magnet)}" type="button"><span class="material-icons" style="font-size:15px;">content_copy</span>Copy magnet</button>`);
+      actions.push(`<a class="btn btn--primary btn--sm" href="${escapeHtml(r.magnet)}"><span class="material-icons" aria-hidden="true">link</span>Open magnet</a>`);
+      actions.push(`<button class="btn btn--ghost btn--sm" data-copy="${escapeHtml(r.magnet)}" type="button"><span class="material-icons" aria-hidden="true">content_copy</span>Copy magnet</button>`);
     }
     if (r.link) {
-      actions.push(`<a class="btn btn--ghost btn--sm" href="${escapeHtml(r.link)}" target="_blank" rel="noopener"><span class="material-icons" style="font-size:15px;">download</span>.torrent link</a>`);
+      actions.push(`<a class="btn btn--ghost btn--sm" href="${escapeHtml(r.link)}" target="_blank" rel="noopener"><span class="material-icons" aria-hidden="true">download</span>.torrent link</a>`);
     }
     if (!r.magnet && !r.link) {
       actions.push(`<span class="muted-hint">No magnet or link found for this result.</span>`);
@@ -546,7 +470,7 @@
         try {
           await navigator.clipboard.writeText(btn.getAttribute("data-copy"));
           const original = btn.innerHTML;
-          btn.innerHTML = `<span class="material-icons" style="font-size:15px;">check</span>Copied`;
+          btn.innerHTML = `<span class="material-icons" aria-hidden="true">check</span>Copied`;
           setTimeout(() => { btn.innerHTML = original; }, 1400);
         } catch (e) {}
       });

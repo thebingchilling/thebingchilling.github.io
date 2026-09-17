@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Bingqilin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Search and stream movies and TV shows from sources you configure yourself." />
   <!-- ── App-shell / installability metadata. Together with manifest.webmanifest
        and sw.js, this is what lets the OS treat this as a real installed app
        (own icon, own window, no address bar) rather than a browser tab. ── -->
@@ -22,448 +23,522 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
   <script src="/shared/theme-init.js"></script>
+  <link rel="stylesheet" href="/shared/tokens.css" />
   <link rel="stylesheet" href="/shared/chrome.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
   <style>
-    :root {
-      /* ── Material Design 3 tonal palette (warm terracotta seed) ── */
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+    /* Page-specific only. Colour, type, shape and motion come from
+       /shared/tokens.css; the app shell from /shared/chrome.css;
+       buttons, cards, fields, dialogs and the rest from
+       /shared/ui.css. */
 
-      /* elevation (Material 3 shadow tokens) */
-      --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
-      --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
-      --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
-
-      /* ── legacy aliases: everything below in this stylesheet keeps using
-         these same variable names, so no other selector needs to change ── */
-      --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
-      --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
-      --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
-      --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
-      --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
-      --radius: 12px;
-      --t: 0.2s cubic-bezier(0.2,0,0,1);
-    }
-    /* Lets native UI (text selection, form-control chrome, etc.) pick a
-       sensible light/dark rendering to match — independent of, and in
-       addition to, the custom-styled elements re-themed above. */
-    :root { color-scheme: light dark; }
-    /* ── Dark mode: follows the OS/browser setting automatically.
-       Only the token layer below is redefined — every component rule in
-       this stylesheet is already built on these variables, so nothing
-       else needs to change for the whole app to re-theme. ── */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --md-primary: #ffb77c; --md-on-primary: #4a2800;
-        --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-        --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-        --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-        --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-        --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-        --md-error: #ffb4ab; --md-on-error: #690005;
-        --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-        --md-surface: #17120d;
-        --md-surface-container-lowest: #100c08;
-        --md-surface-container-low: #201a14;
-        --md-surface-container: #241e18;
-        --md-surface-container-high: #2f2822;
-        --md-surface-container-highest: #3a332c;
-        --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-        --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-        --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-        --primary-dark: #ffcda0;
-        --text-faint: #a89686;
-      }
-      .config-feedback--ok { color: #6fdb8f; }
-    }
-    /* ── Manual theme override (Settings → Appearance). An explicit choice
-       always wins over system preference, in either direction, because an
-       attribute selector has higher specificity than the bare :root the
-       media query above targets. "System" = no attribute = the media query
-       above is the sole decider, exactly as before. ── */
-    :root[data-theme="dark"] {
-      --md-primary: #ffb77c; --md-on-primary: #4a2800;
-      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-      --md-error: #ffb4ab; --md-on-error: #690005;
-      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-      --md-surface: #17120d;
-      --md-surface-container-lowest: #100c08;
-      --md-surface-container-low: #201a14;
-      --md-surface-container: #241e18;
-      --md-surface-container-high: #2f2822;
-      --md-surface-container-highest: #3a332c;
-      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-      --primary-dark: #ffcda0;
-      --text-faint: #a89686;
-    }
-    :root[data-theme="dark"] .config-feedback--ok { color: #6fdb8f; }
-    :root[data-theme="light"] {
-      --md-primary: #8a4a16; --md-on-primary: #ffffff;
-      --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-      --md-secondary: #77584a; --md-on-secondary: #ffffff;
-      --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-      --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-      --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-      --md-error: #ba1a1a; --md-on-error: #ffffff;
-      --md-error-container: #ffdad6; --md-on-error-container: #410002;
-      --md-surface: #ffffff;
-      --md-surface-container-lowest: #ffffff;
-      --md-surface-container-low: #fdf1e6;
-      --md-surface-container: #f7ebdd;
-      --md-surface-container-high: #f1e5d6;
-      --md-surface-container-highest: #ebdfd0;
-      --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-      --md-outline: #837366; --md-outline-variant: #d6c5b5;
-      --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
-      --primary-dark: #632f00;
-      --text-faint: #8a7a6d;
-    }
-    :root[data-theme="light"] .config-feedback--ok { color: #146c2e; }
-    *, *::before, *::after { box-sizing: border-box; }
-    /* ── Native-app shell layer ──────────────────────────────────────────
-       This block is what stops the page from *feeling* like a browser tab:
-       no blue/grey tap flash on touch, no callout/selection popovers on
-       chrome controls, and the standard iOS/Android tap-delay removed via
-       touch-action. Real content (search input, overview text) is
-       deliberately left selectable. Vertical overscroll is left at its
-       default so the browser's native pull-to-refresh still works. */
-    body { -webkit-tap-highlight-color: transparent; }
-    button, a, [role="button"], .card, .chip, .ep-card, .source-card { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    button, .btn, .chip, .card, .ep-card, .source-card,
-    .play-btn, .reroll-btn, .share-btn, .player-back, .segmented__item, .source-menu__item {
-      -webkit-touch-callout: none; user-select: none;
-    }
-    /* ── Ripple: Material state-layer touch feedback. Hover states above
-       only fire for a mouse — touch has nothing today, which is the single
-       biggest reason the app currently *feels* like a webpage instead of a
-       native surface. JS (spawnRipple) appends/removes the .ripple span.
-       .icon-btn/.bottom-nav__item's own position/overflow for this live in
-       /shared/chrome.css since every page ripples them. ── */
-    .btn, .chip, .card, .ep-card, .source-card,
-    .play-btn, .reroll-btn, .share-btn, .player-back, .segmented__item, .source-menu__item {
-      position: relative; overflow: hidden;
-    }
-
-    /* ── View Transitions: fade-through motion for setView() navigation ── */
-    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; animation-timing-function: cubic-bezier(0.2,0,0,1); }
+    /* ── View transitions ──────────────────────────────────────────────
+       Search ↔ Detail ↔ Player are views inside one document, so these
+       are same-document transitions (the cross-document ones between
+       Media/Live/Tools live in chrome.css). */
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; animation-timing-function: var(--ease-emphasized); }
     ::view-transition-old(root) { animation-name: bq-view-out; }
     ::view-transition-new(root) { animation-name: bq-view-in; }
     @keyframes bq-view-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
     @keyframes bq-view-in { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
-    @media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; } }
-    /* Hero poster morph: a tapped card's poster visually expands into the
-       Detail view's poster slot instead of just cross-fading with the rest
-       of the page — see handleCardClick()/renderDetailSkeleton(). A named
-       group gets its own independent transition (position+size interpolated
-       automatically), separate from the root fade-through above. */
-    ::view-transition-group(hero-poster) { animation-duration: 0.32s; animation-timing-function: cubic-bezier(0.2,0,0,1); }
-    @media (prefers-reduced-motion: reduce) { ::view-transition-group(hero-poster) { animation: none !important; } }
-    /* Baseline box-model for icon spans; the font-family/ligature rules
-       live in /shared/chrome.css alongside the vendored Material Icons
-       @font-face so every page shares one definition. */
-    .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
-    html, body { margin: 0; padding: 0; height: 100%; }
-    body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
-    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    body, .view { scrollbar-width: none; }
-    body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
+    /* Hero poster morph: a tapped card's poster expands into the Detail
+       view's poster slot rather than cross-fading with the rest of the
+       page — see handleCardClick()/renderDetailSkeleton(). A named group
+       gets its own transition (position and size interpolated), separate
+       from the root fade-through above. */
+    ::view-transition-group(hero-poster) { animation-duration: 0.32s; animation-timing-function: var(--ease-emphasized); }
+    @media (prefers-reduced-motion: reduce) {
+      ::view-transition-old(root), ::view-transition-new(root), ::view-transition-group(hero-poster) { animation: none !important; }
+    }
 
-    /* ── Quick source-switch menu (top bar) ── */
-    .source-menu-wrap { position: relative; }
-    .source-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 180px; max-width: 260px; max-height: 60vh; overflow-y: auto; background: var(--md-surface-container-low); border-radius: 14px; box-shadow: var(--el3); padding: 0.35rem; z-index: 40; display: flex; flex-direction: column; gap: 0.1rem; }
-    .source-menu.hidden { display: none; }
-    .source-menu__item { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem; border-radius: 10px; border: none; background: none; color: var(--text); font-family: 'Google Sans', sans-serif; font-size: 0.85rem; cursor: pointer; text-align: left; width: 100%; position: relative; overflow: hidden; }
-    .source-menu__item:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
-    .source-menu__item--active { color: var(--primary-dark); font-weight: 600; }
-    .source-menu__item .material-icons { font-size: 16px; flex-shrink: 0; visibility: hidden; }
-    .source-menu__item--active .material-icons { visibility: visible; }
-    .source-menu__item span:not(.material-icons) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* ── Shared buttons (M3 filled / outlined / danger — .icon-btn lives in
-       /shared/chrome.css) ── */
-    .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
-    .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
-    .btn--primary:hover { box-shadow: var(--el1); filter: brightness(1.06); }
-    .btn--primary:active { box-shadow: none; filter: brightness(0.94); }
-    .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
-    .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
-    .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); box-shadow: none; }
-    .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .btn--sm { padding: 0.32rem 0.8rem; font-size: 0.8rem; }
-    .btn--danger { background: var(--md-error-container); color: var(--md-on-error-container); border: none; }
-    .btn--danger:hover { background: color-mix(in srgb, var(--md-error) 14%, var(--md-error-container)); }
-    .btn:disabled { opacity: 0.38; cursor: not-allowed; filter: none !important; box-shadow: none !important; }
-
-    /* ── Views ── */
-    main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    .view { position: relative; display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(1.5rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; }
-    /* Search is the only screen that shows the bottom nav — reserve room so
-       its content never sits underneath the fixed bar. */
+    /* Search is the only view that shows the bottom nav — reserve room so
+       its content never sits under the fixed bar. */
     #viewSearch { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
-    .view--active { display: block; }
-    .view-title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* ── Header rows ── */
-    .player-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .player-header-right { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
-
-    /* ── Back button ── */
-    .player-back { display: flex; align-items: center; gap: 0.35rem; min-width: 0; background: none; border: none; cursor: pointer; font-family: 'Google Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
-    /* playerTitle can be a full movie/show name — let it wrap instead of
-       truncating to one ellipsized line and hiding most of it. */
+    /* playerTitle can be a full movie or show name — let it wrap rather
+       than truncating to one ellipsized line that hides most of it. */
     #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
-    .player-back:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
-    .player-back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .player-back .material-icons { font-size: 18px; }
 
-    /* ── Share button (M3 tonal) ── */
-    .share-btn { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--md-secondary-container); color: var(--md-on-secondary-container); border: none; border-radius: 999px; padding: 0.32rem 0.75rem; font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: filter var(--t), background var(--t); flex-shrink: 0; }
-    .share-btn:hover { filter: brightness(0.97); }
-    .share-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .share-btn .material-icons { font-size: 15px; }
+    /* ── Share button (M3 tonal, compact) ── */
+    .share-btn {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      min-height: 32px;
+      padding: 0 0.75rem;
+      border: none;
+      border-radius: var(--shape-full);
+      background: var(--md-secondary-container);
+      color: var(--md-on-secondary-container);
+      font: var(--type-label-medium);
+      letter-spacing: var(--track-label-medium);
+      cursor: pointer;
+      transition: background var(--t);
+    }
+    .share-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: currentColor;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--t);
+    }
+    @media (hover: hover) { .share-btn:hover::before { opacity: var(--state-hover); } }
+    .share-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+    .share-btn .material-icons { font-size: 16px; }
     .share-btn--copied { background: var(--md-primary-container); color: var(--md-on-primary-container); }
 
-    /* ── Search bar (M3 search field) ── */
-    .search-bar { display: flex; align-items: center; gap: 0.7rem; background: var(--md-surface-container-high); border-radius: 28px; padding: 0.65rem 1rem; box-shadow: none; border: 1px solid transparent; margin-bottom: 0.65rem; transition: background var(--t), box-shadow var(--t); }
-    .search-bar:focus-within { box-shadow: var(--el1); background: var(--md-surface-container-highest); }
-    .search-bar__icon { color: var(--md-on-surface-variant); font-size: 22px; flex-shrink: 0; }
-    .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 1rem; color: var(--text); }
-    .search-bar__input::placeholder { color: var(--text-faint); }
-    .search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
-    .search-status { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem; min-height: 1.2em; display: flex; align-items: center; gap: 0.5rem; }
-    .search-status--error { color: var(--md-error); }
-    .empty-state { text-align: center; padding: 3.5rem 1rem 2rem; color: var(--text-faint); user-select: none; }
-    .empty-state__icon { font-size: 3.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
-    .empty-state__title { font-family: 'Google Sans', sans-serif; font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-    .empty-state__sub { font-size: 0.82rem; }
-
-    /* ── Results grid (M3 elevated cards) ── */
+    /* ── Results grid ── */
     .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; }
     @media (min-width: 720px) { .results-grid { grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); } }
-    .card { background: var(--surface); border-radius: var(--radius); overflow: hidden; cursor: pointer; display: flex; flex-direction: column; border: none; box-shadow: var(--el1); transition: transform var(--t), box-shadow var(--t), background var(--t); position: relative; }
-    .card:hover { transform: translateY(-2px); box-shadow: var(--el2); background: var(--surface2); }
-    .card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .card__img-wrap { position: relative; overflow: hidden; background: var(--bg2); aspect-ratio: 2/3; }
-    .card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .card__placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 2rem; }
-    .card__body { padding: 0.45rem 0.55rem 0.55rem; }
-    .card__title { font-size: 0.88rem; font-weight: 500; color: var(--text); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-    .card__meta { display: flex; align-items: center; justify-content: space-between; margin-top: 0.2rem; }
-    .card__chip { padding: 0.12rem 0.55rem; border-radius: 6px; background: var(--md-tertiary-container); border: none; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--md-on-tertiary-container); }
-    .card__year { font-size: 0.76rem; color: var(--text-faint); }
-    .card__ext-btn { position: absolute; bottom: 6px; right: 6px; width: 26px; height: 26px; border-radius: 999px; border: none; background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity var(--t), transform var(--t); z-index: 2; }
-    .card__ext-btn .material-icons { font-size: 14px; }
-    .card:hover .card__ext-btn, .card:focus-within .card__ext-btn { opacity: 1; }
-    .card__ext-btn:hover { transform: scale(1.12); filter: brightness(1.15); }
-    .card__ext-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; opacity: 1; }
-    @media (hover: none) { .card__ext-btn { opacity: 1; } } /* no hover on touch — show it outright instead of hiding it forever */
+    .media-card__img-wrap { aspect-ratio: 2/3; }
+    .media-card__meta { display: flex; align-items: center; justify-content: space-between; margin-top: 0.2rem; }
+    .media-card__chip {
+      padding: 0.12rem 0.55rem;
+      border: none;
+      border-radius: var(--shape-xs);
+      background: var(--md-tertiary-container);
+      color: var(--md-on-tertiary-container);
+      font: var(--type-label-small);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .media-card__year {
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
+    /* "Open on the source site" — sits over the poster art, so it uses the
+       inverse surface rather than a page surface token. */
+    .media-card__ext-btn {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      z-index: 2;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: var(--shape-full);
+      background: var(--md-inverse-surface);
+      color: var(--md-inverse-on-surface);
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity var(--t), transform var(--t);
+    }
+    .media-card__ext-btn .material-icons { font-size: 16px; }
+    .media-card:hover .media-card__ext-btn,
+    .media-card:focus-within .media-card__ext-btn { opacity: 1; }
+    .media-card__ext-btn:hover { transform: scale(1.12); }
+    .media-card__ext-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; opacity: 1; }
+    /* Touch has no hover, so showing it on hover would hide it forever. */
+    @media (hover: none) { .media-card__ext-btn { opacity: 1; } }
 
     /* ── Detail ── */
-    .detail-body { background: var(--surface); border-radius: var(--radius); border: none; box-shadow: var(--el1); overflow: hidden; }
+    .detail-body { overflow: hidden; border: none; border-radius: var(--shape-m); background: var(--surface); box-shadow: var(--el1); }
+    .detail-content { display: flex; flex-direction: column; gap: 0.9rem; padding: 0.8rem 0.9rem; }
     .detail-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
     .detail-tags--center { justify-content: center; }
-    .detail-content { padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.9rem; }
-    .detail-section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.25rem; }
-    .overview { margin: 0; font-size: 0.84rem; line-height: 1.6; color: var(--text-muted); }
+    .detail-section-label {
+      margin-bottom: 0.25rem;
+      font: var(--type-label-medium);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .detail-extra { display: flex; flex-direction: column; gap: 0.35rem; }
+    .overview {
+      margin: 0;
+      font: var(--type-body-medium);
+      letter-spacing: var(--track-body-medium);
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
     .overview--error { color: var(--md-error); }
 
-    /* ── Detail poster: the show/movie name now lives right under its own
-       poster (not off in the header next to Back/Share) — bigger, more
-       elevated artwork so the two read as one clear unit at a glance. ── */
+    /* The title sits directly under its own poster rather than off in the
+       header, so the two read as one unit. */
     .detail-poster { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; text-align: center; }
-    .detail-poster__frame { width: 190px; max-width: 62%; aspect-ratio: 2/3; border-radius: 20px; overflow: hidden; box-shadow: var(--el3); background: var(--bg2); }
-    .detail-poster__frame img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .detail-poster__frame {
+      width: 190px;
+      max-width: 62%;
+      aspect-ratio: 2/3;
+      overflow: hidden;
+      border-radius: var(--shape-l);
+      background: var(--bg2);
+      box-shadow: var(--el3);
+    }
+    .detail-poster__frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .detail-poster__frame--ph { display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 2.6rem; }
-    .detail-poster__title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.35rem; font-weight: 600; color: var(--text); line-height: 1.25; max-width: 22rem; }
-    .meta-tag { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 500; padding: 0.18rem 0.6rem; border-radius: 6px; background: var(--md-surface-container-high); color: var(--text-muted); white-space: nowrap; }
+    .detail-poster__title {
+      margin: 0;
+      max-width: 22rem;
+      font: var(--type-headline-small);
+      letter-spacing: var(--track-headline);
+      line-height: 1.25;
+      color: var(--text);
+    }
+    .meta-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.18rem 0.6rem;
+      border-radius: var(--shape-xs);
+      background: var(--md-surface-container-high);
+      color: var(--text-muted);
+      font: var(--type-label-medium);
+      letter-spacing: var(--track-label-medium);
+    }
 
-    /* ── Series panel: tagline + overview under the poster (no Play button
-       — TV plays via season/episode selection further down instead). ── */
-    .series-panel__text { display: flex; flex-direction: column; gap: 0.5rem; }
-    .series-panel__tagline { margin: 0; font-size: 0.83rem; color: var(--text-muted); font-style: italic; line-height: 1.4; }
-    .series-panel__overview { margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); }
-
-    /* ── Movie panel: tagline + overview + Play button under the poster. ── */
-    .movie-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+    /* ── Series / movie panels under the poster ── */
+    .series-panel__text,
     .movie-panel__text { display: flex; flex-direction: column; gap: 0.5rem; }
-    .movie-panel__tagline { margin: 0; font-size: 0.83rem; color: var(--text-muted); font-style: italic; line-height: 1.4; }
-    .movie-panel__overview { margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); }
+    .movie-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+    .series-panel__tagline,
+    .movie-panel__tagline {
+      margin: 0;
+      font: var(--type-body-medium);
+      letter-spacing: var(--track-body-medium);
+      font-style: italic;
+      line-height: 1.4;
+      color: var(--text-muted);
+    }
+    .series-panel__overview,
+    .movie-panel__overview {
+      margin: 0;
+      font: var(--type-body-medium);
+      letter-spacing: var(--track-body-medium);
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
     @media (min-width: 480px) {
       .movie-panel__play.play-btn { width: auto; min-width: 220px; margin: 0 auto; padding-left: 1.6rem; padding-right: 1.6rem; }
     }
 
-    /* ── Play button: full-width by default (mobile), auto-width in the
-       desktop row above. Icon is inline SVG (not the Material Icons
-       webfont) so it still renders correctly even if that font fails. ── */
-    .play-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; background: var(--primary); color: var(--on-primary); border: none; border-radius: 14px; padding: 0.9rem 1rem; font-family: 'Google Sans', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: var(--el2); transition: filter 0.18s, box-shadow 0.18s, transform 0.05s; }
-    .play-btn:hover { filter: brightness(1.06); box-shadow: var(--el3); }
-    .play-btn:active { transform: scale(0.99); filter: brightness(0.94); }
-    .play-btn:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
+    /* ── Play button ───────────────────────────────────────────────────
+       The page's single most important action, so it is taller than a
+       standard .btn (M3's 56dp medium size). The icon is inline SVG, not
+       the Material Icons webfont, so it still renders if that font
+       fails. */
+    .play-btn {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      min-height: 56px;
+      padding: 0 1.5rem;
+      border: none;
+      border-radius: var(--shape-l);
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      font: var(--type-title-medium);
+      letter-spacing: var(--track-title-medium);
+      cursor: pointer;
+      transition: box-shadow var(--t), transform var(--t);
+    }
+    .play-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: currentColor;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--t);
+    }
+    @media (hover: hover) {
+      .play-btn:hover { box-shadow: var(--el3); }
+      .play-btn:hover::before { opacity: var(--state-hover); }
+    }
+    .play-btn:active { transform: scale(0.99); }
+    .play-btn:active::before { opacity: var(--state-press); }
+    .play-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 3px; }
     .play-btn__icon { flex-shrink: 0; }
 
-    /* ── Skeleton ── */
-    .detail-skeleton { padding: 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; }
-    .skel { background: var(--bg2); border-radius: 8px; animation: skel-pulse 1.4s ease-in-out infinite; }
-    @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    /* ── Skeletons ── */
+    .detail-skeleton { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.9rem; }
     .skel-panel { display: grid; grid-template-columns: 1fr; grid-template-areas: "poster" "text" "play"; gap: 0.9rem; justify-items: center; }
     .skel-panel--tv { grid-template-areas: "poster" "text"; }
-    .skel-panel-poster { grid-area: poster; width: 190px; max-width: 62%; aspect-ratio: 2/3; border-radius: 20px; display: block; object-fit: cover; }
+    .skel-panel-poster { grid-area: poster; display: block; width: 190px; max-width: 62%; aspect-ratio: 2/3; border-radius: var(--shape-l); }
     .skel-panel-lines { grid-area: text; width: 100%; display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.2rem; }
-    .skel-panel-play { grid-area: play; width: 100%; height: 48px; border-radius: 14px; }
+    .skel-panel-play { grid-area: play; width: 100%; height: 56px; border-radius: var(--shape-l); }
     .skel-line { height: 14px; }
     .skel-line--short { width: 40%; }
     .skel-line--med { width: 65%; }
     .skel-line--full { width: 100%; }
     .skel-block { height: 80px; }
+    .media-card-skel { display: flex; flex-direction: column; overflow: hidden; border-radius: var(--shape-m); background: var(--surface); box-shadow: var(--el1); }
+    .media-card-skel__img { aspect-ratio: 2/3; border-radius: 0; }
+    .media-card-skel__body { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.45rem 0.55rem 0.55rem; }
+    .media-card-skel__line { height: 12px; }
+    .media-card-skel__line--wide { width: 90%; }
+    .media-card-skel__line--narrow { width: 55%; }
 
-    /* ── Search results skeleton — mirrors .card's own layout/sizing ── */
-    .card-skel { border-radius: var(--radius); overflow: hidden; box-shadow: var(--el1); background: var(--surface); display: flex; flex-direction: column; }
-    .card-skel__img { aspect-ratio: 2/3; border-radius: 0; }
-    .card-skel__body { padding: 0.45rem 0.55rem 0.55rem; display: flex; flex-direction: column; gap: 0.35rem; }
-    .card-skel__line { height: 12px; }
-    .card-skel__line--wide { width: 90%; }
-    .card-skel__line--narrow { width: 55%; }
-
-    /* (roll button now lives inline in the Seasons/Episodes header rows) */
-
-    /* ── Season chips (M3 filter chips) ── */
+    /* ── Seasons & episodes ── */
     .chip-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .chip { border-radius: 8px; padding: 0.35rem 0.9rem; font-size: 0.83rem; border: 1px solid var(--md-outline); cursor: pointer; background: transparent; color: var(--text-muted); font-weight: 500; font-family: 'Google Sans', sans-serif; transition: background var(--t), box-shadow var(--t), border-color var(--t); }
-    .chip:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); box-shadow: none; }
-    .chip--selected { background: var(--md-secondary-container); color: var(--md-on-secondary-container); border-color: transparent; box-shadow: none; }
-    .chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .detail-extra { display: flex; flex-direction: column; gap: 0.35rem; }
     .episodes-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
     .episodes-header .detail-section-label { margin-bottom: 0; }
     .grid--episodes { display: grid; grid-template-columns: 1fr; gap: 0.55rem; }
     @media (min-width: 720px) { .grid--episodes { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); } }
 
-    /* ── Episode cards ── */
-    .ep-card { background: var(--surface); border-radius: var(--radius); border: none; box-shadow: var(--el1); overflow: hidden; display: flex; flex-direction: column; height: 100%; cursor: pointer; transition: transform var(--t), box-shadow var(--t), background var(--t); }
-    .ep-card:hover { transform: translateY(-2px); box-shadow: var(--el2); background: var(--surface2); }
-    .ep-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .ep-card {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      border: none;
+      border-radius: var(--shape-m);
+      background: var(--surface);
+      box-shadow: var(--el1);
+      cursor: pointer;
+      -webkit-touch-callout: none;
+      user-select: none;
+      transition: transform var(--t), box-shadow var(--t), background var(--t);
+    }
+    @media (hover: hover) {
+      .ep-card:hover { transform: translateY(-2px); box-shadow: var(--el2); background: var(--surface2); }
+    }
+    .ep-card:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
     .ep-card--highlight { animation: ep-pulse 1.6s ease-out forwards; }
-    @keyframes ep-pulse { 0% { outline: 2px solid var(--primary); box-shadow: 0 0 0 0 rgba(138,74,22,0.45); } 60% { box-shadow: 0 0 0 12px rgba(138,74,22,0); } 100% { outline: none; box-shadow: var(--el1); } }
+    @keyframes ep-pulse {
+      0%   { outline: 2px solid var(--md-primary); box-shadow: 0 0 0 0 color-mix(in srgb, var(--md-primary) 45%, transparent); }
+      60%  { box-shadow: 0 0 0 12px color-mix(in srgb, var(--md-primary) 0%, transparent); }
+      100% { outline: none; box-shadow: var(--el1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .ep-card--highlight { animation: none; outline: 2px solid var(--md-primary); } }
     .ep-card--unaired { cursor: not-allowed; opacity: 0.45; filter: grayscale(0.4); }
     .ep-card--unaired:hover { transform: none; box-shadow: var(--el1); background: var(--surface); }
-    .ep-card__unaired-badge { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.68rem; color: var(--text-faint); background: var(--bg2); border: none; border-radius: 999px; padding: 0.1rem 0.45rem; margin-top: 0.1rem; width: fit-content; }
-    .ep-card__img-wrap { position: relative; padding-top: 56.25%; background: var(--bg2); overflow: hidden; }
+    .ep-card__unaired-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0.1rem 0.5rem;
+      border: none;
+      border-radius: var(--shape-full);
+      background: var(--bg2);
+      color: var(--text-faint);
+      font: var(--type-label-small);
+      letter-spacing: var(--track-label-small);
+    }
+    .ep-card__img-wrap { position: relative; padding-top: 56.25%; overflow: hidden; background: var(--bg2); }
     .ep-card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .ep-card__body { padding: 0.5rem 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.3rem; flex: 1; }
-    .ep-card__title { margin: 0; font-size: 0.88rem; font-weight: 500; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-    .ep-card__date { margin: 0; font-size: 0.75rem; color: var(--text-faint); }
-    .ep-card__summary { margin: 0; font-size: 0.79rem; line-height: 1.45; color: var(--text-muted); }
-    .ep-more-btn { border: none; background: none; color: var(--primary); font-size: 0.76rem; font-weight: 500; cursor: pointer; padding: 0; margin-left: 0.2rem; font-family: 'Google Sans', sans-serif; }
+    .ep-card__body { display: flex; flex-direction: column; flex: 1; gap: 0.3rem; padding: 0.5rem 0.6rem 0.6rem; }
+    .ep-card__title {
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
+    .ep-card__date {
+      margin: 0;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
+    .ep-card__summary {
+      margin: 0;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+    .ep-more-btn {
+      margin-left: 0.2rem;
+      padding: 0;
+      border: none;
+      background: none;
+      color: var(--md-primary);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
     .ep-more-btn:hover { text-decoration: underline; }
-    /* ── Player ── */
-    .player-wrap { margin-top: 0.35rem; border-radius: 14px; overflow: hidden; background: #000; position: relative; padding-top: 56.25%; box-shadow: var(--el2); }
-    .player-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
-    .player-overlay { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #111; color: rgba(255,255,255,0.45); font-size: 0.85rem; gap: 0.5rem; transition: opacity 0.3s; text-align: center; padding: 1rem; }
-    .player-overlay.hidden { opacity: 0; pointer-events: none; }
-    .player-overlay .material-icons { font-size: 2.5rem; opacity: 0.35; }
+    .ep-more-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; border-radius: var(--shape-xs); }
 
-    /* ── Now playing / reroll card ── */
-    .now-playing-card { margin-top: 0.75rem; background: var(--surface); border: none; box-shadow: var(--el1); border-radius: var(--radius); padding: 0.65rem 0.75rem; display: flex; gap: 0.6rem; align-items: flex-start; }
-    .now-playing-card.hidden { display: none; }
+    /* ── Now playing / reroll ── */
+    .now-playing-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border: none;
+      border-radius: var(--shape-m);
+      background: var(--surface);
+      box-shadow: var(--el1);
+    }
     .now-playing-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
-    .now-playing-card__eyebrow { font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary); }
-    .now-playing-card__title { font-size: 0.88rem; font-weight: 500; color: var(--text); line-height: 1.3; white-space: normal; overflow: visible; }
-    .now-playing-card__meta { font-size: 0.72rem; color: var(--text-faint); }
-    .now-playing-card__overview { font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 0.15rem; }
-    .reroll-btn { flex-shrink: 0; width: 36px; height: 36px; border-radius: 999px; border: none; background: var(--md-secondary-container); color: var(--md-on-secondary-container); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--el1); transition: background var(--t), transform var(--t), box-shadow var(--t); }
-    .reroll-btn:hover { box-shadow: var(--el2); transform: rotate(30deg); }
-    .reroll-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .reroll-btn .material-icons { font-size: 18px; }
-    .reroll-btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none; box-shadow: none; }
+    .now-playing-card__eyebrow {
+      font: var(--type-label-small);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--md-primary);
+    }
+    .now-playing-card__title {
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      line-height: 1.3;
+      color: var(--text);
+    }
+    .now-playing-card__meta {
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
+    .now-playing-card__overview {
+      margin-top: 0.15rem;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+    .reroll-btn {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: var(--shape-full);
+      background: var(--md-secondary-container);
+      color: var(--md-on-secondary-container);
+      cursor: pointer;
+      transition: box-shadow var(--t), transform var(--t);
+    }
+    @media (hover: hover) { .reroll-btn:hover { box-shadow: var(--el2); transform: rotate(30deg); } }
+    .reroll-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+    .reroll-btn .material-icons { font-size: 20px; }
+    .reroll-btn:disabled {
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+      background: color-mix(in srgb, var(--md-on-surface) calc(var(--disabled-container) * 100%), transparent);
+      color: color-mix(in srgb, var(--md-on-surface) calc(var(--disabled-content) * 100%), transparent);
+    }
 
-    /* ── Settings sheet (M3 modal bottom sheet) ── */
-    .settings { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
-    .settings.hidden { display: none; }
-    .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); }
-    .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem calc(1rem + env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left)); animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; overscroll-behavior-y: contain; }
-    .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
-    @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
-    .settings__title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1rem; font-weight: 500; color: var(--text); }
-    .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
-    .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
-
-    /* ── Segmented button group (M3) — used for the Appearance picker ── */
-    .segmented { display: flex; border: 1px solid var(--md-outline-variant); border-radius: 999px; padding: 3px; gap: 3px; background: var(--md-surface-container-high); }
-    .segmented__item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: none; background: none; border-radius: 999px; padding: 0.45rem 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
-    .segmented__item .material-icons { font-size: 17px; }
-    .segmented__item--active { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
-    .segmented__item:hover:not(.segmented__item--active) { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
-    .segmented__item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-
-    /* ── Switch (M3) — used for the per-source "block pop-ups" toggle ── */
-
-    .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
-
-    /* source cards (M3 selectable list items) */
+    /* ── Settings: source list ── */
     .source-list { display: flex; flex-direction: column; gap: 0.4rem; }
-    .source-list--empty { padding: 0.9rem; border-radius: 10px; background: var(--bg2); border: 1px dashed var(--md-outline); text-align: center; }
-    .source-list--empty p { margin: 0; font-size: 0.82rem; color: var(--text-faint); line-height: 1.5; }
-    .source-list--empty strong { color: var(--text-muted); }
-    .source-card { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.7rem; border-radius: 10px; border: 1px solid var(--md-outline-variant); background: var(--surface); cursor: pointer; transition: border-color var(--t), background var(--t); }
-    .source-card:hover { background: var(--surface2); }
-    .source-card--active { border-color: var(--primary); background: var(--md-primary-container); }
-    .source-card__check { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--md-outline); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background var(--t), border-color var(--t); }
-    .source-card--active .source-card__check { background: var(--primary); border-color: var(--primary); }
-    .source-card__check .material-icons { font-size: 12px; color: var(--on-primary); display: none; }
+    .source-list--empty {
+      padding: 0.9rem;
+      border: 1px dashed var(--md-outline);
+      border-radius: var(--shape-m);
+      background: var(--bg2);
+      text-align: center;
+    }
+    .source-list--empty p {
+      margin: 0;
+      font: var(--type-body-medium);
+      letter-spacing: var(--track-body-medium);
+      line-height: var(--leading-prose);
+      color: var(--text-muted);
+    }
+    .source-list--empty strong { color: var(--text); }
+    .source-card {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 48px;
+      padding: 0.4rem 0.5rem 0.4rem 0.7rem;
+      border: 1px solid var(--md-outline-variant);
+      border-radius: var(--shape-m);
+      background: var(--surface);
+      cursor: pointer;
+      transition: background var(--t), border-color var(--t);
+    }
+    @media (hover: hover) { .source-card:hover { background: var(--surface2); } }
+    .source-card:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+    .source-card--active { border-color: var(--md-primary); background: var(--md-primary-container); }
+    .source-card__check {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--md-outline);
+      border-radius: 50%;
+      transition: background var(--t), border-color var(--t);
+    }
+    .source-card--active .source-card__check { background: var(--md-primary); border-color: var(--md-primary); }
+    .source-card__check .material-icons { display: none; font-size: 12px; color: var(--md-on-primary); }
     .source-card--active .source-card__check .material-icons { display: block; }
-    .source-card__name { flex: 1; font-size: 0.88rem; font-weight: 500; color: var(--text); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .source-card__name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
     .source-card--active .source-card__name { color: var(--md-on-primary-container); }
-    .source-card__actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
-    .source-card__btn { width: 28px; height: 28px; border-radius: 999px; border: none; background: transparent; color: var(--text-faint); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background var(--t), color var(--t); }
-    .source-card__btn:hover { background: color-mix(in srgb, var(--md-on-surface) 10%, transparent); color: var(--text); }
-    .source-card__btn .material-icons { font-size: 16px; }
-    .source-card__btn--danger:hover { background: var(--md-error-container); color: var(--md-on-error-container); }
+    .source-card__actions { display: flex; gap: 0.1rem; flex-shrink: 0; }
+    /* Deleting a source is the one destructive action in the list, so its
+       hover reads in the error colour rather than the neutral state layer. */
+    .source-card__btn--danger:hover { color: var(--md-error); }
 
-    /* source form */
-    .source-form { border: 1px solid var(--md-outline-variant); border-radius: 16px; padding: 0.75rem; background: var(--surface2); display: flex; flex-direction: column; gap: 0.5rem; }
-    .source-form__title { font-size: 0.82rem; font-weight: 600; color: var(--text); margin: 0 0 0.1rem; }
-    .source-form input[type=text] { width: 100%; border: 1px solid var(--md-outline); border-radius: 8px; padding: 0.4rem 0.65rem; font-size: 0.84rem; font-family: 'Google Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); }
-    .source-form input[type=text]:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-    .source-form__label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.1rem; display: block; }
-    .source-form__hint { font-size: 0.7rem; color: var(--text-faint); }
+    /* ── Settings: add/edit source form ── */
+    .source-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border: 1px solid var(--md-outline-variant);
+      border-radius: var(--shape-l);
+      background: var(--surface2);
+    }
+    .source-form__title {
+      margin: 0 0 0.1rem;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
+    .source-form input[type=text] {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 0.65rem;
+      border: 1px solid var(--md-outline);
+      border-radius: var(--shape-s);
+      background: var(--surface);
+      color: var(--text);
+      font: var(--type-body-medium);
+      letter-spacing: var(--track-body-medium);
+      outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    .source-form input[type=text]:focus { border-color: var(--md-primary); box-shadow: 0 0 0 1px var(--md-primary); }
+    .source-form__label {
+      display: block;
+      margin-bottom: 0.1rem;
+      font: var(--type-label-medium);
+      letter-spacing: var(--track-label-medium);
+      color: var(--text-muted);
+    }
+    .source-form__hint {
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
     .source-form__actions { display: flex; gap: 0.4rem; justify-content: flex-end; margin-top: 0.15rem; }
-
-    /* ── Config import/export ── */
-    .config-area { display: flex; flex-direction: column; gap: 0.5rem; }
-    .config-textarea-wrap { position: relative; }
-    .config-textarea { width: 100%; min-height: 130px; border: 1px solid var(--md-outline); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.78rem; font-family: 'Google Sans', monospace, sans-serif; background: var(--bg); color: var(--text); outline: none; resize: vertical; line-height: 1.55; transition: border-color var(--t), box-shadow var(--t); }
-    .config-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-    .config-textarea::placeholder { color: var(--text-faint); }
-    .config-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
-    .config-feedback { font-size: 0.76rem; flex: 1; min-width: 0; }
-    .config-feedback--ok  { color: #146c2e; }
-    .config-feedback--err { color: var(--md-error); }
-
-    /* ── Misc ── */
-    .hidden { display: none !important; }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
   </style>
 </head>
 <body>
@@ -473,39 +548,40 @@
       <span class="top-bar__name">🍦 Bingqilin</span>
     </div>
     <div class="top-bar__actions">
-      <div class="source-menu-wrap">
+      <div class="menu-wrap source-menu-wrap">
         <button id="topSourceBtn" class="icon-btn hidden" type="button" aria-label="Switch player source" title="Source" aria-haspopup="true" aria-expanded="false">
-          <span class="material-icons">swap_horiz</span>
+          <span class="material-icons" aria-hidden="true">swap_horiz</span>
         </button>
-        <div id="sourceMenu" class="source-menu hidden" role="menu" aria-label="Player source"></div>
+        <div id="sourceMenu" class="menu source-menu hidden" role="menu" aria-label="Player source"></div>
       </div>
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
-        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+        <span class="material-icons" aria-hidden="true" id="themeToggleIcon">brightness_auto</span>
       </button>
       <button id="settingsBtn" class="icon-btn" type="button" aria-label="Settings">
-        <span class="material-icons">settings</span>
+        <span class="material-icons" aria-hidden="true">settings</span>
       </button>
     </div>
   </header>
 
-  <main class="app-main">
+  <main class="app-main app-main--views">
     <!-- Search view -->
     <section id="viewSearch" class="view view--active" aria-label="Search">
+      <h1 class="sr-only">Search movies &amp; TV shows</h1>
       <form id="searchForm" class="search-bar" role="search">
         <span class="material-icons search-bar__icon" aria-hidden="true">search</span>
         <input id="searchInput" type="search" class="search-bar__input"
           placeholder="Search movies &amp; TV shows…" autocomplete="off"
           aria-label="Search movies and TV shows" />
         <button id="clearBtn" class="icon-btn hidden" type="button" aria-label="Clear search">
-          <span class="material-icons" style="font-size:20px;">close</span>
+          <span class="material-icons" aria-hidden="true">close</span>
         </button>
       </form>
       <div id="searchStatus" class="search-status" role="status" aria-live="polite"></div>
       <div id="resultsGrid" class="results-grid" role="list"></div>
       <div id="emptyState" class="empty-state">
-        <div class="empty-state__icon">🎬</div>
-        <div class="empty-state__title">What are we watching?</div>
-        <div class="empty-state__sub">Search for any movie or TV show above</div>
+        <span class="material-icons empty-state__icon" aria-hidden="true">movie</span>
+        <p class="empty-state__title">What are we watching?</p>
+        <p class="empty-state__sub">Search for any movie or TV show above</p>
       </div>
     </section>
 
@@ -513,11 +589,11 @@
     <section id="viewDetail" class="view" aria-label="Details">
       <div class="player-header-row">
         <button id="backFromDetail" class="player-back" type="button" aria-label="Back to search">
-          <span class="material-icons">arrow_back</span><span>Search</span>
+          <span class="material-icons" aria-hidden="true">arrow_back</span><span>Search</span>
         </button>
         <div class="player-header-right">
           <button id="shareDetailBtn" class="share-btn" type="button" aria-label="Copy link">
-            <span class="material-icons">link</span><span id="shareDetailBtnLabel">Share</span>
+            <span class="material-icons" aria-hidden="true">link</span><span id="shareDetailBtnLabel">Share</span>
           </button>
         </div>
       </div>
@@ -528,22 +604,22 @@
     <section id="viewPlayer" class="view" aria-label="Player">
       <div class="player-header-row">
         <button id="backFromPlayer" class="player-back" type="button" aria-label="Back">
-          <span class="material-icons">arrow_back</span>
+          <span class="material-icons" aria-hidden="true">arrow_back</span>
           <span>Back</span>
         </button>
         <div class="player-header-right">
           <button id="playerFullscreenBtn" class="icon-btn" type="button" aria-label="Fullscreen">
-            <span class="material-icons" id="playerFullscreenIcon">fullscreen</span>
+            <span class="material-icons" aria-hidden="true" id="playerFullscreenIcon">fullscreen</span>
           </button>
           <button id="shareBtn" class="share-btn" type="button" aria-label="Copy link">
-            <span class="material-icons">link</span><span id="shareBtnLabel">Share</span>
+            <span class="material-icons" aria-hidden="true">link</span><span id="shareBtnLabel">Share</span>
           </button>
         </div>
       </div>
       <h2 id="playerTitle" class="view-title" style="margin:0 0 0.35rem;"></h2>
       <div class="player-wrap" id="playerWrap">
         <div id="playerOverlay" class="player-overlay" role="status" aria-live="polite">
-          <span class="material-icons" id="playerOverlayIcon">smart_display</span>
+          <span class="material-icons" aria-hidden="true" id="playerOverlayIcon">smart_display</span>
           <span id="playerOverlayText" class="player-overlay__text">Loading player…</span>
         </div>
         <iframe id="playerFrame" src="" loading="lazy" allowfullscreen webkitallowfullscreen mozallowfullscreen
@@ -559,7 +635,7 @@
           <div class="now-playing-card__overview" id="epCardOverview"></div>
         </div>
         <button id="epCardRollBtn" class="reroll-btn" type="button" aria-label="Roll a random episode">
-          <span class="material-icons">shuffle</span>
+          <span class="material-icons" aria-hidden="true">shuffle</span>
         </button>
       </div>
     </section>
@@ -573,16 +649,16 @@
        name — see the @view-transition rule below. -->
   <div class="bottom-dock" id="bottomDock">
     <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
-      <button class="bottom-nav__item bottom-nav__item--active" id="navSearchBtn" type="button" aria-label="Media">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+      <button class="bottom-nav__item bottom-nav__item--active" aria-current="page" id="navSearchBtn" type="button">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">video_library</span></span>
         <span class="bottom-nav__label">Media</span>
       </button>
-      <a class="bottom-nav__item" href="/live" aria-label="Switch to Live TV &amp; Radio">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+      <a class="bottom-nav__item" href="/live">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">live_tv</span></span>
         <span class="bottom-nav__label">Live</span>
       </a>
-      <a class="bottom-nav__item" href="/tools/" aria-label="Switch to Tools">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+      <a class="bottom-nav__item" href="/tools/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">construction</span></span>
         <span class="bottom-nav__label">Tools</span>
       </a>
     </nav>
@@ -590,39 +666,38 @@
 </div>
 
 <!-- Settings sheet -->
-<div id="settingsSheet" class="settings hidden" role="dialog" aria-modal="true" aria-label="Settings">
-  <div id="settingsBackdrop" class="settings__backdrop"></div>
-  <div class="settings__panel">
-    <div class="settings__header">
-      <h2 class="settings__title">Settings</h2>
+<div id="settingsSheet" class="scrim scrim--bottom hidden" role="dialog" aria-modal="true" aria-label="Settings" aria-hidden="true">
+  <div class="sheet">
+    <div class="sheet__header">
+      <h2 class="sheet__title">Settings</h2>
       <button id="settingsClose" class="icon-btn" type="button" aria-label="Close settings">
-        <span class="material-icons">close</span>
+        <span class="material-icons" aria-hidden="true">close</span>
       </button>
     </div>
 
     <!-- Appearance section -->
-    <div class="settings__section">
-      <div class="settings__section-label">Appearance</div>
+    <div class="sheet__section">
+      <div class="sheet__section-label">Appearance</div>
       <div class="segmented" id="themeSegmented" role="radiogroup" aria-label="Theme">
         <button class="segmented__item" data-theme-choice="system" type="button" role="radio">
-          <span class="material-icons">brightness_auto</span>System
+          <span class="material-icons" aria-hidden="true">brightness_auto</span>System
         </button>
         <button class="segmented__item" data-theme-choice="light" type="button" role="radio">
-          <span class="material-icons">light_mode</span>Light
+          <span class="material-icons" aria-hidden="true">light_mode</span>Light
         </button>
         <button class="segmented__item" data-theme-choice="dark" type="button" role="radio">
-          <span class="material-icons">dark_mode</span>Dark
+          <span class="material-icons" aria-hidden="true">dark_mode</span>Dark
         </button>
       </div>
     </div>
 
     <!-- Sources section -->
-    <div class="settings__section">
-      <div class="settings__section-label">Sources</div>
+    <div class="sheet__section">
+      <div class="sheet__section-label">Sources</div>
       <div id="sourceList" class="source-list"></div>
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.2rem;">
         <button id="addSourceBtn" class="btn btn--ghost btn--sm" type="button">
-          <span class="material-icons" style="font-size:16px;">add</span>Add source
+          <span class="material-icons" aria-hidden="true">add</span>Add source
         </button>
       </div>
       <div id="sourceForm" class="source-form hidden">
@@ -649,22 +724,22 @@
     </div>
 
     <!-- Import / Export config -->
-    <div class="settings__section">
-      <div class="settings__section-label">Import / Export</div>
-      <p class="settings__hint">Paste a config here to import sources in bulk, or export your current ones to back up or share.</p>
+    <div class="sheet__section">
+      <div class="sheet__section-label">Import / Export</div>
+      <p class="sheet__hint">Paste a config here to import sources in bulk, or export your current ones to back up or share.</p>
       <div class="config-area">
         <div class="config-textarea-wrap">
-          <textarea id="configTextarea" class="config-textarea"
+          <textarea id="configTextarea" class="textarea config-textarea"
             placeholder="name: vid&#10;movie: https://example.com/embed/movie/{tmdb}&#10;tv: https://example.com/embed/tv/{tmdb}/{season}/{episode}"
             spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
         <div class="config-actions">
           <span id="configFeedback" class="config-feedback" role="status" aria-live="polite"></span>
           <button id="configImportBtn" class="btn btn--primary btn--sm" type="button">
-            <span class="material-icons" style="font-size:15px;">download</span>Import
+            <span class="material-icons" aria-hidden="true">download</span>Import
           </button>
           <button id="configExportBtn" class="btn btn--ghost btn--sm" type="button">
-            <span class="material-icons" style="font-size:15px;">upload</span>Export
+            <span class="material-icons" aria-hidden="true">upload</span>Export
           </button>
         </div>
       </div>
@@ -684,8 +759,8 @@
    SW registration is best-effort: on failure the app just runs exactly as
    it did before (no offline shell / install prompt), never broken.
 ═══════════════════════════════════════════════════════ */
-BQChrome.initRipple(".icon-btn, .btn, .chip, .card, .ep-card, .source-card, " +
-  ".play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .source-menu__item");
+BQChrome.initRipple(".icon-btn, .btn, .chip, .media-card, .ep-card, .source-card, " +
+  ".play-btn, .reroll-btn, .share-btn, .player-back, .bottom-nav__item, .segmented__item, .menu__item");
 
 /* ── Swipe-back ───────────────────────────────────────────────────────
    An edge swipe (start within EDGE px of the left edge, drag right past
@@ -934,7 +1009,6 @@ const settingsBtn      = $("settingsBtn");
 const bottomDock        = $("bottomDock");
 const navSearchBtn      = $("navSearchBtn");
 const settingsSheet    = $("settingsSheet");
-const settingsBackdrop = $("settingsBackdrop");
 const settingsClose    = $("settingsClose");
 const sourceListEl     = $("sourceList");
 const addSourceBtn     = $("addSourceBtn");
@@ -1097,8 +1171,8 @@ function reloadCurrentPlayerIfActive() {
 }
 function renderSourceMenu() {
   sourceMenu.innerHTML = SOURCES.map((src, i) => `
-    <button type="button" class="source-menu__item${i === activeSourceIdx ? " source-menu__item--active" : ""}" role="menuitemradio" aria-checked="${i === activeSourceIdx}" data-idx="${i}">
-      <span class="material-icons">check</span><span>${esc(src.name)}</span>
+    <button type="button" class="menu__item source-menu__item${i === activeSourceIdx ? " menu__item--active" : ""}" role="menuitemradio" aria-checked="${i === activeSourceIdx}" data-idx="${i}">
+      <span class="material-icons" aria-hidden="true">check</span><span>${esc(src.name)}</span>
     </button>`).join("");
   sourceMenu.querySelectorAll(".source-menu__item").forEach(item => {
     item.addEventListener("click", () => {
@@ -1303,11 +1377,11 @@ async function doRoll(tvId, seasonNums, label) {
 // replaces these the moment real results (or "no results") come back.
 function renderSearchSkeleton(count = 8) {
   resultsGrid.innerHTML = Array.from({ length: count }, () => `
-    <div class="card-skel" aria-hidden="true">
-      <div class="card-skel__img skel"></div>
-      <div class="card-skel__body">
-        <div class="card-skel__line card-skel__line--wide skel"></div>
-        <div class="card-skel__line card-skel__line--narrow skel"></div>
+    <div class="media-card-skel" aria-hidden="true">
+      <div class="media-card-skel__img skel"></div>
+      <div class="media-card-skel__body">
+        <div class="media-card-skel__line media-card-skel__line--wide skel"></div>
+        <div class="media-card-skel__line media-card-skel__line--narrow skel"></div>
       </div>
     </div>`).join("");
 }
@@ -1322,27 +1396,27 @@ function renderResults(items) {
     const poster  = item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null;
 
     const art = document.createElement("article");
-    art.className = "card"; art.setAttribute("role","listitem"); art.tabIndex = 0;
+    art.className = "media-card"; art.setAttribute("role","listitem"); art.tabIndex = 0;
     art.dataset.id = item.id; art.dataset.mediaType = item.media_type;
     art.dataset.title = title||""; art.dataset.year = year;
     art.setAttribute("aria-label", `${title||"Unknown"} (${isMovie?"Movie":"TV show"}${year?", "+year:""})`);
 
-    const imgWrap = document.createElement("div"); imgWrap.className = "card__img-wrap";
-    if (poster) { const img = document.createElement("img"); img.className="card__img"; img.src=poster; img.alt=title||""; img.loading="lazy"; imgWrap.appendChild(img); }
-    else { const ph = document.createElement("div"); ph.className="card__placeholder"; ph.innerHTML=`<span class="material-icons">movie</span>`; imgWrap.appendChild(ph); }
+    const imgWrap = document.createElement("div"); imgWrap.className = "media-card__img-wrap";
+    if (poster) { const img = document.createElement("img"); img.className="media-card__img"; img.src=poster; img.alt=title||""; img.loading="lazy"; imgWrap.appendChild(img); }
+    else { const ph = document.createElement("div"); ph.className="media-card__placeholder"; ph.innerHTML=`<span class="material-icons" aria-hidden="true">movie</span>`; imgWrap.appendChild(ph); }
 
     const extBtn = document.createElement("button");
-    extBtn.className = "card__ext-btn"; extBtn.type = "button";
+    extBtn.className = "media-card__ext-btn"; extBtn.type = "button";
     extBtn.setAttribute("aria-label", "Search externally"); extBtn.title = "Search on predb.me";
-    extBtn.innerHTML = `<span class="material-icons">travel_explore</span>`;
+    extBtn.innerHTML = `<span class="material-icons" aria-hidden="true">travel_explore</span>`;
     imgWrap.appendChild(extBtn);
 
-    const body = document.createElement("div"); body.className = "card__body";
-    const titleEl = document.createElement("div"); titleEl.className = "card__title"; titleEl.textContent = title||"Untitled";
-    const meta  = document.createElement("div"); meta.className = "card__meta";
-    const chip  = document.createElement("span"); chip.className = "card__chip"; chip.textContent = isMovie ? "Movie" : "TV";
+    const body = document.createElement("div"); body.className = "media-card__body";
+    const titleEl = document.createElement("div"); titleEl.className = "media-card__title"; titleEl.textContent = title||"Untitled";
+    const meta  = document.createElement("div"); meta.className = "media-card__meta";
+    const chip  = document.createElement("span"); chip.className = "media-card__chip"; chip.textContent = isMovie ? "Movie" : "TV";
     meta.appendChild(chip);
-    if (year) { const yr = document.createElement("span"); yr.className="card__year"; yr.textContent=year; meta.appendChild(yr); }
+    if (year) { const yr = document.createElement("span"); yr.className="media-card__year"; yr.textContent=year; meta.appendChild(yr); }
     body.appendChild(titleEl); body.appendChild(meta);
     art.appendChild(imgWrap); art.appendChild(body);
     frag.appendChild(art);
@@ -1394,7 +1468,7 @@ function renderMovie(movie) {
   detailBody.innerHTML = `
     <div class="detail-content">
       <div class="detail-poster">
-        <div class="detail-poster__frame">${poster ? `<img src="${esc(poster)}" alt="" loading="lazy"/>` : `<div class="detail-poster__frame--ph"><span class="material-icons">movie</span></div>`}</div>
+        <div class="detail-poster__frame">${poster ? `<img src="${esc(poster)}" alt="" loading="lazy"/>` : `<div class="detail-poster__frame--ph"><span class="material-icons" aria-hidden="true">movie</span></div>`}</div>
         <h3 class="detail-poster__title">${esc(title)}</h3>
         ${tagsHtml ? `<div class="detail-tags detail-tags--center">${tagsHtml}</div>` : ""}
       </div>
@@ -1437,7 +1511,7 @@ function renderTV(tv) {
   detailBody.innerHTML = `
     <div class="detail-content">
       <div class="detail-poster">
-        <div class="detail-poster__frame">${poster ? `<img src="${esc(poster)}" alt="" loading="lazy"/>` : `<div class="detail-poster__frame--ph"><span class="material-icons">live_tv</span></div>`}</div>
+        <div class="detail-poster__frame">${poster ? `<img src="${esc(poster)}" alt="" loading="lazy"/>` : `<div class="detail-poster__frame--ph"><span class="material-icons" aria-hidden="true">live_tv</span></div>`}</div>
         <h3 class="detail-poster__title">${esc(title)}</h3>
         ${tagsHtml ? `<div class="detail-tags detail-tags--center">${tagsHtml}</div>` : ""}
       </div>
@@ -1451,7 +1525,7 @@ function renderTV(tv) {
         <div class="episodes-header">
           <div class="detail-section-label" style="margin-bottom:0;">Seasons</div>
           <button class="reroll-btn" id="rollShowBtn" type="button" aria-label="Surprise me — play a random episode" title="Surprise me">
-            <span class="material-icons">shuffle</span>
+            <span class="material-icons" aria-hidden="true">shuffle</span>
           </button>
         </div>
         <div id="seasonChips" class="chip-grid" style="margin:0.4rem 0 0.6rem;">${chipsHtml}${!seasons.length?`<p class="overview">No season data.</p>`:""}</div>
@@ -1531,7 +1605,7 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
 
     const imgWrap = document.createElement("div"); imgWrap.className = "ep-card__img-wrap";
     if (still) { const img=document.createElement("img"); img.className="ep-card__img"; img.src=still; img.alt=ep.name||""; img.loading="lazy"; imgWrap.appendChild(img); }
-    else { const ph=document.createElement("div"); ph.className="card__placeholder"; ph.innerHTML=`<span class="material-icons">live_tv</span>`; imgWrap.appendChild(ph); }
+    else { const ph=document.createElement("div"); ph.className="media-card__placeholder"; ph.innerHTML=`<span class="material-icons" aria-hidden="true">live_tv</span>`; imgWrap.appendChild(ph); }
 
     let airLabel = "";
     if (ep.air_date) { airLabel = aired ? ep.air_date : `Airs ${new Date(ep.air_date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}`; }
@@ -1540,7 +1614,7 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
     const titleEl = document.createElement("h4"); titleEl.className="ep-card__title"; titleEl.textContent=`S${seasonNum} · E${ep.episode_number}${ep.name?" — "+ep.name:""}`;
     body.appendChild(titleEl);
     if (airLabel) { const d=document.createElement("p"); d.className="ep-card__date"; d.textContent=airLabel; body.appendChild(d); }
-    if (!aired) { const b=document.createElement("span"); b.className="ep-card__unaired-badge"; b.innerHTML=`<span class="material-icons" style="font-size:12px;">schedule</span>Not yet aired`; body.appendChild(b); }
+    if (!aired) { const b=document.createElement("span"); b.className="ep-card__unaired-badge"; b.innerHTML=`<span class="material-icons" aria-hidden="true">schedule</span>Not yet aired`; body.appendChild(b); }
     const sumEl = document.createElement("p"); sumEl.className="ep-card__summary";
     if (aired) {
       const span=document.createElement("span"); span.className="ep-sum-text"; span.textContent=short; sumEl.appendChild(span);
@@ -1600,15 +1674,15 @@ function setHeroPoster(el) {
   if (el) el.style.viewTransitionName = "hero-poster";
 }
 async function handleCardClick(e) {
-  const extBtn = e.target.closest(".card__ext-btn");
+  const extBtn = e.target.closest(".media-card__ext-btn");
   if (extBtn) {
     e.stopPropagation();
-    const art = extBtn.closest(".card"); const q = `${art.dataset.title||""} ${art.dataset.year||""}`.trim();
+    const art = extBtn.closest(".media-card"); const q = `${art.dataset.title||""} ${art.dataset.year||""}`.trim();
     if (q) window.open(EXT_SEARCH + encodeURIComponent(q), "_blank", "noopener"); return;
   }
-  const card = e.target.closest(".card"); if (!card) return;
+  const card = e.target.closest(".media-card"); if (!card) return;
   const id = Number(card.dataset.id), mt = card.dataset.mediaType; if (!id||!mt) return;
-  const posterImg = card.querySelector(".card__img");
+  const posterImg = card.querySelector(".media-card__img");
   setHeroPoster(posterImg);
   pushDetailHash(mt, id); setView("detail");
   await loadDetailFor(mt, id, posterImg ? posterImg.src : null);
@@ -1630,8 +1704,8 @@ async function loadDetailFor(mt, id, posterUrl) {
 resultsGrid.addEventListener("click", handleCardClick);
 resultsGrid.addEventListener("keydown", e => {
   if (e.key==="Enter"||e.key===" ") {
-    if (e.target.closest(".card__ext-btn")) { e.preventDefault(); e.target.click(); return; }
-    const c = e.target.closest(".card"); if (c) { e.preventDefault(); handleCardClick({target:c}); }
+    if (e.target.closest(".media-card__ext-btn")) { e.preventDefault(); e.target.click(); return; }
+    const c = e.target.closest(".media-card"); if (c) { e.preventDefault(); handleCardClick({target:c}); }
   }
 });
 
@@ -1704,13 +1778,13 @@ function renderSourceList() {
     card.setAttribute("role","button"); card.tabIndex=0;
     card.setAttribute("aria-pressed", String(i===activeSourceIdx));
     card.innerHTML = `
-      <div class="source-card__check"><span class="material-icons">check</span></div>
+      <div class="source-card__check"><span class="material-icons" aria-hidden="true">check</span></div>
       <span class="source-card__name">${esc(src.name)}</span>
       <div class="source-card__actions">
-        <button class="source-card__btn" type="button" aria-label="Move up" data-action="up" data-idx="${i}">${i===0?"":`<span class="material-icons">arrow_upward</span>`}</button>
-        <button class="source-card__btn" type="button" aria-label="Move down" data-action="down" data-idx="${i}">${i===SOURCES.length-1?"":`<span class="material-icons">arrow_downward</span>`}</button>
-        <button class="source-card__btn" type="button" aria-label="Edit" data-action="edit" data-idx="${i}"><span class="material-icons">edit</span></button>
-        <button class="source-card__btn source-card__btn--danger" type="button" aria-label="Delete" data-action="delete" data-idx="${i}"><span class="material-icons">delete_outline</span></button>
+        <button class="icon-btn icon-btn--sm source-card__btn" type="button" aria-label="Move up" data-action="up" data-idx="${i}">${i===0?"":`<span class="material-icons" aria-hidden="true">arrow_upward</span>`}</button>
+        <button class="icon-btn icon-btn--sm source-card__btn" type="button" aria-label="Move down" data-action="down" data-idx="${i}">${i===SOURCES.length-1?"":`<span class="material-icons" aria-hidden="true">arrow_downward</span>`}</button>
+        <button class="icon-btn icon-btn--sm source-card__btn" type="button" aria-label="Edit" data-action="edit" data-idx="${i}"><span class="material-icons" aria-hidden="true">edit</span></button>
+        <button class="icon-btn icon-btn--sm source-card__btn source-card__btn--danger" type="button" aria-label="Delete" data-action="delete" data-idx="${i}"><span class="material-icons" aria-hidden="true">delete_outline</span></button>
       </div>`;
 
     card.addEventListener("click", e => {
@@ -1736,13 +1810,23 @@ function focusSourceControl(idx, action) {
   });
 }
 
-settingsSheet.addEventListener("click", e => {
+settingsSheet.addEventListener("click", async e => {
   const btn = e.target.closest(".source-card__btn"); if (!btn||!btn.dataset.action) return;
   const action=btn.dataset.action, idx=Number(btn.dataset.idx);
   if (action==="up" && idx>0) { [SOURCES[idx-1],SOURCES[idx]]=[SOURCES[idx],SOURCES[idx-1]]; if (activeSourceIdx===idx) setActiveSource(idx-1); else if (activeSourceIdx===idx-1) setActiveSource(idx); sourcesSave(SOURCES); renderSourceList(); focusSourceControl(idx-1, "up"); }
   else if (action==="down" && idx<SOURCES.length-1) { [SOURCES[idx],SOURCES[idx+1]]=[SOURCES[idx+1],SOURCES[idx]]; if (activeSourceIdx===idx) setActiveSource(idx+1); else if (activeSourceIdx===idx+1) setActiveSource(idx); sourcesSave(SOURCES); renderSourceList(); focusSourceControl(idx+1, "down"); }
   else if (action==="edit") { editingSourceIdx=idx; const s=SOURCES[idx]; sfName.value=s.name; sfMovieUrl.value=s.movie_url; sfTvUrl.value=s.tv_url||""; sourceFormTitle.textContent="Edit source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); }
-  else if (action==="delete") { if (SOURCES.length<=1){if(!confirm("Delete the last source? You will need to import or add a new one."))return;} SOURCES.splice(idx,1); if (activeSourceIdx>=SOURCES.length) setActiveSource(Math.max(0,SOURCES.length-1)); sourcesSave(SOURCES); renderSourceList(); if (SOURCES.length) focusSourceControl(Math.min(idx, SOURCES.length-1), "delete"); else addSourceBtn.focus(); }
+  else if (action==="delete") {
+    if (SOURCES.length<=1) {
+      const ok = await BQChrome.confirm({
+        title: "Delete the last source?",
+        body: "You will need to import or add a new one before anything can play.",
+        confirmLabel: "Delete",
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    SOURCES.splice(idx,1); if (activeSourceIdx>=SOURCES.length) setActiveSource(Math.max(0,SOURCES.length-1)); sourcesSave(SOURCES); renderSourceList(); if (SOURCES.length) focusSourceControl(Math.min(idx, SOURCES.length-1), "delete"); else addSourceBtn.focus(); }
 });
 
 addSourceBtn.addEventListener("click", () => { editingSourceIdx=-1; sfName.value=""; sfMovieUrl.value=""; sfTvUrl.value=""; sourceFormTitle.textContent="Add source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); });
@@ -1790,12 +1874,14 @@ configExportBtn.addEventListener("click", async () => {
   }
 });
 
-/* ── Settings open/close ── */
-function openSettings()  { closeSourceMenu(); renderSourceList(); settingsSheet.classList.remove("hidden"); settingsSheet.removeAttribute("aria-hidden"); setTimeout(()=>settingsClose.focus(),50); }
-function closeSettings() { settingsSheet.classList.add("hidden"); settingsSheet.setAttribute("aria-hidden","true"); settingsBtn.focus(); }
+/* ── Settings open/close ──
+   BQChrome.dialog supplies Escape, the focus trap, focus restore, the
+   background scroll lock and dismiss-on-scrim-click. */
+const settingsDialog = BQChrome.dialog(settingsSheet, { initialFocus: () => settingsClose });
+function openSettings()  { closeSourceMenu(); renderSourceList(); settingsDialog.open(); }
+function closeSettings() { settingsDialog.close(); }
 settingsBtn.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
-settingsBackdrop.addEventListener("click", closeSettings);
 
 /* ── Theme toggle ── */
 // "system" = no data-theme attribute = the prefers-color-scheme media query
@@ -1824,18 +1910,6 @@ document.querySelectorAll("#themeSegmented .segmented__item").forEach(btn => {
   btn.addEventListener("click", () => bqTheme.setThemePref(btn.dataset.themeChoice));
 });
 
-
-settingsSheet.addEventListener("keydown", e => {
-  if (e.key==="Escape") { closeSettings(); return; }
-  if (e.key==="Tab") {
-    const f=[...settingsSheet.querySelectorAll("button,select,input,textarea,[tabindex]:not([tabindex='-1'])")].filter(el=>!el.disabled);
-    if (!f.length) return;
-    const inTrap=f.includes(document.activeElement);
-    if (!inTrap) { e.preventDefault(); f[0].focus(); return; }
-    if (e.shiftKey&&document.activeElement===f[0]) { e.preventDefault(); f[f.length-1].focus(); }
-    else if (!e.shiftKey&&document.activeElement===f[f.length-1]) { e.preventDefault(); f[0].focus(); }
-  }
-});
 
 /* ═══════════════════════════════════════════════════════
    SEARCH WIRING

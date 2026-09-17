@@ -21,377 +21,422 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
 <script src="/shared/theme-init.js"></script>
-<link rel="stylesheet" href="/shared/chrome.css" />
+  <link rel="stylesheet" href="/shared/tokens.css" />
+  <link rel="stylesheet" href="/shared/chrome.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.16.3/shaka-player.compiled.js"></script>
-<style>
-  :root {
-    /* ── Material Design 3 tonal palette (warm terracotta seed) ── */
-    --md-primary: #8a4a16; --md-on-primary: #ffffff;
-    --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-    --md-secondary: #77584a; --md-on-secondary: #ffffff;
-    --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-    --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-    --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-    --md-error: #ba1a1a; --md-on-error: #ffffff;
-    --md-error-container: #ffdad6; --md-on-error-container: #410002;
-    --md-surface: #ffffff;
-    --md-surface-container-lowest: #ffffff;
-    --md-surface-container-low: #fdf1e6;
-    --md-surface-container: #f7ebdd;
-    --md-surface-container-high: #f1e5d6;
-    --md-surface-container-highest: #ebdfd0;
-    --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-    --md-outline: #837366; --md-outline-variant: #d6c5b5;
-    --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
+  <style>
+    /* Page-specific only. Colour, type, shape and motion come from
+       /shared/tokens.css; the app shell from /shared/chrome.css;
+       buttons, cards, fields, dialogs and the rest from
+       /shared/ui.css. */
 
-    --el1: 0 1px 2px rgba(34,20,5,0.30), 0 1px 3px 1px rgba(34,20,5,0.15);
-    --el2: 0 1px 2px rgba(34,20,5,0.30), 0 2px 6px 2px rgba(34,20,5,0.15);
-    --el3: 0 1px 3px rgba(34,20,5,0.30), 0 4px 8px 3px rgba(34,20,5,0.15);
-
-    --bg: var(--md-surface); --bg2: var(--md-surface-container-high);
-    --surface: var(--md-surface-container-low); --surface2: var(--md-surface-container);
-    --primary: var(--md-primary); --primary-dark: #632f00; --on-primary: var(--md-on-primary);
-    --text: var(--md-on-surface); --text-muted: var(--md-on-surface-variant); --text-faint: #8a7a6d;
-    --border: color-mix(in srgb, var(--md-outline-variant) 75%, transparent);
-    --radius: 12px;
-    --t: 0.2s cubic-bezier(0.2,0,0,1);
-  }
-  :root { color-scheme: light dark; }
-  /* ── Dark mode: follows the OS/browser setting automatically — see
-     index.html for the full rationale. Same token overrides, kept in sync. ── */
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --md-primary: #ffb77c; --md-on-primary: #4a2800;
-      --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-      --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-      --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-      --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-      --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-      --md-error: #ffb4ab; --md-on-error: #690005;
-      --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-      --md-surface: #17120d;
-      --md-surface-container-lowest: #100c08;
-      --md-surface-container-low: #201a14;
-      --md-surface-container: #241e18;
-      --md-surface-container-high: #2f2822;
-      --md-surface-container-highest: #3a332c;
-      --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-      --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-      --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-      --primary-dark: #ffcda0;
-      --text-faint: #a89686;
+    /* ── View transitions: fade-through for switchView() ── */
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; animation-timing-function: var(--ease-emphasized); }
+    ::view-transition-old(root) { animation-name: bq-view-out; }
+    ::view-transition-new(root) { animation-name: bq-view-in; }
+    @keyframes bq-view-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
+    @keyframes bq-view-in { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) {
+      ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
     }
-    .config-feedback--ok { color: #6fdb8f; }
-  }
-  /* ── Manual theme override (Settings → Appearance) — see index.html for
-     the full rationale; same values, kept in sync. ── */
-  :root[data-theme="dark"] {
-    --md-primary: #ffb77c; --md-on-primary: #4a2800;
-    --md-primary-container: #6b3900; --md-on-primary-container: #ffdcbf;
-    --md-secondary: #e5bfa9; --md-on-secondary: #442a1c;
-    --md-secondary-container: #5d4032; --md-on-secondary-container: #ffdbc7;
-    --md-tertiary: #d2c86e; --md-on-tertiary: #343100;
-    --md-tertiary-container: #4b4700; --md-on-tertiary-container: #efe58b;
-    --md-error: #ffb4ab; --md-on-error: #690005;
-    --md-error-container: #93000a; --md-on-error-container: #ffdad6;
-    --md-surface: #17120d;
-    --md-surface-container-lowest: #100c08;
-    --md-surface-container-low: #201a14;
-    --md-surface-container: #241e18;
-    --md-surface-container-high: #2f2822;
-    --md-surface-container-highest: #3a332c;
-    --md-on-surface: #ede0d3; --md-on-surface-variant: #d5c4b4;
-    --md-outline: #9f8d7c; --md-outline-variant: #52443a;
-    --md-inverse-surface: #ede0d3; --md-inverse-on-surface: #392e24;
-    --primary-dark: #ffcda0;
-    --text-faint: #a89686;
-  }
-  :root[data-theme="dark"] .config-feedback--ok { color: #6fdb8f; }
-  :root[data-theme="light"] {
-    --md-primary: #8a4a16; --md-on-primary: #ffffff;
-    --md-primary-container: #ffdcbf; --md-on-primary-container: #2d1600;
-    --md-secondary: #77584a; --md-on-secondary: #ffffff;
-    --md-secondary-container: #ffdbc7; --md-on-secondary-container: #2c160b;
-    --md-tertiary: #66601a; --md-on-tertiary: #ffffff;
-    --md-tertiary-container: #efe58b; --md-on-tertiary-container: #1f1c00;
-    --md-error: #ba1a1a; --md-on-error: #ffffff;
-    --md-error-container: #ffdad6; --md-on-error-container: #410002;
-    --md-surface: #ffffff;
-    --md-surface-container-lowest: #ffffff;
-    --md-surface-container-low: #fdf1e6;
-    --md-surface-container: #f7ebdd;
-    --md-surface-container-high: #f1e5d6;
-    --md-surface-container-highest: #ebdfd0;
-    --md-on-surface: #22190f; --md-on-surface-variant: #52443a;
-    --md-outline: #837366; --md-outline-variant: #d6c5b5;
-    --md-inverse-surface: #392e24; --md-inverse-on-surface: #fdede1;
-    --primary-dark: #632f00;
-    --text-faint: #8a7a6d;
-  }
-  :root[data-theme="light"] .config-feedback--ok { color: #146c2e; }
-  *, *::before, *::after { box-sizing: border-box; }
-  /* ── Native-app shell layer — see index.html for the full rationale ── */
-  body { -webkit-tap-highlight-color: transparent; }
-  button, a, [role="button"], .card, .tab-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-  button, .btn, .tab-btn, .card,
-  .player-back, .card__pin, .mini-player, .mini-player__btn, .segmented__item {
-    -webkit-touch-callout: none; user-select: none;
-  }
-  /* ── Ripple: Material state-layer touch feedback — see index.html for
-     the full rationale. JS (BQChrome.initRipple) appends/removes the
-     .ripple span. .icon-btn/.bottom-nav__item's own position/overflow for
-     this live in /shared/chrome.css since every page ripples them. ── */
-  .btn, .tab-btn, .card,
-  .player-back, .mini-player, .mini-player__btn, .segmented__item {
-    position: relative; overflow: hidden;
-  }
 
-  /* ── View Transitions: fade-through motion for switchView() navigation ── */
-  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; animation-timing-function: cubic-bezier(0.2,0,0,1); }
-  ::view-transition-old(root) { animation-name: bq-view-out; }
-  ::view-transition-new(root) { animation-name: bq-view-in; }
-  @keyframes bq-view-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
-  @keyframes bq-view-in { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
-  @media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; } }
-  /* Baseline box-model for icon spans; the font-family/ligature rules
-     live in /shared/chrome.css alongside the vendored Material Icons
-     @font-face so every page shares one definition. */
-  .material-icons { display: inline-block; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; vertical-align: middle; }
-  html, body { margin: 0; padding: 0; height: 100%; }
-  body { font-family: 'Google Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
-  .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  body, .view { scrollbar-width: none; }
-  body::-webkit-scrollbar, .view::-webkit-scrollbar { display: none; }
+    .view { padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
+    /* Browse is the only view that shows the bottom nav — reserve room so
+       its content never sits under the fixed bar. */
+    #viewBrowse { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+    /* Extra room when the mini-player is stacked above the nav too. */
+    body.has-mini-player #viewBrowse { padding-bottom: calc(4.6rem + 3.6rem + env(safe-area-inset-bottom)); }
+    /* playerTitle can be a full channel name — let it wrap rather than
+       truncating to one ellipsized line as .view-title does by default. */
+    #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
 
-  /* ── Mini-player: a native music/radio app's now-playing bar. Lets a
-     channel keep playing while browsing instead of always killing it on
-     Back — tap the bar to return to the full player, ✕ to actually stop. ── */
-  .mini-player { display: flex; align-items: center; gap: 0.6rem; width: 100%; border: none; border-top: 1px solid var(--border); background: var(--md-surface-container-high); padding: 0.4rem calc(0.6rem + env(safe-area-inset-right)) 0.4rem calc(0.6rem + env(safe-area-inset-left)); cursor: pointer; text-align: left; font-family: 'Google Sans', sans-serif; }
-  .mini-player.hidden { display: none; }
-  .mini-player__art { position: relative; width: 40px; height: 40px; border-radius: 10px; overflow: hidden; background: var(--bg2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
-  .mini-player__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .mini-player__art .material-icons { font-size: 20px; }
-  .mini-player__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-  .mini-player__title { font-size: 0.85rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mini-player__meta { display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mini-player__btn { flex-shrink: 0; width: 36px; height: 36px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: background var(--t), color var(--t); }
-  .mini-player__btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
-  .mini-player__btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .mini-player__btn .material-icons { font-size: 20px; }
+    /* ── Mini-player ───────────────────────────────────────────────────
+       A native music app's now-playing bar: lets a channel keep playing
+       while browsing instead of always stopping on Back. Tap the bar to
+       return to the full player, the ✕ to actually stop. */
+    .mini-player {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      padding: 0.45rem 0.6rem;
+      border: none;
+      border-top: 1px solid var(--border);
+      background: var(--md-surface-container-high);
+      text-align: left;
+      cursor: pointer;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+    .mini-player__art {
+      position: relative;
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: var(--shape-s);
+      background: var(--bg2);
+    }
+    .mini-player__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .mini-player__art .material-icons { font-size: 20px; }
+    .mini-player__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .mini-player__title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
+    .mini-player__meta {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
+    /* Transport controls inside the bar: 40dp, because a 48dp target would
+       make the mini-player taller than the nav it sits on. */
+    .mini-player__btn {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--shape-full);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color var(--t);
+    }
+    .mini-player__btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: currentColor;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--t);
+    }
+    @media (hover: hover) {
+      .mini-player__btn:hover { color: var(--text); }
+      .mini-player__btn:hover::before { opacity: var(--state-hover); }
+    }
+    .mini-player__btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: -2px; }
+    .mini-player__btn .material-icons { font-size: 20px; }
 
-  main.app-main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  /* overscroll-behavior-y left at its default (not "contain") so a pull
-     past the top of this scroll container chains to the document and the
-     browser's own native pull-to-refresh still fires. */
-  .view { position: relative; display: none; padding: 0.75rem calc(0.9rem + env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom)) calc(0.9rem + env(safe-area-inset-left)); width: 100%; max-width: 960px; margin: 0 auto; overflow-y: auto; }
-  /* Browse is the only screen that shows the bottom nav — reserve room so
-     its content never sits underneath the fixed bar. */
-  #viewBrowse { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
-  /* Extra room when the mini-player bar is also stacked above the nav. */
-  body.has-mini-player #viewBrowse { padding-bottom: calc(4.6rem + 3.6rem + env(safe-area-inset-bottom)); }
-  .view--active { display: block; }
-  .view-title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .view-meta { margin: 0; min-width: 0; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* ── EPG: now/next on the player page ── */
+    .epg-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 0.5rem 0 0.65rem;
+      padding: 0.7rem 0.8rem;
+      border-radius: var(--shape-m);
+      background: var(--surface);
+      box-shadow: var(--el1);
+    }
+    .epg-row { display: flex; flex-direction: column; gap: 0.2rem; }
+    .epg-label {
+      font: var(--type-label-small);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--md-primary);
+    }
+    .epg-title { font: var(--type-title-small); letter-spacing: var(--track-title-small); color: var(--text); }
+    .epg-time { font: var(--type-body-small); letter-spacing: var(--track-body-small); color: var(--text-faint); }
+    .epg-progress { height: 4px; overflow: hidden; border-radius: var(--shape-full); background: var(--md-surface-container-high); }
+    .epg-progress-fill { height: 100%; border-radius: var(--shape-full); background: var(--md-error); }
+    .epg-guide-btn {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      align-self: flex-start;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 32px;
+      padding: 0 0.85rem;
+      border: none;
+      border-radius: var(--shape-full);
+      background: var(--md-primary-container);
+      color: var(--md-on-primary-container);
+      font: var(--type-label-medium);
+      letter-spacing: var(--track-label-medium);
+      cursor: pointer;
+    }
+    .epg-guide-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: currentColor;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--t);
+    }
+    @media (hover: hover) { .epg-guide-btn:hover::before { opacity: var(--state-hover); } }
+    .epg-guide-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+    .epg-guide-btn .material-icons { font-size: 16px; }
 
-  /* playerTitle can be a full channel name — let it wrap on its own line
-     instead of truncating to one ellipsized line like .view-title does
-     by default. */
-  #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
-  .player-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
-  .player-back { display: flex; align-items: center; gap: 0.35rem; background: none; border: none; cursor: pointer; font-family: 'Google Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); padding: 0.35rem 0.6rem; border-radius: 999px; transition: background var(--t), color var(--t); }
-  .player-back:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--text); }
-  .player-back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .player-back .material-icons { font-size: 18px; }
+    /* ── Full guide dialog ── */
+    .guide-day { border-bottom: 1px solid var(--border); }
+    .guide-day:last-child { border-bottom: none; }
+    .guide-day > summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      min-height: 48px;
+      padding: 0.3rem;
+      cursor: pointer;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
+    .guide-day > summary::-webkit-details-marker { display: none; }
+    .guide-day > summary:focus-visible { outline: 2px solid var(--md-primary); outline-offset: -2px; border-radius: var(--shape-s); }
+    .guide-day__meta { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+    .guide-day__meta .material-icons { font-size: 20px; color: var(--text-faint); transition: transform var(--t); }
+    .guide-day[open] .guide-day__meta .material-icons { transform: rotate(180deg); }
+    .guide-day__count { font: var(--type-body-small); letter-spacing: var(--track-body-small); color: var(--text-faint); }
+    .guide-list { display: flex; flex-direction: column; gap: 0.15rem; padding: 0 0.2rem 0.7rem; }
+    .guide-row { display: flex; gap: 0.6rem; padding: 0.4rem; border-radius: var(--shape-s); }
+    .guide-row--live { background: var(--md-primary-container); }
+    .guide-row__time {
+      flex-shrink: 0;
+      width: 64px;
+      padding-top: 0.05rem;
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
+    .guide-row--live .guide-row__time { color: var(--md-on-primary-container); font-weight: 600; }
+    .guide-row__title { font: var(--type-body-medium); letter-spacing: var(--track-body-medium); color: var(--text); }
+    .guide-row--live .guide-row__title { color: var(--md-on-primary-container); font-weight: 600; }
+    .guide-live-tag {
+      display: inline-block;
+      margin-left: 0.35rem;
+      padding: 0.05rem 0.35rem;
+      border-radius: var(--shape-xs);
+      background: var(--md-error-container);
+      color: var(--md-on-error-container);
+      font: var(--type-label-small);
+      letter-spacing: 0.04em;
+    }
 
-  /* ── EPG: now/next on the player page ── */
-  .epg-info { margin: 0.5rem 0 0.65rem; padding: 0.7rem 0.8rem; background: var(--surface); border-radius: var(--radius); box-shadow: var(--el1); display: flex; flex-direction: column; gap: 0.55rem; }
-  .epg-row { display: flex; flex-direction: column; gap: 0.2rem; }
-  .epg-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; color: var(--primary); }
-  .epg-title { font-size: 0.85rem; font-weight: 500; color: var(--text); }
-  .epg-time { font-size: 0.72rem; color: var(--text-faint); }
-  .epg-progress { height: 4px; border-radius: 999px; background: var(--md-surface-container-high); overflow: hidden; }
-  .epg-progress-fill { height: 100%; background: var(--md-error); border-radius: 999px; }
-  .epg-guide-btn { align-self: flex-start; display: flex; align-items: center; gap: 0.35rem; border: none; background: var(--md-primary-container); color: var(--md-on-primary-container); font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; padding: 0.4rem 0.75rem; border-radius: 999px; cursor: pointer; transition: filter var(--t); }
-  .epg-guide-btn:hover { filter: brightness(0.96); }
-  .epg-guide-btn .material-icons { font-size: 16px; }
+    /* ── Results grid (square logo tiles) ── */
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 0.55rem; }
+    @media (min-width: 720px) { .results-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); } }
+    /* Square, and the logo is contained with padding rather than cropped —
+       a channel logo cropped to fill is unrecognisable. */
+    .media-card__img-wrap { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+    .media-card__img { z-index: 1; object-fit: contain; padding: 16%; background: var(--bg2); }
+    .media-card__placeholder { z-index: 0; }
+    .media-card__body { padding: 0.4rem 0.5rem 0.5rem; }
+    .media-card__title { font: var(--type-body-small); letter-spacing: var(--track-body-small); font-weight: 500; line-height: 1.3; }
+    .media-card__badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      z-index: 2;
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--shape-xs);
+      background: var(--md-secondary-container);
+      color: var(--md-on-secondary-container);
+      font: var(--type-label-small);
+      letter-spacing: var(--track-label-small);
+    }
+    .media-card__now {
+      margin-top: 0.1rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: var(--type-label-small);
+      letter-spacing: var(--track-label-small);
+      font-weight: 400;
+      line-height: 1.25;
+      color: var(--text-faint);
+    }
+    .media-card__progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2;
+      height: 3px;
+      background: color-mix(in srgb, var(--md-scrim) 18%, transparent);
+    }
+    .media-card__progress-fill { height: 100%; background: var(--md-error); }
 
-  /* ── Full guide modal ── */
-  .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(20,14,8,0.5); display: flex; align-items: center; justify-content: center; padding: 1rem; }
-  .modal-overlay.hidden { display: none; }
-  .modal-panel { background: var(--md-surface-container-lowest); border-radius: 18px; width: 100%; max-width: 480px; max-height: 82vh; display: flex; flex-direction: column; box-shadow: var(--el3); overflow: hidden; }
-  .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; padding: 0.9rem 0.8rem 0.7rem 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .modal-title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1.05rem; font-weight: 600; color: var(--text); }
-  .modal-sub { margin: 0.15rem 0 0; font-size: 0.75rem; color: var(--text-faint); }
-  .modal-body { overflow-y: auto; padding: 0.3rem 0.7rem 1rem; }
+    /* Pin (favourite) toggle — sits over channel artwork of unknown
+       colour, so it carries its own dark backdrop rather than a surface
+       token. */
+    .media-card__pin {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      z-index: 3;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--md-scrim) 50%, transparent);
+      color: #fff;
+      cursor: pointer;
+      transition: background var(--t), transform var(--t);
+    }
+    .media-card__pin .material-icons { font-size: 16px; }
+    @media (hover: hover) {
+      .media-card__pin:hover { background: color-mix(in srgb, var(--md-scrim) 70%, transparent); transform: scale(1.08); }
+    }
+    .media-card__pin--active { background: var(--md-primary); color: var(--md-on-primary); }
+    .media-card__pin--active:hover { background: var(--md-primary); }
+    .media-card__pin:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
-  .guide-day { border-bottom: 1px solid var(--border); }
-  .guide-day:last-child { border-bottom: none; }
-  .guide-day > summary { list-style: none; cursor: pointer; padding: 0.75rem 0.3rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-weight: 500; color: var(--text); font-size: 0.88rem; }
-  .guide-day > summary::-webkit-details-marker { display: none; }
-  .guide-day__meta { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
-  .guide-day__meta .material-icons { font-size: 20px; color: var(--text-faint); transition: transform var(--t); }
-  .guide-day[open] .guide-day__meta .material-icons { transform: rotate(180deg); }
-  .guide-day__count { font-size: 0.72rem; color: var(--text-faint); font-weight: 400; }
-  .guide-list { display: flex; flex-direction: column; gap: 0.15rem; padding: 0 0.2rem 0.7rem; }
-  .guide-row { display: flex; gap: 0.6rem; padding: 0.4rem; border-radius: 8px; }
-  .guide-row--live { background: var(--md-primary-container); }
-  .guide-row__time { flex-shrink: 0; width: 64px; font-size: 0.74rem; color: var(--text-faint); padding-top: 0.05rem; }
-  .guide-row--live .guide-row__time { color: var(--md-on-primary-container); font-weight: 600; }
-  .guide-row__title { font-size: 0.85rem; color: var(--text); }
-  .guide-row--live .guide-row__title { color: var(--md-on-primary-container); font-weight: 600; }
-  .guide-live-tag { display: inline-block; margin-left: 0.35rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; color: var(--md-on-error-container); background: var(--md-error-container); padding: 0.05rem 0.35rem; border-radius: 999px; vertical-align: middle; }
+    .grid-section-label {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.6rem;
+      font: var(--type-label-medium);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .grid-section-label:first-child { margin-top: 0; }
+    .grid-section-label .material-icons { font-size: 16px; }
 
-  /* ── Tab bar (M3 segmented buttons) ── */
-  .tab-bar { display: flex; background: var(--md-surface-container-high); border-radius: 999px; padding: 4px; gap: 4px; margin-bottom: 0.7rem; }
-  .tab-btn { flex: 1; border: none; background: transparent; padding: 0.55rem 1rem; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: background var(--t), color var(--t), box-shadow var(--t); }
-  .tab-btn .material-icons { font-size: 18px; }
-  .tab-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
-  .tab-btn--active { background: var(--md-surface-container-lowest); color: var(--primary-dark); box-shadow: var(--el1); }
-  .tab-btn--active:hover { background: var(--md-surface-container-lowest); }
-  .tab-btn__count { font-size: 0.7rem; color: var(--text-faint); }
-  .tab-btn--active .tab-btn__count { color: var(--primary); }
+    /* ── DRM channels ──────────────────────────────────────────────────
+       Can't be played here, but still clickable: tapping one opens its
+       programme guide instead of attempting playback. */
+    .media-card--drm { opacity: 0.62; cursor: pointer; }
+    .media-card--drm .media-card__pin { display: none; }
+    .media-card__drm-badge,
+    .media-card__drm-guide-hint {
+      position: absolute;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: var(--shape-xs);
+      background: color-mix(in srgb, var(--md-scrim) 55%, transparent);
+      color: #fff;
+      font: var(--type-label-small);
+      letter-spacing: 0.04em;
+    }
+    .media-card__drm-badge { top: 6px; right: 6px; }
+    .media-card__drm-guide-hint { bottom: 6px; right: 6px; }
+    .media-card__drm-badge .material-icons,
+    .media-card__drm-guide-hint .material-icons { font-size: 12px; }
 
-  /* ── Search bar ── */
-  .search-bar { display: flex; align-items: center; gap: 0.7rem; background: var(--md-surface-container-high); border-radius: 28px; padding: 0.6rem 1rem; border: 1px solid transparent; margin-bottom: 0.55rem; transition: background var(--t), box-shadow var(--t); }
-  .search-bar:focus-within { box-shadow: var(--el1); background: var(--md-surface-container-highest); }
-  .search-bar__icon { color: var(--md-on-surface-variant); font-size: 20px; flex-shrink: 0; }
-  .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font-family: 'Google Sans', sans-serif; font-size: 0.95rem; color: var(--text); min-width: 0; }
-  .search-bar__input::placeholder { color: var(--text-faint); }
-  .search-bar__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+    /* ── Player: radio ─────────────────────────────────────────────────
+       A big, obvious play/pause button drives playback; the <audio>
+       element is kept controls-less and used purely as the engine, since
+       the native control bar alone left nothing obviously clickable once
+       autoplay was blocked. */
+    .radio-player {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 0.35rem;
+      padding: 1.4rem 1rem 1.6rem;
+      border-radius: var(--shape-l);
+      background: var(--surface);
+      box-shadow: var(--el1);
+    }
+    .radio-player__art {
+      position: relative;
+      width: 42vw;
+      height: 42vw;
+      min-width: 120px;
+      min-height: 120px;
+      max-width: 190px;
+      max-height: 190px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: var(--shape-xl);
+      background: var(--bg2);
+    }
+    .radio-player__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 12%; }
+    .radio-player__art-ph { color: var(--text-faint); font-size: 3rem; }
+    .radio-play-btn {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      cursor: pointer;
+      transition: transform var(--t), box-shadow var(--t);
+    }
+    .radio-play-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: currentColor;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--t);
+    }
+    @media (hover: hover) {
+      .radio-play-btn:hover { transform: scale(1.04); box-shadow: var(--el2); }
+      .radio-play-btn:hover::before { opacity: var(--state-hover); }
+    }
+    .radio-play-btn:active { transform: scale(0.97); }
+    .radio-play-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 3px; }
+    .radio-play-btn .material-icons { font-size: 32px; }
+    .radio-player audio { width: 100%; max-width: 360px; accent-color: var(--md-primary); }
 
-  .search-status { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.55rem; min-height: 1.2em; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-  .search-status--error { color: var(--md-error); }
-  .retry-link { color: var(--primary); font-weight: 500; cursor: pointer; background: none; border: none; font-family: inherit; font-size: inherit; padding: 0; text-decoration: underline; }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--shape-full);
+      background: var(--md-error-container);
+      color: var(--md-on-error-container);
+      font: var(--type-label-medium);
+      letter-spacing: 0.04em;
+    }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--md-error); animation: live-pulse 1.4s ease-in-out infinite; }
+    @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
 
-  .empty-state { text-align: center; padding: 3.5rem 1rem 2rem; color: var(--text-faint); user-select: none; }
-  .empty-state__icon { font-size: 3.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
-  .empty-state__title { font-family: 'Google Sans', sans-serif; font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-  .empty-state__sub { font-size: 0.82rem; }
-
-  /* ── Results grid (square logo tiles) ── */
-  .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 0.55rem; }
-  @media (min-width: 720px) { .results-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); } }
-  .card { background: var(--surface); border-radius: var(--radius); overflow: hidden; cursor: pointer; display: flex; flex-direction: column; border: none; box-shadow: var(--el1); transition: transform var(--t), box-shadow var(--t), background var(--t); position: relative; }
-  .card:hover { transform: translateY(-2px); box-shadow: var(--el2); background: var(--surface2); }
-  .card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .card__img-wrap { position: relative; overflow: hidden; background: var(--bg2); aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
-  .card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 16%; z-index: 1; background: var(--bg2); }
-  .card__placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 2rem; z-index: 0; }
-  .card__body { padding: 0.4rem 0.5rem 0.5rem; }
-  .card__title { font-size: 0.78rem; font-weight: 500; color: var(--text); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-  .card__badge { position: absolute; top: 6px; left: 6px; z-index: 2; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 6px; background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); }
-
-  /* ── EPG: now-playing on cards ── */
-  .card__now { font-size: 0.68rem; color: var(--text-faint); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.1rem; }
-  .card__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(0,0,0,0.18); z-index: 2; }
-  .card__progress-fill { height: 100%; background: var(--md-error); }
-
-  /* ── Pin (favorite) toggle ── */
-  .card__pin { position: absolute; bottom: 6px; right: 6px; z-index: 3; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(20,14,8,0.42); color: rgba(255,255,255,0.85); border: none; cursor: pointer; padding: 0; transition: background var(--t), color var(--t), transform var(--t); }
-  .card__pin .material-icons { font-size: 15px; }
-  .card__pin:hover { background: rgba(20,14,8,0.65); transform: scale(1.08); }
-  .card__pin--active { background: var(--md-primary); color: var(--md-on-primary); }
-  .card__pin--active:hover { background: var(--md-primary); }
-  .card__pin:focus-visible { outline: 2px solid var(--md-on-primary-container); outline-offset: 1px; }
-
-  .grid-section-label { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin: 0.5rem 0 0.1rem; }
-  .grid-section-label:first-child { margin-top: 0; }
-  .grid-section-label .material-icons { font-size: 14px; }
-
-  /* ── Player: TV (video) ── */
-  .player-wrap { margin-top: 0.35rem; border-radius: 14px; overflow: hidden; background: #000; position: relative; padding-top: 56.25%; box-shadow: var(--el2); }
-  .player-wrap video { position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: #000; }
-  .player-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #111; color: rgba(255,255,255,0.55); font-size: 0.85rem; gap: 0.5rem; transition: opacity 0.3s; pointer-events: none; }
-  .player-overlay.hidden { opacity: 0; }
-  .player-overlay .material-icons { font-size: 2.5rem; opacity: 0.35; }
-
-  /* ── Player: Radio ── */
-  .radio-player { margin-top: 0.35rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1.4rem 1rem 1.6rem; background: var(--surface); border-radius: var(--radius); box-shadow: var(--el1); }
-  .radio-player__art { width: 42vw; height: 42vw; max-width: 190px; max-height: 190px; min-width: 120px; min-height: 120px; border-radius: 22px; overflow: hidden; background: var(--bg2); box-shadow: var(--el2); position: relative; display: flex; align-items: center; justify-content: center; }
-  .radio-player__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 12%; }
-  .radio-player__art-ph { color: var(--text-faint); font-size: 3rem; }
-  /* A big, obvious play/pause button drives playback — the native <audio>
-     element below is kept controls-less and used purely as the playback
-     engine, since relying on the native control bar alone left nothing
-     obviously clickable once autoplay was blocked by the browser. */
-  .radio-play-btn { width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--md-primary); color: var(--md-on-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--el2); transition: transform var(--t), filter var(--t); flex-shrink: 0; }
-  .radio-play-btn:hover { filter: brightness(1.05); transform: scale(1.04); }
-  .radio-play-btn:active { transform: scale(0.97); }
-  .radio-play-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 3px; }
-  .radio-play-btn .material-icons { font-size: 32px; }
-  .radio-player audio { width: 100%; max-width: 360px; accent-color: var(--primary); }
-
-  .live-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; color: var(--md-on-error-container); background: var(--md-error-container); padding: 0.22rem 0.6rem; border-radius: 999px; flex-shrink: 0; }
-  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--md-error); animation: live-pulse 1.4s ease-in-out infinite; }
-  @keyframes live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-  /* ── Skeleton ── */
-  .skel { background: var(--bg2); border-radius: 8px; animation: skel-pulse 1.4s ease-in-out infinite; }
-  @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-  .skel-card { aspect-ratio: 1/1; border-radius: var(--radius); }
-
-  /* ── DRM channels: can't be played here, but still clickable — tapping
-     one opens its programme guide (EPG) instead of attempting playback. ── */
-  .card--drm { opacity: 0.62; cursor: pointer; }
-  .card--drm:hover { transform: translateY(-2px); box-shadow: var(--el2); background: var(--surface2); }
-  .card--drm .card__pin { display: none; }
-  .card__drm-badge { position: absolute; top: 6px; right: 6px; z-index: 2; display: flex; align-items: center; gap: 0.15rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.03em; padding: 0.1rem 0.4rem; border-radius: 6px; background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); }
-  .card__drm-badge .material-icons { font-size: 11px; }
-  .card__drm-guide-hint { position: absolute; bottom: 6px; right: 6px; z-index: 2; display: flex; align-items: center; gap: 0.15rem; font-size: 0.6rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 6px; background: rgba(20,14,8,0.55); color: #fff; }
-  .card__drm-guide-hint .material-icons { font-size: 12px; }
-
-  /* ── Shared buttons (M3 filled / outlined / danger) ── */
-  .btn { border: none; outline: none; border-radius: 999px; font-family: 'Google Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 1.15rem; cursor: pointer; transition: background var(--t), box-shadow var(--t), filter var(--t); white-space: nowrap; }
-  .btn--primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
-  .btn--primary:hover { box-shadow: var(--el1); filter: brightness(1.06); }
-  .btn--primary:active { box-shadow: none; filter: brightness(0.94); }
-  .btn--primary:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
-  .btn--ghost { background: transparent; color: var(--primary); border: 1px solid var(--md-outline); }
-  .btn--ghost:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); box-shadow: none; }
-  .btn--ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .btn--sm { padding: 0.32rem 0.8rem; font-size: 0.8rem; }
-  .btn--danger { background: var(--md-error-container); color: var(--md-on-error-container); border: none; }
-  .btn--danger:hover { background: color-mix(in srgb, var(--md-error) 14%, var(--md-error-container)); }
-  .btn:disabled { opacity: 0.38; cursor: not-allowed; filter: none !important; box-shadow: none !important; }
-
-  /* ── Settings sheet (M3 modal bottom sheet) ── */
-  .settings { position: fixed; inset: 0; z-index: 110; display: flex; align-items: flex-end; justify-content: center; }
-  .settings.hidden { display: none; }
-  .settings__backdrop { position: absolute; inset: 0; background: rgba(34,20,5,0.4); }
-  .settings__panel { position: relative; width: 100%; max-width: 520px; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0; box-shadow: var(--el3); padding: 1.3rem calc(1rem + env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left)); animation: slideUp 0.2s cubic-bezier(0.2,0,0,1); max-height: 88vh; overflow-y: auto; overscroll-behavior-y: contain; }
-  .settings__panel::before { content: ""; position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; border-radius: 999px; background: var(--md-outline-variant); }
-  @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  .settings__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
-  .settings__title { margin: 0; font-family: 'Google Sans', sans-serif; font-size: 1rem; font-weight: 500; color: var(--text); }
-  .settings__section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
-  .settings__section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 0.1rem; }
-
-  /* ── Segmented button group (M3) — used for the Appearance picker ── */
-  .segmented { display: flex; border: 1px solid var(--md-outline-variant); border-radius: 999px; padding: 3px; gap: 3px; background: var(--md-surface-container-high); }
-  .segmented__item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: none; background: none; border-radius: 999px; padding: 0.45rem 0.4rem; font-family: 'Google Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: background var(--t), color var(--t); }
-  .segmented__item .material-icons { font-size: 17px; }
-  .segmented__item--active { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
-  .segmented__item:hover:not(.segmented__item--active) { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
-  .segmented__item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .settings__hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.4; margin: 0; }
-
-  /* ── Config import/export ── */
-  .config-area { display: flex; flex-direction: column; gap: 0.5rem; }
-  .config-textarea-wrap { position: relative; }
-  .config-textarea { width: 100%; min-height: 130px; border: 1px solid var(--md-outline); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.78rem; font-family: 'Google Sans', monospace, sans-serif; background: var(--bg); color: var(--text); outline: none; resize: vertical; line-height: 1.55; transition: border-color var(--t), box-shadow var(--t); }
-  .config-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-  .config-textarea::placeholder { color: var(--text-faint); }
-  .config-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
-  .config-feedback { font-size: 0.76rem; flex: 1; min-width: 0; }
-  .config-feedback--ok  { color: #146c2e; }
-  .config-feedback--err { color: var(--md-error); }
-
-  .empty-state__import-btn { margin-top: 0.9rem; }
-
-  .hidden { display: none !important; }
-  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-</style>
+    .skel-card { aspect-ratio: 1/1; border-radius: var(--shape-m); }
+    .empty-state__import-btn { margin-top: 0.9rem; }
+  </style>
 </head>
 <body>
 <div class="app">
@@ -401,23 +446,24 @@
     </div>
     <div class="top-bar__actions">
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
-        <span class="material-icons" id="themeToggleIcon">brightness_auto</span>
+        <span class="material-icons" aria-hidden="true" id="themeToggleIcon">brightness_auto</span>
       </button>
       <button id="settingsBtn" class="icon-btn" type="button" aria-label="Import channels &amp; guide" title="Import channels &amp; guide">
-        <span class="material-icons">settings</span>
+        <span class="material-icons" aria-hidden="true">settings</span>
       </button>
     </div>
   </header>
 
-  <main class="app-main">
+  <main class="app-main app-main--views">
     <!-- Browse view -->
     <section id="viewBrowse" class="view view--active" aria-label="Browse channels">
-      <div class="tab-bar" role="tablist">
-        <button class="tab-btn tab-btn--active" id="tabRadio" type="button" role="tab" aria-selected="true">
-          <span class="material-icons">radio</span>Radio <span class="tab-btn__count" id="countRadio"></span>
+      <h1 class="sr-only">Live TV &amp; radio</h1>
+      <div class="segmented" id="kindTabs" role="tablist" aria-label="Channel kind">
+        <button class="segmented__item segmented__item--active" id="tabRadio" type="button" role="tab" aria-selected="true" aria-controls="resultsGrid" data-tab="radio">
+          <span class="material-icons" aria-hidden="true">radio</span>Radio <span class="segmented__count" id="countRadio"></span>
         </button>
-        <button class="tab-btn" id="tabTv" type="button" role="tab" aria-selected="false">
-          <span class="material-icons">live_tv</span>TV <span class="tab-btn__count" id="countTv"></span>
+        <button class="segmented__item" id="tabTv" type="button" role="tab" aria-selected="false" aria-controls="resultsGrid" data-tab="tv">
+          <span class="material-icons" aria-hidden="true">live_tv</span>TV <span class="segmented__count" id="countTv"></span>
         </button>
       </div>
 
@@ -426,18 +472,18 @@
         <input id="searchInput" type="search" class="search-bar__input"
           placeholder="Search channels…" autocomplete="off" aria-label="Search channels" />
         <button id="clearBtn" class="icon-btn hidden" type="button" aria-label="Clear search">
-          <span class="material-icons" style="font-size:20px;">close</span>
+          <span class="material-icons" aria-hidden="true">close</span>
         </button>
       </div>
 
       <div id="searchStatus" class="search-status" role="status" aria-live="polite"></div>
-      <div id="resultsGrid" class="results-grid" role="list"></div>
+      <div id="resultsGrid" class="results-grid" role="list" aria-live="polite"></div>
       <div id="emptyState" class="empty-state hidden">
-        <div class="empty-state__icon">📻</div>
-        <div class="empty-state__title" id="emptyStateTitle">No channels found</div>
-        <div class="empty-state__sub" id="emptyStateSub">Try a different search term</div>
+        <span class="material-icons empty-state__icon" aria-hidden="true">radio</span>
+        <p class="empty-state__title" id="emptyStateTitle">No channels found</p>
+        <p class="empty-state__sub" id="emptyStateSub">Try a different search term</p>
         <button id="emptyStateImportBtn" class="btn btn--primary empty-state__import-btn hidden" type="button">
-          <span class="material-icons" style="font-size:16px;">add</span>Import channels
+          <span class="material-icons" aria-hidden="true">add</span>Import channels
         </button>
       </div>
     </section>
@@ -446,11 +492,11 @@
     <section id="viewPlayer" class="view" aria-label="Player">
       <div class="player-header-row">
         <button id="backFromPlayer" class="player-back" type="button" aria-label="Back">
-          <span class="material-icons">arrow_back</span><span id="backFromPlayerLabel">Back</span>
+          <span class="material-icons" aria-hidden="true">arrow_back</span><span id="backFromPlayerLabel">Back</span>
         </button>
         <div style="display:flex; align-items:center; gap:0.4rem;">
           <button id="pipBtn" class="icon-btn hidden" type="button" aria-label="Picture-in-picture" title="Picture-in-picture">
-            <span class="material-icons" style="font-size:20px;">picture_in_picture_alt</span>
+            <span class="material-icons" aria-hidden="true">picture_in_picture_alt</span>
           </button>
           <span id="liveBadge" class="live-badge"><span class="live-dot"></span>LIVE</span>
         </div>
@@ -471,13 +517,13 @@
           <span id="epgNextTime" class="epg-time"></span>
         </div>
         <button id="viewGuideBtn" class="epg-guide-btn" type="button">
-          <span class="material-icons">calendar_month</span>Full guide
+          <span class="material-icons" aria-hidden="true">calendar_month</span>Full guide
         </button>
       </div>
 
       <div id="tvPlayerWrap" class="player-wrap hidden">
         <div id="playerOverlay" class="player-overlay">
-          <span class="material-icons">live_tv</span>
+          <span class="material-icons" aria-hidden="true">live_tv</span>
           <span id="playerOverlayText">Loading stream…</span>
         </div>
         <video id="videoEl" controls playsinline></video>
@@ -486,10 +532,10 @@
       <div id="radioPlayerWrap" class="radio-player hidden">
         <div class="radio-player__art">
           <img id="radioLogo" src="" alt="" />
-          <div id="radioArtPh" class="radio-player__art-ph"><span class="material-icons">radio</span></div>
+          <div id="radioArtPh" class="radio-player__art-ph"><span class="material-icons" aria-hidden="true">radio</span></div>
         </div>
         <button id="radioPlayBtn" class="radio-play-btn" type="button" aria-label="Play">
-          <span class="material-icons" id="radioPlayIcon">play_arrow</span>
+          <span class="material-icons" aria-hidden="true" id="radioPlayIcon">play_arrow</span>
         </button>
         <audio id="audioEl" preload="none"></audio>
       </div>
@@ -505,33 +551,33 @@
     <div class="mini-player hidden" id="miniPlayer" role="button" tabindex="0" aria-label="Expand player">
       <span class="mini-player__art" id="miniPlayerArt">
         <img id="miniPlayerArtImg" src="" alt="" class="hidden" />
-        <span class="material-icons" id="miniPlayerArtPh">live_tv</span>
+        <span class="material-icons" aria-hidden="true" id="miniPlayerArtPh">live_tv</span>
       </span>
       <span class="mini-player__body">
         <span class="mini-player__title" id="miniPlayerTitle"></span>
         <span class="mini-player__meta"><span class="live-dot"></span><span id="miniPlayerMeta"></span></span>
       </span>
       <span class="mini-player__btn" id="miniPlayerPlayBtn" role="button" tabindex="0" aria-label="Pause">
-        <span class="material-icons">pause</span>
+        <span class="material-icons" aria-hidden="true">pause</span>
       </span>
       <span class="mini-player__btn" id="miniPlayerCloseBtn" role="button" tabindex="0" aria-label="Stop">
-        <span class="material-icons">close</span>
+        <span class="material-icons" aria-hidden="true">close</span>
       </span>
     </div>
 
     <!-- Bottom navigation (M3 NavigationBar) — see index.html for the full
          rationale. Hidden over the full-screen Player, shown over Browse. -->
     <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
-      <a class="bottom-nav__item" href="/" aria-label="Switch to Movies &amp; TV shows">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">video_library</span></span>
+      <a class="bottom-nav__item" href="/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">video_library</span></span>
         <span class="bottom-nav__label">Media</span>
       </a>
-      <button class="bottom-nav__item bottom-nav__item--active" id="navBrowseBtn" type="button" aria-label="Live">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">live_tv</span></span>
+      <button class="bottom-nav__item bottom-nav__item--active" aria-current="page" id="navBrowseBtn" type="button">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">live_tv</span></span>
         <span class="bottom-nav__label">Live</span>
       </button>
-      <a class="bottom-nav__item" href="/tools/" aria-label="Switch to Tools">
-        <span class="bottom-nav__icon-wrap"><span class="material-icons">construction</span></span>
+      <a class="bottom-nav__item" href="/tools/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">construction</span></span>
         <span class="bottom-nav__label">Tools</span>
       </a>
     </nav>
@@ -539,55 +585,54 @@
 </div>
 
 <!-- Settings sheet: import your own TV/Radio playlists (M3U8 or JSON) + EPG -->
-<div id="settingsSheet" class="settings hidden" role="dialog" aria-modal="true" aria-label="Import channels and guide">
-  <div id="settingsBackdrop" class="settings__backdrop"></div>
-  <div class="settings__panel">
-    <div class="settings__header">
-      <h2 class="settings__title">Import channels</h2>
+<div id="settingsSheet" class="scrim scrim--bottom hidden" role="dialog" aria-modal="true" aria-label="Import channels and guide" aria-hidden="true">
+  <div class="sheet">
+    <div class="sheet__header">
+      <h2 class="sheet__title">Import channels</h2>
       <button id="settingsClose" class="icon-btn" type="button" aria-label="Close">
-        <span class="material-icons">close</span>
+        <span class="material-icons" aria-hidden="true">close</span>
       </button>
     </div>
 
     <!-- Appearance section -->
-    <div class="settings__section">
-      <div class="settings__section-label">Appearance</div>
+    <div class="sheet__section">
+      <div class="sheet__section-label">Appearance</div>
       <div class="segmented" id="themeSegmented" role="radiogroup" aria-label="Theme">
         <button class="segmented__item" data-theme-choice="system" type="button" role="radio">
-          <span class="material-icons">brightness_auto</span>System
+          <span class="material-icons" aria-hidden="true">brightness_auto</span>System
         </button>
         <button class="segmented__item" data-theme-choice="light" type="button" role="radio">
-          <span class="material-icons">light_mode</span>Light
+          <span class="material-icons" aria-hidden="true">light_mode</span>Light
         </button>
         <button class="segmented__item" data-theme-choice="dark" type="button" role="radio">
-          <span class="material-icons">dark_mode</span>Dark
+          <span class="material-icons" aria-hidden="true">dark_mode</span>Dark
         </button>
       </div>
     </div>
 
-    <div class="settings__section">
-      <div class="settings__section-label">Playlist URLs</div>
-      <p class="settings__hint">
+    <div class="sheet__section">
+      <div class="sheet__section-label">Playlist URLs</div>
+      <p class="sheet__hint">
         Paste your playlist URLs below, one per line as <code>key: value</code>.
         Keys: <code>tv</code>, <code>radio</code>, <code>epg</code> (the TV guide data). Add more than
         one <code>tv:</code> or <code>radio:</code> line to combine several playlists into one list.
       </p>
       <div class="config-area">
         <div class="config-textarea-wrap">
-          <textarea id="configTextarea" class="config-textarea"
+          <textarea id="configTextarea" class="textarea config-textarea"
             placeholder="tv: https://example.com/tv.m3u8&#10;radio: https://example.com/radio.json&#10;epg: https://example.com/epg.xml"
             spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
         <div class="config-actions">
           <span id="configFeedback" class="config-feedback" role="status" aria-live="polite"></span>
           <button id="configImportBtn" class="btn btn--primary btn--sm" type="button">
-            <span class="material-icons" style="font-size:15px;">download</span>Import &amp; load
+            <span class="material-icons" aria-hidden="true">download</span>Import &amp; load
           </button>
           <button id="configExportBtn" class="btn btn--ghost btn--sm" type="button">
-            <span class="material-icons" style="font-size:15px;">upload</span>Export
+            <span class="material-icons" aria-hidden="true">upload</span>Export
           </button>
           <button id="configClearBtn" class="btn btn--danger btn--sm" type="button">
-            <span class="material-icons" style="font-size:15px;">delete_outline</span>Clear
+            <span class="material-icons" aria-hidden="true">delete_outline</span>Clear
           </button>
         </div>
       </div>
@@ -595,18 +640,18 @@
   </div>
 </div>
 
-<div id="guideModal" class="modal-overlay hidden">
-  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
-    <div class="modal-header">
+<div id="guideModal" class="scrim scrim--center hidden" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle" aria-hidden="true">
+  <div class="dialog">
+    <div class="dialog__header">
       <div>
-        <h3 id="guideModalTitle" class="modal-title"></h3>
-        <p id="guideModalSub" class="modal-sub"></p>
+        <h3 id="guideModalTitle" class="dialog__title"></h3>
+        <p id="guideModalSub" class="dialog__sub"></p>
       </div>
       <button id="guideModalClose" class="icon-btn" type="button" aria-label="Close guide">
-        <span class="material-icons">close</span>
+        <span class="material-icons" aria-hidden="true">close</span>
       </button>
     </div>
-    <div id="guideModalBody" class="modal-body"></div>
+    <div id="guideModalBody" class="dialog__body"></div>
   </div>
 </div>
 
@@ -620,7 +665,7 @@ const $ = id => document.getElementById(id);
    ─────────────────────────────────────────────────────
    See index.html for the full rationale — same mechanism, kept in sync.
 ═══════════════════════════════════════════════════════ */
-BQChrome.initRipple(".icon-btn, .btn, .tab-btn, .card, .player-back, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item");
+BQChrome.initRipple(".icon-btn, .btn, .media-card, .player-back, .bottom-nav__item, .mini-player, .mini-player__btn, .segmented__item, .epg-guide-btn");
 
 /* ── Swipe-back — see index.html for the full rationale. Same mechanism,
    kept in sync; the invocation is wired up at the bottom of this script. ── */
@@ -738,7 +783,7 @@ function togglePin(kind, id) {
   // renderGrid() rebuilds the whole grid, so the button that was just
   // clicked/focused no longer exists — find its replacement (channels can
   // move position when pinned/unpinned) and restore focus to it.
-  const btn = [...$("resultsGrid").querySelectorAll(".card__pin")].find(b => b.dataset.channelId === id);
+  const btn = [...$("resultsGrid").querySelectorAll(".media-card__pin")].find(b => b.dataset.channelId === id);
   if (btn) btn.focus();
 }
 
@@ -1153,16 +1198,16 @@ function renderGrid() {
     const icon = state.tab === "tv" ? "live_tv" : "radio";
     const isPinned = !!(pins && pins.has(c.id));
     let sectionLabel = "";
-    if (showSections && i === 0) sectionLabel = `<div class="grid-section-label"><span class="material-icons">push_pin</span>Pinned</div>`;
+    if (showSections && i === 0) sectionLabel = `<div class="grid-section-label"><span class="material-icons" aria-hidden="true">push_pin</span>Pinned</div>`;
     if (showSections && i === pinnedCount) sectionLabel = `<div class="grid-section-label">All channels</div>`;
 
     let nowHtml = "", progressHtml = "";
     if (kind === "tv" && !c.drm) {
       const nn = nowNextFor(c.id);
       if (nn && nn.current) {
-        nowHtml = `<div class="card__now">${escapeHtml(nn.current.title)}</div>`;
+        nowHtml = `<div class="media-card__now">${escapeHtml(nn.current.title)}</div>`;
         const pct = Math.min(100, Math.max(0, ((Date.now() - nn.current.start) / (nn.current.stop - nn.current.start)) * 100));
-        progressHtml = `<div class="card__progress"><div class="card__progress-fill" style="width:${pct.toFixed(1)}%"></div></div>`;
+        progressHtml = `<div class="media-card__progress"><div class="media-card__progress-fill" style="width:${pct.toFixed(1)}%"></div></div>`;
       }
     }
 
@@ -1174,41 +1219,41 @@ function renderGrid() {
     const drmLabel = c.drm ? ` — DRM protected, can't be played here, shows programme guide` : "";
 
     return `${sectionLabel}
-      <div class="card ${c.drm ? "card--drm" : ""}" tabindex="0" role="listitem" data-idx="${i}" aria-label="${escapeHtml(c.name)}${drmLabel}">
-        <div class="card__img-wrap">
-          ${chno ? `<span class="card__badge">${escapeHtml(chno)}</span>` : ""}
-          ${c.drm ? `<span class="card__drm-badge"><span class="material-icons">lock</span>DRM</span>` : ""}
-          ${logo ? `<img class="card__img" loading="lazy" src="${escapeAttr(logo)}" alt="" onerror="this.remove()" />` : ""}
-          <div class="card__placeholder"><span class="material-icons">${icon}</span></div>
-          ${c.drm ? `<span class="card__drm-guide-hint"><span class="material-icons">calendar_month</span>Guide</span>` : `<button class="card__pin ${isPinned ? "card__pin--active" : ""}" type="button" data-pin-idx="${i}" data-channel-id="${escapeAttr(c.id)}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
-            <span class="material-icons">push_pin</span>
+      <div class="media-card ${c.drm ? "media-card--drm" : ""}" tabindex="0" role="listitem" data-idx="${i}" aria-label="${escapeHtml(c.name)}${drmLabel}">
+        <div class="media-card__img-wrap">
+          ${chno ? `<span class="media-card__badge">${escapeHtml(chno)}</span>` : ""}
+          ${c.drm ? `<span class="media-card__drm-badge"><span class="material-icons" aria-hidden="true">lock</span>DRM</span>` : ""}
+          ${logo ? `<img class="media-card__img" loading="lazy" src="${escapeAttr(logo)}" alt="" onerror="this.remove()" />` : ""}
+          <div class="media-card__placeholder"><span class="material-icons" aria-hidden="true">${icon}</span></div>
+          ${c.drm ? `<span class="media-card__drm-guide-hint"><span class="material-icons" aria-hidden="true">calendar_month</span>Guide</span>` : `<button class="media-card__pin ${isPinned ? "media-card__pin--active" : ""}" type="button" data-pin-idx="${i}" data-channel-id="${escapeAttr(c.id)}" aria-pressed="${isPinned}" aria-label="${isPinned ? "Unpin" : "Pin"} ${escapeHtml(c.name)}">
+            <span class="material-icons" aria-hidden="true">push_pin</span>
           </button>`}
           ${progressHtml}
         </div>
-        <div class="card__body">
-          <div class="card__title">${escapeHtml(c.name)}</div>
+        <div class="media-card__body">
+          <div class="media-card__title">${escapeHtml(c.name)}</div>
           ${nowHtml}
         </div>
       </div>`;
   }).join("");
 
-  grid.querySelectorAll(".card:not(.card--drm)").forEach(card => {
+  grid.querySelectorAll(".media-card:not(.media-card--drm)").forEach(card => {
     card.addEventListener("click", () => openPlayer(list[Number(card.dataset.idx)]));
     card.addEventListener("keydown", e => {
-      if (e.target.closest(".card__pin")) return;
+      if (e.target.closest(".media-card__pin")) return;
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); card.click(); }
     });
   });
   // DRM channels can't be played, but tapping/activating one opens its
   // programme guide (EPG) — same modal as the "Full guide" button in the
   // normal player view, just reachable straight from the grid.
-  grid.querySelectorAll(".card--drm").forEach(card => {
+  grid.querySelectorAll(".media-card--drm").forEach(card => {
     card.addEventListener("click", () => openGuideModal(list[Number(card.dataset.idx)]));
     card.addEventListener("keydown", e => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); card.click(); }
     });
   });
-  grid.querySelectorAll(".card__pin").forEach(btn => {
+  grid.querySelectorAll(".media-card__pin").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
       togglePin(kind, list[Number(btn.dataset.pinIdx)].id);
@@ -1220,17 +1265,13 @@ function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":
 function escapeAttr(s) { return escapeHtml(s); }
 
 /* ═══════════ Tabs & search ═══════════ */
+const kindTabs = BQChrome.initTabs($("kindTabs"), (tab) => setTab(tab.dataset.tab));
 function setTab(tab) {
   state.tab = tab; state.query = "";
   $("searchInput").value = ""; $("clearBtn").classList.add("hidden");
-  $("tabRadio").classList.toggle("tab-btn--active", tab === "radio");
-  $("tabRadio").setAttribute("aria-selected", tab === "radio");
-  $("tabTv").classList.toggle("tab-btn--active", tab === "tv");
-  $("tabTv").setAttribute("aria-selected", tab === "tv");
+  kindTabs.select(tab === "tv" ? $("tabTv") : $("tabRadio"));
   renderStatus(); renderGrid();
 }
-$("tabRadio").addEventListener("click", () => setTab("radio"));
-$("tabTv").addEventListener("click", () => setTab("tv"));
 
 $("searchInput").addEventListener("input", () => {
   clearTimeout(searchDebounce);
@@ -1245,7 +1286,6 @@ $("clearBtn").addEventListener("click", () => {
 
 /* ═══════════ Settings sheet: import channel playlists ═══════════ */
 const settingsSheet = $("settingsSheet");
-const settingsBackdrop = $("settingsBackdrop");
 const settingsBtn = $("settingsBtn");
 const settingsClose = $("settingsClose");
 const configTextarea = $("configTextarea");
@@ -1259,32 +1299,17 @@ function setConfigFeedback(msg, ok) {
   configFeedback.className = "config-feedback" + (ok === true ? " config-feedback--ok" : ok === false ? " config-feedback--err" : "");
 }
 
+// BQChrome.dialog supplies Escape, the focus trap, focus restore, the
+// background scroll lock and dismiss-on-scrim-click.
+const settingsDialog = BQChrome.dialog(settingsSheet, { initialFocus: () => settingsClose });
 function openSettings() {
   configTextarea.value = serialiseConfigText(config);
   setConfigFeedback("", null);
-  settingsSheet.classList.remove("hidden");
-  settingsSheet.removeAttribute("aria-hidden");
-  setTimeout(() => settingsClose.focus(), 50);
+  settingsDialog.open();
 }
-function closeSettings() {
-  settingsSheet.classList.add("hidden");
-  settingsSheet.setAttribute("aria-hidden", "true");
-  settingsBtn.focus();
-}
+function closeSettings() { settingsDialog.close(); }
 settingsBtn.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
-settingsBackdrop.addEventListener("click", closeSettings);
-settingsSheet.addEventListener("keydown", e => {
-  if (e.key === "Escape") { closeSettings(); return; }
-  if (e.key === "Tab") {
-    const f = [...settingsSheet.querySelectorAll("button,select,input,textarea,[tabindex]:not([tabindex='-1'])")].filter(el => !el.disabled);
-    if (!f.length) return;
-    const inTrap = f.includes(document.activeElement);
-    if (!inTrap) { e.preventDefault(); f[0].focus(); return; }
-    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
-    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
-  }
-});
 
 $("emptyStateImportBtn").addEventListener("click", openSettings);
 
@@ -1321,7 +1346,13 @@ configExportBtn.addEventListener("click", async () => {
 });
 
 configClearBtn.addEventListener("click", async () => {
-  if (!confirm("Remove your imported playlists?")) return;
+  const ok = await BQChrome.confirm({
+    title: "Remove your imported playlists?",
+    body: "The channel and guide URLs you pasted will be cleared from this device.",
+    confirmLabel: "Remove",
+    danger: true,
+  });
+  if (!ok) return;
   await clearStoredConfig();
   configTextarea.value = "";
   setConfigFeedback("Cleared.", true);
@@ -1540,7 +1571,7 @@ function openGuideModal(channel) {
 
   if (!list || !list.length) {
     $("guideModalSub").textContent = "";
-    body.innerHTML = `<p style="color:var(--text-faint); font-size:0.85rem; padding:1rem 0.3rem;">No guide data available for this channel.</p>`;
+    body.innerHTML = `<div class="state-panel"><p>No guide data available for this channel.</p></div>`;
   } else {
     const now = new Date();
     const groups = new Map();
@@ -1557,7 +1588,7 @@ function openGuideModal(channel) {
           <span>${escapeHtml(dayLabel(progs[0].start))}</span>
           <span class="guide-day__meta">
             <span class="guide-day__count">${progs.length} shows</span>
-            <span class="material-icons">expand_more</span>
+            <span class="material-icons" aria-hidden="true">expand_more</span>
           </span>
         </summary>
         <div class="guide-list">
@@ -1572,19 +1603,14 @@ function openGuideModal(channel) {
       </details>`).join("");
   }
 
-  $("guideModal").classList.remove("hidden");
-  document.body.style.overflow = "hidden";
+  guideDialog.open();
 }
 
-function closeGuideModal() {
-  $("guideModal").classList.add("hidden");
-  document.body.style.overflow = "";
-}
+function closeGuideModal() { guideDialog.close(); }
 
+const guideDialog = BQChrome.dialog($("guideModal"), { initialFocus: () => $("guideModalClose") });
 $("viewGuideBtn").addEventListener("click", () => { if (currentPlayerChannel) openGuideModal(currentPlayerChannel); });
 $("guideModalClose").addEventListener("click", closeGuideModal);
-$("guideModal").addEventListener("click", e => { if (e.target.id === "guideModal") closeGuideModal(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("guideModal").classList.contains("hidden")) closeGuideModal(); });
 
 /* ═══════════ Media Session ═══════════
    Surfaces the current channel on the OS's own now-playing UI — lock
