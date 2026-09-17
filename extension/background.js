@@ -7,6 +7,13 @@
    written into after the fact. Chrome's own blocker misses nearly all of
    it, because every one of them is technically a click the user made.
 
+   content/prevent-popups.js stops these before they exist, and is what
+   does the real work now. This file is the net underneath it: it closes
+   what did get opened, which is visibly late — the tab is created, takes
+   focus, paints, and is then removed. It still earns its place, because
+   it covers what the sandbox cannot: a frame the page built some way the
+   content script never saw, and a source opened before the script ran.
+
    What separates those from a tab the user actually wanted is the frame
    that asked for it. The embed sits in an <iframe>, so everything it opens
    comes from a frame below the top one; a tab the page itself opens — a

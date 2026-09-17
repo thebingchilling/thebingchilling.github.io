@@ -6,13 +6,44 @@ installed or it is not.
 
 ## What it covers
 
-Three things, all of them only when the tab is on the player:
+Two layers, both only when the tab is on the player.
+
+**The embed is sandboxed, so the popup is never created.** The player
+builds each embed as an `<iframe>`, and an iframe's `sandbox` attribute
+decides what the document inside may do. Withhold `allow-popups` and
+`window.open` returns `null`; withhold `allow-top-navigation` and the
+tab-under cannot fire. Nothing opens, so there is nothing to close and
+nothing to see. `content/prevent-popups.js` applies it by patching
+`document.createElement`, because the attribute has to be on the element
+*before* it enters the DOM — insertion is what starts the navigation.
+
+**Anything that still gets through is closed.** `background.js` is the net
+underneath, for a frame the content script never saw:
 
 | Trick | How it is caught |
 | --- | --- |
-| `window.open()` / `target="_blank"` from inside the embed | `webNavigation.onCreatedNavigationTarget` fires as the target tab is created, before it paints, and it is closed |
+| `window.open()` / `target="_blank"` from inside the embed | `webNavigation.onCreatedNavigationTarget` fires as the target tab is created, and it is closed |
 | `window.open()` with no URL, filled in afterwards with `document.write()` | `tabs.onCreated`, matching blank targets on the opener |
 | Tab-under — the embed sends *your* tab to the ad and leaves the video in a popup behind it | `webNavigation.onCommitted`, which sends the tab back to the page it was just on |
+
+This second layer is visibly late by nature: the tab is created, takes
+focus, paints, and is then removed. That flash is why the sandbox exists.
+
+### What the embed keeps
+
+`allow-scripts`, `allow-same-origin`, `allow-forms`, `allow-presentation`,
+`allow-orientation-lock`, `allow-pointer-lock`. Fullscreen is not a sandbox
+token — it rides on the `allowfullscreen` attribute and the `allow=` policy
+the page already sets, so it is untouched.
+
+`allow-scripts` with `allow-same-origin` together normally deserve a second
+look, since they let a document clear its own sandbox — but only one that is
+same-origin with the page applying it. The embed is cross-origin by
+definition and cannot reach the attribute.
+
+**If a source breaks under this,** the sandbox is the first thing to
+suspect: remove the extension, reload, and see. There is no toggle, by
+design — the whole thing is install-or-not.
 
 ## Where it runs
 
@@ -120,7 +151,8 @@ works everywhere, which is why that is still listed first above.
 ## Files
 
 - `manifest.json` — MV3; `webNavigation` + `storage`, one host permission
-- `background.js` — the three rules
+- `content/prevent-popups.js` — the sandbox, applied before the embed loads
+- `background.js` — the three catch-up rules
 - `lib/scope.js` — the path allow-list that defines "the player"
 - `../.github/workflows/package-extension.yml` — build and release
 - `../.github/scripts/pack-crx.mjs` — the CRX3 writer

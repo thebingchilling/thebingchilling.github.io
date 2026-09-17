@@ -1299,32 +1299,6 @@ function setPlayerOverlayReady() {
   playerOverlay.classList.add("hidden");
   hideOverlayAction();
 }
-/* Shown when an embed never reports that it loaded. Sources go down, get
-   blocked, or serve a page that never fires load — and the overlay used to
-   simply disappear after 8 seconds, leaving a black rectangle and no
-   explanation. Offering the next source turns a dead end into one tap. */
-function setPlayerOverlayStuck() {
-  playerOverlay.classList.remove("hidden");
-  playerOverlayIcon.textContent = "error_outline";
-  const more = SOURCES.length > 1;
-  playerOverlayText.textContent = more
-    ? "This source isn't responding."
-    : "This source isn't responding. Add another in Settings to have something to fall back on.";
-  if (!more) { hideOverlayAction(); return; }
-  playerOverlayBtn.textContent = "Try another source";
-  playerOverlayBtn.classList.remove("hidden");
-  playerOverlayBtn.onclick = cycleSource;
-}
-/* Advances to the next configured source and reloads whatever is playing.
-   Routed through loadPlayer(), like the source menu, so the overlay and
-   the load timeout re-arm for the new document. */
-function cycleSource() {
-  if (SOURCES.length < 2) return;
-  setActiveSource((activeSourceIdx + 1) % SOURCES.length);
-  updateSourceMenuButton();
-  BQChrome.snackbar(`Switched to "${SOURCES[activeSourceIdx].name}".`);
-  reloadCurrentPlayerIfActive();
-}
 
 /* ── Player fullscreen ──
    Fullscreens the iframe element itself instead of depending on the
@@ -1614,12 +1588,23 @@ function loadPlayer({ mediaType, id, season, episode, label, rolledEpData = null
     setPlayerOverlayLoading("Loading player…");
     const frame = swapPlayerFrame(url, `Video player — ${label || ""}`);
     if (url) {
-      frame.addEventListener("load", setPlayerOverlayReady, { once: true });
-      // If load hasn't fired by then the embed is not coming — say so and
-      // offer the next source, rather than hiding the overlay over a black
-      // rectangle. Only acts if this is still the frame on screen; a newer
-      // load has its own timer.
-      setTimeout(() => { if (playerFrame === frame) setPlayerOverlayStuck(); }, 8000);
+      // Not every working embed fires load — some sources never do, and a
+      // few fire it so late that any deadline is a guess. So the timer
+      // only uncovers the player; it never judges the source.
+      //
+      // It used to swap in a "This source isn't responding" panel, and
+      // because nothing cancelled it when load *did* fire, that panel went
+      // up over sources that were already playing: the overlay is
+      // inset: 0 and opaque, so it hid a working video behind an error
+      // about it. Clearing the timer is what that code was missing;
+      // uncovering unconditionally is what it should have done instead.
+      const reveal = setTimeout(() => {
+        if (playerFrame === frame) setPlayerOverlayReady();
+      }, 8000);
+      frame.addEventListener("load", () => {
+        clearTimeout(reveal);
+        setPlayerOverlayReady();
+      }, { once: true });
     }
   }
   if (!url) setPlayerOverlayLoading(lastPlayerUrlError || "Couldn't load a player for this title.");
