@@ -113,22 +113,12 @@
       letter-spacing: var(--track-title-small);
       color: var(--text);
     }
-    .discover__clear {
-      flex-shrink: 0;
-      padding: 0.2rem 0.6rem;
-      border: none;
-      border-radius: var(--shape-full);
-      background: none;
-      color: var(--text-muted);
-      font: var(--type-label-medium);
-      letter-spacing: var(--track-label-medium);
-      cursor: pointer;
-      transition: background var(--t), color var(--t);
-    }
-    @media (hover: hover) { .discover__clear:hover { background: var(--md-surface-container-high); color: var(--text); } }
-    .discover__clear:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
-    /* The episode a show was left on, in place of a release year. */
-    .media-card__ep { font: var(--type-body-small); letter-spacing: var(--track-body-small); color: var(--md-primary); font-weight: 600; }
+
+    /* Specials sit at the end of the season chips and are set apart from
+       the numbered run — dashed rather than solid, so the row reads as
+       "seasons 1-5, and then the extras" at a glance. */
+    .chip--specials { border-style: dashed; border-color: var(--md-outline); }
+    .chip--specials.chip--selected { border-style: solid; }
 
     /* ── Results grid ── */
     .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; }
@@ -159,32 +149,53 @@
     /* Secondary to Play, and far enough from it not to read as a pair. */
     .movie-panel__scene { align-self: center; margin-top: 0.55rem; }
 
-    .scene-list { display: flex; flex-direction: column; gap: 0.45rem; max-height: min(55vh, 420px); overflow: auto; -webkit-overflow-scrolling: touch; }
-    .scene-row { padding: 0.55rem 0.7rem; border-radius: var(--shape-s); background: var(--md-surface-container-high); }
+    .scene-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: min(55vh, 420px); overflow: auto; -webkit-overflow-scrolling: touch; }
+    .scene-row {
+      position: relative;
+      padding: 0.65rem 0.8rem 0.65rem 0.95rem;
+      border-radius: var(--shape-m);
+      background: var(--surface-raised);
+      box-shadow: var(--el1);
+    }
+    /* A hairline in the accent down the leading edge — enough to give each
+       release a start and let the eye run down the list, without the
+       heavier treatment a full card border would bring. */
+    .scene-row::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0.55rem; bottom: 0.55rem;
+      width: 3px;
+      border-radius: var(--shape-full);
+      background: var(--md-primary);
+      opacity: 0.55;
+    }
     .scene-row__name {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.76rem;
-      line-height: 1.5;
+      font-size: 0.78rem;
+      line-height: 1.55;
       color: var(--text);
       word-break: break-all;
     }
+    /* The group after the final dash is the one part of a scene name that
+       isn't describing the file, so it reads as a byline rather than more
+       of the same string. */
+    /* nowrap so the group never splits across lines: break-all is needed
+       for the dotted name, which has nowhere natural to break, but it was
+       cutting "RiSEHD" into "Ri / SEHD" — the one part of the string a
+       reader is scanning for. */
+    .scene-row__group { color: var(--md-primary); font-weight: 600; white-space: nowrap; }
     .scene-row__meta {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.45rem;
-      margin-top: 0.35rem;
+      gap: 0.9rem;
+      margin-top: 0.4rem;
       font: var(--type-label-small);
       letter-spacing: var(--track-label-small);
       color: var(--text-faint);
     }
-    .scene-row__tag {
-      padding: 0.05rem 0.4rem;
-      border-radius: var(--shape-xs);
-      background: var(--md-tertiary-container);
-      color: var(--md-on-tertiary-container);
-      font-weight: 600;
-    }
+    .scene-row__fact { display: inline-flex; align-items: center; gap: 0.25rem; }
+    .scene-row__fact .material-icons { font-size: 14px; }
 
     /* ── Detail ── */
     .detail-body { overflow: hidden; border: none; border-radius: var(--shape-m); background: var(--surface); box-shadow: var(--el1); }
@@ -971,47 +982,6 @@ async function initSources() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   WATCH HISTORY
-   ─────────────────────────────────────────────────────
-   What was played, and for a show which episode it was left on. There is
-   deliberately no playback position: the players are third-party embeds in
-   a cross-origin iframe, so the page genuinely cannot see how far through
-   one is, and a "resume at 14:32" that silently restarts from zero would
-   be worse than not offering it. One entry per title, not per episode, so
-   a show you are working through occupies one card that moves forward with
-   you rather than filling the screen with its own back catalogue.
-═══════════════════════════════════════════════════════ */
-const HISTORY_KEY = "bq_history";
-const HISTORY_MAX = 12;
-let watchHistory = [];
-
-async function initHistory() {
-  try {
-    const parsed = JSON.parse(await Store.get(HISTORY_KEY));
-    if (Array.isArray(parsed)) watchHistory = parsed.filter(h => h && h.id && h.mediaType);
-  } catch (e) { /* nothing saved yet, or corrupt data — start empty */ }
-}
-function historySave() { Store.set(HISTORY_KEY, JSON.stringify(watchHistory)); }
-
-function recordWatch({ mediaType, id, title, poster, season, episode, epName }) {
-  if (!id || !mediaType) return;
-  const key = mediaType + ":" + id;
-  watchHistory = watchHistory.filter(h => (h.mediaType + ":" + h.id) !== key);
-  watchHistory.unshift({
-    mediaType, id, title: title || "", poster: poster || null,
-    season: season || null, episode: episode || null, epName: epName || "", ts: Date.now(),
-  });
-  if (watchHistory.length > HISTORY_MAX) watchHistory.length = HISTORY_MAX;
-  historySave();
-  renderDiscover();
-}
-
-function historyHash(h) {
-  if (h.mediaType === "movie") return `#/movie/${h.id}`;
-  return (h.season && h.episode) ? `#/tv/${h.id}/s${h.season}/e${h.episode}` : `#/tv/${h.id}`;
-}
-
-/* ═══════════════════════════════════════════════════════
    TMDB
 ═══════════════════════════════════════════════════════ */
 const TMDB_BASE  = "https://api.themoviedb.org/3";
@@ -1121,15 +1091,36 @@ function renderSceneList(results) {
   const rows = results.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
   rows.forEach((r) => {
     const row = document.createElement("div"); row.className = "scene-row";
+
     const name = document.createElement("div"); name.className = "scene-row__name";
-    name.textContent = r.release || "(unnamed release)";
+    const full = r.release || "(unnamed release)";
+    // Split the trailing "-GROUP" off so it can carry the accent. Matched
+    // conservatively: a real group is a short token with no dots in it, so
+    // a name that just happens to contain a dash keeps its whole string.
+    // The exclusions are hyphenated source tags — a name ending WEB-DL or
+    // BLU-RAY would otherwise have "DL" or "RAY" accented as if it were
+    // the group.
+    const m = /^(.*-)([A-Za-z0-9_]{2,20})$/.exec(full);
+    const NOT_A_GROUP = /^(dl|ray|rip|ts|tc|cam|scr|dvd|hd|sd|uhd|hdr)$/i;
+    if (m && !NOT_A_GROUP.test(m[2])) {
+      name.appendChild(document.createTextNode(m[1]));
+      const g = document.createElement("span"); g.className = "scene-row__group"; g.textContent = m[2];
+      name.appendChild(g);
+    } else {
+      name.textContent = full;
+    }
     row.appendChild(name);
 
     const meta = document.createElement("div"); meta.className = "scene-row__meta";
-    const bits = [fmtSceneDate(r.date), fmtSceneSize(r.size)].filter(Boolean);
-    if (bits.length) { const s = document.createElement("span"); s.textContent = bits.join(" · "); meta.appendChild(s); }
-    if (r.hasNFO === "yes") { const t = document.createElement("span"); t.className = "scene-row__tag"; t.textContent = "NFO"; meta.appendChild(t); }
-    if (r.isForeign === "yes") { const t = document.createElement("span"); t.className = "scene-row__tag"; t.textContent = "FOREIGN"; meta.appendChild(t); }
+    const fact = (icon, text) => {
+      if (!text) return;
+      const el = document.createElement("span"); el.className = "scene-row__fact";
+      const i = document.createElement("span"); i.className = "material-icons"; i.setAttribute("aria-hidden", "true"); i.textContent = icon;
+      el.appendChild(i); el.appendChild(document.createTextNode(text));
+      meta.appendChild(el);
+    };
+    fact("event", fmtSceneDate(r.date));
+    fact("save", fmtSceneSize(r.size));
     if (meta.children.length) row.appendChild(meta);
     body.appendChild(row);
   });
@@ -1180,7 +1171,7 @@ async function openSceneReleases(title, year) {
 /* ═══════════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════════ */
-let currentDetail = { mediaType: null, id: null, title: "", seasonNumbers: [], poster: null };
+let currentDetail = { mediaType: null, id: null, title: "", seasonNumbers: [] };
 let currentPlayer = { mediaType: null, id: null, season: null, episode: null, label: "", url: "" };
 const loadedSeasons = {};
 let detailScrollTop = 0;
@@ -1327,6 +1318,11 @@ function setStatus(msg, err = false) {
   else     { searchStatus.setAttribute("aria-hidden", "true"); searchStatus.textContent = ""; searchStatus.className = "search-status"; }
 }
 function randItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+/* Season 0 is TMDB's specials bucket. Left to the generic formatting it
+   reads "Season 0" and "S0 · E4", which is both ugly and wrong — these
+   aren't a zeroth season, they're the extras. */
+function seasonHeading(n) { return Number(n) === 0 ? "Specials" : `Season ${n}`; }
+function seasonShort(n)   { return Number(n) === 0 ? "Specials" : `S${n}`; }
 
 let _todayCache = { val: "", ts: 0 };
 function getToday() {
@@ -1397,9 +1393,8 @@ async function handleHashRoute() {
     const season = Number(sStr), episode = Number(eStr);
     // Showing the player again is only enough when it is still the *same*
     // episode and the embed is actually loaded. Anything that left the
-    // player — Back to Search, or resuming a different episode from
-    // Recently watched — tore the iframe down, so this has to reload
-    // rather than reveal an empty frame.
+    // player tore the iframe down, so this has to reload rather than
+    // reveal an empty frame.
     if (currentPlayer.season === season && currentPlayer.episode === episode && playerFrame.getAttribute("src")) {
       setView("player"); return;
     }
@@ -1557,18 +1552,6 @@ function loadPlayer({ mediaType, id, season, episode, label, rolledEpData = null
 
   currentPlayer = { mediaType, id, season: season || null, episode: episode || null, label: label || "", url };
 
-  // Only once a playable URL was actually built — a failed source lookup
-  // isn't something to offer to resume.
-  if (url) {
-    recordWatch({
-      mediaType, id,
-      title: label || currentDetail.title,
-      poster: currentDetail.id === id ? currentDetail.poster : null,
-      season, episode,
-      epName: epData?.name || "",
-    });
-  }
-
   setView("player");
   pushPlayerHash();
 
@@ -1658,7 +1641,7 @@ async function updateEpCard(tvId, season, episode, rolledEpData) {
   const airDate = ep?.air_date
     ? new Date(ep.air_date + "T00:00:00").toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" })
     : "";
-  epCardMeta.textContent = [`S${season} · E${episode}`, airDate].filter(Boolean).join(" · ");
+  epCardMeta.textContent = [`${seasonShort(season)} · E${episode}`, airDate].filter(Boolean).join(" · ");
   epCardOverview.textContent = ep?.overview || "";
 
   epCardRollBtn.onclick = async () => {
@@ -1679,7 +1662,7 @@ async function updateEpCard(tvId, season, episode, rolledEpData) {
   // Leads with "Next" so the accessible name contains the visible label,
   // as WCAG's Label in Name requires — the rest is the useful detail.
   epCardNextBtn.setAttribute("aria-label",
-    `Next episode — season ${next.season}, episode ${next.episode}`);
+    `Next episode — ${seasonHeading(next.season).toLowerCase()}, episode ${next.episode}`);
   epCardNextBtn.onclick = () => loadPlayer({
     mediaType: "tv", id: tvId, season: next.season, episode: next.episode,
     label: currentDetail.title, rolledEpData: next.ep,
@@ -1768,17 +1751,14 @@ function renderSearchSkeleton(count = 8) {
       </div>
     </div>`).join("");
 }
-/* One card, three callers: search results, Recently watched and Trending.
-   They differ only in what sits next to the Movie/TV chip and whether a
-   tap resumes an episode instead of opening the detail view, so the markup
-   is built once here rather than copied per surface. */
-function buildMediaCard({ id, mediaType, title, year, poster, epLabel, resumeHash, ariaExtra }) {
+/* Shared by search results and Trending, which differ only in where their
+   items come from — so the markup is built once here rather than copied. */
+function buildMediaCard({ id, mediaType, title, year, poster, ariaExtra }) {
   const isMovie = mediaType === "movie";
   const art = document.createElement("article");
   art.className = "media-card"; art.setAttribute("role","listitem"); art.tabIndex = 0;
   art.dataset.id = id; art.dataset.mediaType = mediaType;
   art.dataset.title = title||""; art.dataset.year = year||"";
-  if (resumeHash) art.dataset.resumeHash = resumeHash;
   art.setAttribute("aria-label",
     `${title||"Unknown"} (${isMovie?"Movie":"TV show"}${year?", "+year:""})${ariaExtra?", "+ariaExtra:""}`);
 
@@ -1791,8 +1771,7 @@ function buildMediaCard({ id, mediaType, title, year, poster, epLabel, resumeHas
   const meta  = document.createElement("div"); meta.className = "media-card__meta";
   const chip  = document.createElement("span"); chip.className = "media-card__chip"; chip.textContent = isMovie ? "Movie" : "TV";
   meta.appendChild(chip);
-  if (epLabel) { const ep = document.createElement("span"); ep.className="media-card__ep"; ep.textContent=epLabel; meta.appendChild(ep); }
-  else if (year) { const yr = document.createElement("span"); yr.className="media-card__year"; yr.textContent=year; meta.appendChild(yr); }
+  if (year) { const yr = document.createElement("span"); yr.className="media-card__year"; yr.textContent=year; meta.appendChild(yr); }
   body.appendChild(titleEl); body.appendChild(meta);
   art.appendChild(imgWrap); art.appendChild(body);
   return art;
@@ -1849,8 +1828,7 @@ function renderDetailSkeleton(mediaType, posterUrl) {
    RENDER MOVIE
 ═══════════════════════════════════════════════════════ */
 function renderMovie(movie) {
-  currentDetail = { mediaType:"movie", id:movie.id, title:movie.title||movie.original_title||"", seasonNumbers:[],
-                    poster: movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : null };
+  currentDetail = { mediaType:"movie", id:movie.id, title:movie.title||movie.original_title||"", seasonNumbers:[] };
   const title   = currentDetail.title || "Movie";
   const year    = getYear(movie.release_date);
   const rt      = movie.runtime > 0 ? `${movie.runtime} min` : "";
@@ -1892,13 +1870,20 @@ function renderMovie(movie) {
 ═══════════════════════════════════════════════════════ */
 function renderTV(tv) {
   loadedSeasons[tv.id] = loadedSeasons[tv.id] || {};
-  const seasons    = (tv.seasons||[]).filter(s => s.season_number > 0);
-  const seasonNums = seasons.map(s => s.season_number);
-  currentDetail    = { mediaType:"tv", id:tv.id, title:tv.name||tv.original_name||"", seasonNumbers:seasonNums,
-                       poster: tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : null };
+  // Season 0 is TMDB's bucket for specials — one-offs, OVAs, recap and
+  // holiday episodes. It's shown, because for some shows that's real
+  // content, but kept apart from the numbered run: it sits last, is
+  // labelled rather than numbered, and is excluded from the season count,
+  // from Roll and from Next, none of which should wander into it on their
+  // own. Choosing it is deliberate.
+  const regular    = (tv.seasons||[]).filter(s => s.season_number > 0);
+  const specials   = (tv.seasons||[]).filter(s => s.season_number === 0);
+  const seasons    = regular.concat(specials);
+  const seasonNums = regular.map(s => s.season_number);
+  currentDetail    = { mediaType:"tv", id:tv.id, title:tv.name||tv.original_name||"", seasonNumbers:seasonNums };
   const title      = currentDetail.title || "TV Show";
   const year       = getYear(tv.first_air_date);
-  const seasonsLabel = seasons.length ? `${seasons.length} season${seasons.length>1?"s":""}` : "";
+  const seasonsLabel = regular.length ? `${regular.length} season${regular.length>1?"s":""}` : "";
   const tags       = [year, seasonsLabel].filter(Boolean).join(" · ");
 
   const poster   = tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : null;
@@ -1906,8 +1891,9 @@ function renderTV(tv) {
   const tagline  = tv.tagline?.trim() || "";
   const tagsHtml = [year, seasonsLabel, network].filter(Boolean).map(t => `<span class="meta-tag">${esc(t)}</span>`).join("");
 
-  const chipsHtml = seasons.map(s =>
-    `<button class="chip" type="button" data-sn="${s.season_number}" aria-pressed="false">S${s.season_number}</button>`
+  const chipsHtml = seasons.map(s => s.season_number === 0
+    ? `<button class="chip chip--specials" type="button" data-sn="0" aria-pressed="false">Specials</button>`
+    : `<button class="chip" type="button" data-sn="${s.season_number}" aria-pressed="false">S${s.season_number}</button>`
   ).join("");
 
   detailBody.innerHTML = `
@@ -1968,7 +1954,7 @@ async function switchToSeason(tvId, seasonNum) {
 async function loadSeason(tvId, seasonNum) {
   const epGrid = $("episodeGrid"); const heading = $("epsHeading");
   if (!epGrid) return;
-  if (heading) heading.textContent = `Season ${seasonNum}`;
+  if (heading) heading.textContent = seasonHeading(seasonNum);
   if (loadedSeasons[tvId]?.[seasonNum]) { renderEpisodeGrid(tvId, seasonNum, loadedSeasons[tvId][seasonNum]); return; }
   epGrid.innerHTML = `<p class="overview">Loading…</p>`;
   if (detailFetch) detailFetch.abort();
@@ -2002,7 +1988,7 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
     card.className = ["ep-card", !aired?"ep-card--unaired":""].filter(Boolean).join(" ");
     card.tabIndex = aired ? 0 : -1; card.id = `ep-${ep.episode_number}`;
     card.dataset.tvId = tvId; card.dataset.season = seasonNum; card.dataset.ep = ep.episode_number; card.dataset.aired = aired?"1":"0";
-    card.setAttribute("aria-label", `S${seasonNum} E${ep.episode_number}${ep.name?" — "+ep.name:""}${aired?"":" (not yet aired)"}`);
+    card.setAttribute("aria-label", `${seasonShort(seasonNum)} E${ep.episode_number}${ep.name?" — "+ep.name:""}${aired?"":" (not yet aired)"}`);
     card.setAttribute("aria-disabled", aired?"false":"true");
 
     const imgWrap = document.createElement("div"); imgWrap.className = "ep-card__img-wrap";
@@ -2013,7 +1999,7 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
     if (ep.air_date) { airLabel = aired ? ep.air_date : `Airs ${new Date(ep.air_date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}`; }
 
     const body = document.createElement("div"); body.className="ep-card__body";
-    const titleEl = document.createElement("h4"); titleEl.className="ep-card__title"; titleEl.textContent=`S${seasonNum} · E${ep.episode_number}${ep.name?" — "+ep.name:""}`;
+    const titleEl = document.createElement("h4"); titleEl.className="ep-card__title"; titleEl.textContent=`${seasonShort(seasonNum)} · E${ep.episode_number}${ep.name?" — "+ep.name:""}`;
     body.appendChild(titleEl);
     if (airLabel) { const d=document.createElement("p"); d.className="ep-card__date"; d.textContent=airLabel; body.appendChild(d); }
     if (!aired) { const b=document.createElement("span"); b.className="ep-card__unaired-badge"; b.innerHTML=`<span class="material-icons" aria-hidden="true">schedule</span>Not yet aired`; body.appendChild(b); }
@@ -2045,50 +2031,21 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
 ═══════════════════════════════════════════════════════ */
 let trendingItems = [];
 
-function buildDiscoverSection(title, cards, actionEl) {
+function buildDiscoverSection(title, cards) {
   const sec  = document.createElement("section"); sec.className = "discover__section";
   const head = document.createElement("div");     head.className = "discover__header";
   const h    = document.createElement("h2");      h.className = "discover__title"; h.textContent = title;
   head.appendChild(h);
-  if (actionEl) head.appendChild(actionEl);
   const grid = document.createElement("div"); grid.className = "results-grid"; grid.setAttribute("role", "list");
   cards.forEach(c => grid.appendChild(c));
   sec.appendChild(head); sec.appendChild(grid);
   return sec;
 }
 
-function buildHistoryClearBtn() {
-  const btn = document.createElement("button");
-  btn.type = "button"; btn.className = "discover__clear"; btn.textContent = "Clear";
-  btn.addEventListener("click", async () => {
-    const ok = await BQChrome.confirm({
-      title: "Clear recently watched?",
-      body: "This only forgets the list — nothing else is affected.",
-      confirmLabel: "Clear", danger: true,
-    });
-    if (!ok) return;
-    watchHistory = []; historySave(); renderDiscover();
-  });
-  return btn;
-}
-
 function renderDiscover() {
   // Only ever visible on the idle Search screen; a query owns the grid.
   if (searchInput.value.trim()) { discoverArea.classList.add("hidden"); discoverArea.innerHTML = ""; return; }
   discoverArea.innerHTML = "";
-
-  if (watchHistory.length) {
-    const cards = watchHistory.map(h => {
-      const isEp = h.mediaType === "tv" && h.season && h.episode;
-      return buildMediaCard({
-        id: h.id, mediaType: h.mediaType, title: h.title, poster: h.poster,
-        epLabel: isEp ? `S${h.season} · E${h.episode}` : "",
-        resumeHash: historyHash(h),
-        ariaExtra: isEp ? `resume season ${h.season} episode ${h.episode}` : "watched recently",
-      });
-    });
-    discoverArea.appendChild(buildDiscoverSection("Recently watched", cards, buildHistoryClearBtn()));
-  }
 
   if (trendingItems.length) {
     discoverArea.appendChild(buildDiscoverSection("Trending this week", trendingItems.map(cardFromTmdb)));
@@ -2170,14 +2127,6 @@ async function handleCardClick(e) {
   const id = Number(card.dataset.id), mt = card.dataset.mediaType; if (!id||!mt) return;
   const posterImg = card.querySelector(".media-card__img");
   setHeroPoster(posterImg);
-  // A Recently-watched card carries where it left off. Push that entry and
-  // let the router replay it, so resuming takes the same path as opening
-  // the link directly and Back still lands where it should.
-  if (card.dataset.resumeHash) {
-    history.pushState(null, "", card.dataset.resumeHash);
-    await handleHashRoute();
-    return;
-  }
   pushDetailHash(mt, id); setView("detail");
   await loadDetailFor(mt, id, posterImg ? posterImg.src : null);
 }
@@ -2448,7 +2397,9 @@ try {
 
 (async () => {
   await initSources();
-  await initHistory();
+  // Recently watched was removed; drop anything it left behind rather than
+  // leaving a dead key in storage forever.
+  try { localStorage.removeItem("bq_history"); } catch (e) {}
   updateSourceMenuButton();
   handleHashRoute();
   renderDiscover();
