@@ -75,7 +75,17 @@ self.addEventListener("fetch", (event) => {
   // load that made cache-first attractive; revalidating in the background
   // means the next load picks the change up on its own. Correctness no
   // longer depends on remembering to bump a constant by hand.
-  if (url.pathname.startsWith("/icons/") || url.pathname.startsWith("/shared/") || url.pathname === "/manifest.webmanifest") {
+  //
+  // /tools/<tool>/vendor/* is in here for the same reason. The tools page
+  // sells these as utilities that "run entirely on your device", but the
+  // engines that make that true — qpdf's wasm, the QR decoder, JSZip, the
+  // curve25519 and QR-code generators — were fetched from the network on
+  // every single run, so the PDF and authenticator tools were exactly the
+  // ones that broke with no signal. They are cached on first use rather
+  // than precached in SHELL_URLS on install: qpdf.wasm alone is 1.3 MB,
+  // and most visitors never open that tool.
+  if (url.pathname.startsWith("/icons/") || url.pathname.startsWith("/shared/") ||
+      url.pathname === "/manifest.webmanifest" || /^\/tools\/[^/]+\/vendor\//.test(url.pathname)) {
     event.respondWith(
       caches.match(req).then((cached) => {
         const network = fetch(req).then((res) => { putInCache(req, res); return res; });

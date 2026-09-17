@@ -1648,10 +1648,27 @@ function switchView(apply) {
   else apply();
 }
 
+/* ═══════════ Back-button integration ═══════════
+   Opening a channel is a navigation as far as the person is concerned, so
+   it gets a history entry and the system Back gesture closes it. Without
+   this, Back in the player left the site entirely — on Android, where an
+   installed PWA has no visible back button and the gesture is the only way
+   to go back, tapping a channel was a one-way trip out of the app.
+
+   The entry is marked rather than encoded into the URL: channel ids come
+   from imported playlists and are arbitrary strings, and a shareable
+   deep link would be meaningless to anyone who hasn't imported the same
+   playlist. This exists to make Back behave, not to make URLs. */
+function pushPlayerEntry() {
+  if (history.state && history.state.bqPlayer) return; // already on one
+  try { history.pushState({ bqPlayer: true }, ""); } catch (e) {}
+}
+
 function openPlayer(channel) {
   const isTv = state.tab === "tv";
   playingIsTv = isTv;
   hideMiniPlayer();
+  pushPlayerEntry();
   switchView(() => {
     $("viewBrowse").classList.remove("view--active");
     $("viewPlayer").classList.add("view--active");
@@ -1781,6 +1798,7 @@ function hideMiniPlayer() {
 }
 miniPlayer.addEventListener("click", () => {
   hideMiniPlayer();
+  pushPlayerEntry();
   switchView(() => {
     $("viewBrowse").classList.remove("view--active");
     $("viewPlayer").classList.add("view--active");
@@ -1814,7 +1832,11 @@ videoEl.addEventListener("pause", updateMiniPlayerPlayIcon);
 audioEl.addEventListener("play", updateMiniPlayerPlayIcon);
 audioEl.addEventListener("pause", updateMiniPlayerPlayIcon);
 
-$("backFromPlayer").addEventListener("click", () => {
+// Leaves the player view. Deliberately knows nothing about history — it is
+// called *by* the popstate handler, so the in-app button and the system
+// back gesture end up on exactly the same path instead of two that drift.
+function exitPlayerView() {
+  if (!$("viewPlayer").classList.contains("view--active")) return;
   closeGuideModal();
   if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
   // Minimize into the mini-player (keep playing) unless nothing actually
@@ -1828,7 +1850,18 @@ $("backFromPlayer").addEventListener("click", () => {
   clearInterval(epgPanelInterval);
   if (keepPlaying) showMiniPlayer(currentPlayerChannel);
   else { stopAllPlayback(); currentPlayerChannel = null; clearMediaSession(); }
+}
+
+$("backFromPlayer").addEventListener("click", () => {
+  // Consume the entry openPlayer() pushed, so the player doesn't linger in
+  // the history as somewhere Forward (or another Back) can land. popstate
+  // then runs exitPlayerView(); if there is no entry to pop — a reload
+  // while the player was open — leave directly.
+  if (history.state && history.state.bqPlayer) history.back();
+  else exitPlayerView();
 });
+
+window.addEventListener("popstate", () => { exitPlayerView(); });
 
 /* ═══════════ Init ═══════════ */
 try {

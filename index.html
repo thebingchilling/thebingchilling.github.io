@@ -91,6 +91,39 @@
     .share-btn .material-icons { font-size: 16px; }
     .share-btn--copied { background: var(--md-primary-container); color: var(--md-on-primary-container); }
 
+    /* ── Now-playing card actions ── Next sits before Roll: continuing is
+       the common intent, rolling is the occasional one. ── */
+    .now-playing-card__actions { display: flex; flex-shrink: 0; gap: 0.35rem; align-items: center; }
+
+    /* ── Idle screen (no search query): what you were watching, then what
+       everyone else is. Replaces a blank page with the two things most
+       likely to be the reason the app was opened. ── */
+    .discover { display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 0.5rem; }
+    .discover__section { display: flex; flex-direction: column; gap: 0.5rem; }
+    .discover__header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .discover__title {
+      margin: 0;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
+    .discover__clear {
+      flex-shrink: 0;
+      padding: 0.2rem 0.6rem;
+      border: none;
+      border-radius: var(--shape-full);
+      background: none;
+      color: var(--text-muted);
+      font: var(--type-label-medium);
+      letter-spacing: var(--track-label-medium);
+      cursor: pointer;
+      transition: background var(--t), color var(--t);
+    }
+    @media (hover: hover) { .discover__clear:hover { background: var(--md-surface-container-high); color: var(--text); } }
+    .discover__clear:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+    /* The episode a show was left on, in place of a release year. */
+    .media-card__ep { font: var(--type-body-small); letter-spacing: var(--track-body-small); color: var(--md-primary); font-weight: 600; }
+
     /* ── Results grid ── */
     .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; }
     @media (min-width: 720px) { .results-grid { grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); } }
@@ -610,6 +643,7 @@
         </button>
       </form>
       <div id="searchStatus" class="search-status" role="status" aria-live="polite"></div>
+      <div id="discoverArea" class="discover hidden"></div>
       <div id="resultsGrid" class="results-grid" role="list"></div>
       <div id="emptyState" class="empty-state">
         <span class="material-icons empty-state__icon" aria-hidden="true">movie</span>
@@ -667,9 +701,14 @@
           <div class="now-playing-card__meta" id="epCardMeta"></div>
           <div class="now-playing-card__overview" id="epCardOverview"></div>
         </div>
-        <button id="epCardRollBtn" class="reroll-btn" type="button" aria-label="Roll a random episode">
-          <span class="material-icons" aria-hidden="true">shuffle</span>
-        </button>
+        <div class="now-playing-card__actions">
+          <button id="epCardNextBtn" class="reroll-btn hidden" type="button" aria-label="Play the next episode" title="Next episode">
+            <span class="material-icons" aria-hidden="true">skip_next</span>
+          </button>
+          <button id="epCardRollBtn" class="reroll-btn" type="button" aria-label="Roll a random episode" title="Surprise me">
+            <span class="material-icons" aria-hidden="true">shuffle</span>
+          </button>
+        </div>
       </div>
     </section>
   </main>
@@ -926,6 +965,47 @@ async function initSources() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   WATCH HISTORY
+   ─────────────────────────────────────────────────────
+   What was played, and for a show which episode it was left on. There is
+   deliberately no playback position: the players are third-party embeds in
+   a cross-origin iframe, so the page genuinely cannot see how far through
+   one is, and a "resume at 14:32" that silently restarts from zero would
+   be worse than not offering it. One entry per title, not per episode, so
+   a show you are working through occupies one card that moves forward with
+   you rather than filling the screen with its own back catalogue.
+═══════════════════════════════════════════════════════ */
+const HISTORY_KEY = "bq_history";
+const HISTORY_MAX = 12;
+let watchHistory = [];
+
+async function initHistory() {
+  try {
+    const parsed = JSON.parse(await Store.get(HISTORY_KEY));
+    if (Array.isArray(parsed)) watchHistory = parsed.filter(h => h && h.id && h.mediaType);
+  } catch (e) { /* nothing saved yet, or corrupt data — start empty */ }
+}
+function historySave() { Store.set(HISTORY_KEY, JSON.stringify(watchHistory)); }
+
+function recordWatch({ mediaType, id, title, poster, season, episode, epName }) {
+  if (!id || !mediaType) return;
+  const key = mediaType + ":" + id;
+  watchHistory = watchHistory.filter(h => (h.mediaType + ":" + h.id) !== key);
+  watchHistory.unshift({
+    mediaType, id, title: title || "", poster: poster || null,
+    season: season || null, episode: episode || null, epName: epName || "", ts: Date.now(),
+  });
+  if (watchHistory.length > HISTORY_MAX) watchHistory.length = HISTORY_MAX;
+  historySave();
+  renderDiscover();
+}
+
+function historyHash(h) {
+  if (h.mediaType === "movie") return `#/movie/${h.id}`;
+  return (h.season && h.episode) ? `#/tv/${h.id}/s${h.season}/e${h.episode}` : `#/tv/${h.id}`;
+}
+
+/* ═══════════════════════════════════════════════════════
    TMDB
 ═══════════════════════════════════════════════════════ */
 const TMDB_BASE  = "https://api.themoviedb.org/3";
@@ -952,11 +1032,12 @@ const tmdbSearch = (q, s)    => tmdbFetch("/search/multi",         { query: q, i
 const tmdbMovie  = (id, s)   => tmdbFetch(`/movie/${id}`,          { language: "en-US" }, s);
 const tmdbTV     = (id, s)   => tmdbFetch(`/tv/${id}`,             { language: "en-US" }, s);
 const tmdbSeason = (id, n, s)=> tmdbFetch(`/tv/${id}/season/${n}`, { language: "en-US" }, s);
+const tmdbTrending = (s)      => tmdbFetch("/trending/all/week",    { language: "en-US" }, s);
 
 /* ═══════════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════════ */
-let currentDetail = { mediaType: null, id: null, title: "", seasonNumbers: [] };
+let currentDetail = { mediaType: null, id: null, title: "", seasonNumbers: [], poster: null };
 let currentPlayer = { mediaType: null, id: null, season: null, episode: null, label: "", url: "" };
 const loadedSeasons = {};
 let detailScrollTop = 0;
@@ -1059,6 +1140,8 @@ const epCardTitle      = $("epCardTitle");
 const epCardMeta       = $("epCardMeta");
 const epCardOverview   = $("epCardOverview");
 const epCardRollBtn    = $("epCardRollBtn");
+const epCardNextBtn    = $("epCardNextBtn");
+const discoverArea     = $("discoverArea");
 const shareBtn         = $("shareBtn");
 const shareBtnLabel    = $("shareBtnLabel");
 const shareDetailBtn      = $("shareDetailBtn");
@@ -1167,7 +1250,21 @@ async function handleHashRoute() {
   if (!m) { teardownPlayer(); setView("search"); return; }
   const [, type, idStr, sStr, eStr] = m;
   const id = Number(idStr);
-  if (sStr && eStr && currentDetail.id === id && currentPlayer.id === id) { setView("player"); return; }
+  if (sStr && eStr && currentDetail.id === id && currentPlayer.id === id) {
+    const season = Number(sStr), episode = Number(eStr);
+    // Showing the player again is only enough when it is still the *same*
+    // episode and the embed is actually loaded. Anything that left the
+    // player — Back to Search, or resuming a different episode from
+    // Recently watched — tore the iframe down, so this has to reload
+    // rather than reveal an empty frame.
+    if (currentPlayer.season === season && currentPlayer.episode === episode && playerFrame.getAttribute("src")) {
+      setView("player"); return;
+    }
+    replayingRoute = true;
+    try { loadPlayer({ mediaType: "tv", id, season, episode, label: currentDetail.title }); }
+    finally { replayingRoute = false; }
+    return;
+  }
   // Landing back on a Detail URL means we are leaving the player, whether
   // that was the in-app Back button or the browser's own back gesture.
   // Only the in-app buttons used to tear the iframe down, so a system back
@@ -1317,6 +1414,18 @@ function loadPlayer({ mediaType, id, season, episode, label, rolledEpData = null
 
   currentPlayer = { mediaType, id, season: season || null, episode: episode || null, label: label || "", url };
 
+  // Only once a playable URL was actually built — a failed source lookup
+  // isn't something to offer to resume.
+  if (url) {
+    recordWatch({
+      mediaType, id,
+      title: label || currentDetail.title,
+      poster: currentDetail.id === id ? currentDetail.poster : null,
+      season, episode,
+      epName: epData?.name || "",
+    });
+  }
+
   setView("player");
   pushPlayerHash();
 
@@ -1414,6 +1523,48 @@ async function updateEpCard(tvId, season, episode, rolledEpData) {
     await doRoll(tvId, currentDetail.seasonNumbers, currentDetail.title);
     epCardRollBtn.disabled = false;
   };
+
+  // Resolving "what's next" can need a season fetch, so the button starts
+  // hidden and appears once there is somewhere to go. The token guards
+  // against a slow lookup for one episode landing after the user has
+  // already moved to another.
+  const token = ++epCardSeq;
+  epCardNextBtn.classList.add("hidden");
+  const next = await findNextEpisode(tvId, season, episode);
+  if (token !== epCardSeq || !next) return;
+  epCardNextBtn.classList.remove("hidden");
+  epCardNextBtn.setAttribute("aria-label",
+    `Play the next episode, season ${next.season} episode ${next.episode}`);
+  epCardNextBtn.onclick = () => loadPlayer({
+    mediaType: "tv", id: tvId, season: next.season, episode: next.episode,
+    label: currentDetail.title, rolledEpData: next.ep,
+  });
+}
+
+/* The next aired episode after (season, episode): the rest of this season
+   first, then the earliest aired episode of each later season. Returns null
+   at the end of the show, or when everything after this point is unaired —
+   which is why this can't just be episode + 1. */
+let epCardSeq = 0;
+async function findNextEpisode(tvId, season, episode) {
+  let eps = loadedSeasons[tvId]?.[season];
+  if (!eps) { try { eps = await fetchSeasonEps(tvId, season); } catch { eps = []; } }
+  const today = getToday();
+  const laterInSeason = (eps || [])
+    .filter(e => e.episode_number > episode && hasAired(e.air_date, today))
+    .sort((a, b) => a.episode_number - b.episode_number)[0];
+  if (laterInSeason) return { season, episode: laterInSeason.episode_number, ep: laterInSeason };
+
+  const laterSeasons = [...(currentDetail.seasonNumbers || [])].filter(n => n > season).sort((a, b) => a - b);
+  for (const sn of laterSeasons) {
+    let list;
+    try { list = await fetchSeasonEps(tvId, sn); } catch { continue; }
+    const first = (list || [])
+      .filter(e => hasAired(e.air_date, today))
+      .sort((a, b) => a.episode_number - b.episode_number)[0];
+    if (first) return { season: sn, episode: first.episode_number, ep: first };
+  }
+  return null;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1472,42 +1623,59 @@ function renderSearchSkeleton(count = 8) {
       </div>
     </div>`).join("");
 }
+/* One card, three callers: search results, Recently watched and Trending.
+   They differ only in what sits next to the Movie/TV chip and whether a
+   tap resumes an episode instead of opening the detail view, so the markup
+   is built once here rather than copied per surface. */
+function buildMediaCard({ id, mediaType, title, year, poster, epLabel, resumeHash, ariaExtra }) {
+  const isMovie = mediaType === "movie";
+  const art = document.createElement("article");
+  art.className = "media-card"; art.setAttribute("role","listitem"); art.tabIndex = 0;
+  art.dataset.id = id; art.dataset.mediaType = mediaType;
+  art.dataset.title = title||""; art.dataset.year = year||"";
+  if (resumeHash) art.dataset.resumeHash = resumeHash;
+  art.setAttribute("aria-label",
+    `${title||"Unknown"} (${isMovie?"Movie":"TV show"}${year?", "+year:""})${ariaExtra?", "+ariaExtra:""}`);
+
+  const imgWrap = document.createElement("div"); imgWrap.className = "media-card__img-wrap";
+  if (poster) { const img = document.createElement("img"); img.className="media-card__img"; img.src=poster; img.alt=title||""; img.loading="lazy"; imgWrap.appendChild(img); }
+  else { const ph = document.createElement("div"); ph.className="media-card__placeholder"; ph.innerHTML=`<span class="material-icons" aria-hidden="true">${isMovie?"movie":"live_tv"}</span>`; imgWrap.appendChild(ph); }
+
+  const extBtn = document.createElement("button");
+  extBtn.className = "media-card__ext-btn"; extBtn.type = "button";
+  extBtn.setAttribute("aria-label", "Search externally"); extBtn.title = "Search on predb.me";
+  extBtn.innerHTML = `<span class="material-icons" aria-hidden="true">travel_explore</span>`;
+  imgWrap.appendChild(extBtn);
+
+  const body = document.createElement("div"); body.className = "media-card__body";
+  const titleEl = document.createElement("div"); titleEl.className = "media-card__title"; titleEl.textContent = title||"Untitled";
+  const meta  = document.createElement("div"); meta.className = "media-card__meta";
+  const chip  = document.createElement("span"); chip.className = "media-card__chip"; chip.textContent = isMovie ? "Movie" : "TV";
+  meta.appendChild(chip);
+  if (epLabel) { const ep = document.createElement("span"); ep.className="media-card__ep"; ep.textContent=epLabel; meta.appendChild(ep); }
+  else if (year) { const yr = document.createElement("span"); yr.className="media-card__year"; yr.textContent=year; meta.appendChild(yr); }
+  body.appendChild(titleEl); body.appendChild(meta);
+  art.appendChild(imgWrap); art.appendChild(body);
+  return art;
+}
+
+// Normalizes a raw TMDB search/trending item into buildMediaCard's shape.
+function cardFromTmdb(item) {
+  const isMovie = item.media_type === "movie";
+  return buildMediaCard({
+    id: item.id,
+    mediaType: item.media_type,
+    title: isMovie ? item.title : item.name,
+    year: getYear(isMovie ? item.release_date : item.first_air_date),
+    poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
+  });
+}
+
 function renderResults(items) {
   resultsGrid.innerHTML = ""; emptyState.classList.add("hidden");
   if (!items?.length) return;
   const frag = document.createDocumentFragment();
-  items.filter(i => (i.media_type==="movie"||i.media_type==="tv") && i.id).forEach(item => {
-    const isMovie = item.media_type === "movie";
-    const title   = isMovie ? item.title : item.name;
-    const year    = getYear(isMovie ? item.release_date : item.first_air_date);
-    const poster  = item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null;
-
-    const art = document.createElement("article");
-    art.className = "media-card"; art.setAttribute("role","listitem"); art.tabIndex = 0;
-    art.dataset.id = item.id; art.dataset.mediaType = item.media_type;
-    art.dataset.title = title||""; art.dataset.year = year;
-    art.setAttribute("aria-label", `${title||"Unknown"} (${isMovie?"Movie":"TV show"}${year?", "+year:""})`);
-
-    const imgWrap = document.createElement("div"); imgWrap.className = "media-card__img-wrap";
-    if (poster) { const img = document.createElement("img"); img.className="media-card__img"; img.src=poster; img.alt=title||""; img.loading="lazy"; imgWrap.appendChild(img); }
-    else { const ph = document.createElement("div"); ph.className="media-card__placeholder"; ph.innerHTML=`<span class="material-icons" aria-hidden="true">movie</span>`; imgWrap.appendChild(ph); }
-
-    const extBtn = document.createElement("button");
-    extBtn.className = "media-card__ext-btn"; extBtn.type = "button";
-    extBtn.setAttribute("aria-label", "Search externally"); extBtn.title = "Search on predb.me";
-    extBtn.innerHTML = `<span class="material-icons" aria-hidden="true">travel_explore</span>`;
-    imgWrap.appendChild(extBtn);
-
-    const body = document.createElement("div"); body.className = "media-card__body";
-    const titleEl = document.createElement("div"); titleEl.className = "media-card__title"; titleEl.textContent = title||"Untitled";
-    const meta  = document.createElement("div"); meta.className = "media-card__meta";
-    const chip  = document.createElement("span"); chip.className = "media-card__chip"; chip.textContent = isMovie ? "Movie" : "TV";
-    meta.appendChild(chip);
-    if (year) { const yr = document.createElement("span"); yr.className="media-card__year"; yr.textContent=year; meta.appendChild(yr); }
-    body.appendChild(titleEl); body.appendChild(meta);
-    art.appendChild(imgWrap); art.appendChild(body);
-    frag.appendChild(art);
-  });
+  items.filter(i => (i.media_type==="movie"||i.media_type==="tv") && i.id).forEach(item => frag.appendChild(cardFromTmdb(item)));
   resultsGrid.appendChild(frag);
 }
 
@@ -1542,7 +1710,8 @@ function renderDetailSkeleton(mediaType, posterUrl) {
    RENDER MOVIE
 ═══════════════════════════════════════════════════════ */
 function renderMovie(movie) {
-  currentDetail = { mediaType:"movie", id:movie.id, title:movie.title||movie.original_title||"", seasonNumbers:[] };
+  currentDetail = { mediaType:"movie", id:movie.id, title:movie.title||movie.original_title||"", seasonNumbers:[],
+                    poster: movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : null };
   const title   = currentDetail.title || "Movie";
   const year    = getYear(movie.release_date);
   const rt      = movie.runtime > 0 ? `${movie.runtime} min` : "";
@@ -1580,7 +1749,8 @@ function renderTV(tv) {
   loadedSeasons[tv.id] = loadedSeasons[tv.id] || {};
   const seasons    = (tv.seasons||[]).filter(s => s.season_number > 0);
   const seasonNums = seasons.map(s => s.season_number);
-  currentDetail    = { mediaType:"tv", id:tv.id, title:tv.name||tv.original_name||"", seasonNumbers:seasonNums };
+  currentDetail    = { mediaType:"tv", id:tv.id, title:tv.name||tv.original_name||"", seasonNumbers:seasonNums,
+                       poster: tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : null };
   const title      = currentDetail.title || "TV Show";
   const year       = getYear(tv.first_air_date);
   const seasonsLabel = seasons.length ? `${seasons.length} season${seasons.length>1?"s":""}` : "";
@@ -1719,11 +1889,97 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
 }
 
 /* ═══════════════════════════════════════════════════════
+   IDLE SCREEN
+   ─────────────────────────────────────────────────────
+   With no query typed, the app used to show one illustration and nothing
+   else — which is the first thing anyone sees on opening it. The two
+   things most likely to be why they opened it go here instead: what they
+   were part-way through, and what is popular this week. Both are purely
+   additive; the search box behaves exactly as before, and if TMDB's
+   trending call fails the section is simply absent.
+═══════════════════════════════════════════════════════ */
+let trendingItems = [];
+
+function buildDiscoverSection(title, cards, actionEl) {
+  const sec  = document.createElement("section"); sec.className = "discover__section";
+  const head = document.createElement("div");     head.className = "discover__header";
+  const h    = document.createElement("h2");      h.className = "discover__title"; h.textContent = title;
+  head.appendChild(h);
+  if (actionEl) head.appendChild(actionEl);
+  const grid = document.createElement("div"); grid.className = "results-grid"; grid.setAttribute("role", "list");
+  cards.forEach(c => grid.appendChild(c));
+  sec.appendChild(head); sec.appendChild(grid);
+  return sec;
+}
+
+function buildHistoryClearBtn() {
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "discover__clear"; btn.textContent = "Clear";
+  btn.addEventListener("click", async () => {
+    const ok = await BQChrome.confirm({
+      title: "Clear recently watched?",
+      body: "This only forgets the list — nothing else is affected.",
+      confirmLabel: "Clear", danger: true,
+    });
+    if (!ok) return;
+    watchHistory = []; historySave(); renderDiscover();
+  });
+  return btn;
+}
+
+function renderDiscover() {
+  // Only ever visible on the idle Search screen; a query owns the grid.
+  if (searchInput.value.trim()) { discoverArea.classList.add("hidden"); discoverArea.innerHTML = ""; return; }
+  discoverArea.innerHTML = "";
+
+  if (watchHistory.length) {
+    const cards = watchHistory.map(h => {
+      const isEp = h.mediaType === "tv" && h.season && h.episode;
+      return buildMediaCard({
+        id: h.id, mediaType: h.mediaType, title: h.title, poster: h.poster,
+        epLabel: isEp ? `S${h.season} · E${h.episode}` : "",
+        resumeHash: historyHash(h),
+        ariaExtra: isEp ? `resume season ${h.season} episode ${h.episode}` : "watched recently",
+      });
+    });
+    discoverArea.appendChild(buildDiscoverSection("Recently watched", cards, buildHistoryClearBtn()));
+  }
+
+  if (trendingItems.length) {
+    discoverArea.appendChild(buildDiscoverSection("Trending this week", trendingItems.map(cardFromTmdb)));
+  }
+
+  const any = discoverArea.children.length > 0;
+  discoverArea.classList.toggle("hidden", !any);
+  // The stock illustration is the fallback for a genuinely empty idle
+  // screen (no history yet, trending unavailable), not a fixture.
+  emptyState.classList.toggle("hidden", any);
+}
+
+// The no-query state, shared by the three places that return to it.
+function showIdleState() {
+  resultsGrid.innerHTML = "";
+  setStatus("");
+  renderDiscover();
+}
+
+async function loadTrending() {
+  try {
+    const data = await tmdbTrending();
+    trendingItems = (data.results || [])
+      .filter(i => (i.media_type === "movie" || i.media_type === "tv") && i.id)
+      .slice(0, 12);
+    renderDiscover();
+  } catch (e) { /* a bonus row, not a dependency — search is unaffected */ }
+}
+
+/* ═══════════════════════════════════════════════════════
    SEARCH
 ═══════════════════════════════════════════════════════ */
 async function doSearch(query) {
-  if (!query) { resultsGrid.innerHTML=""; emptyState.classList.remove("hidden"); setStatus(""); return; }
+  if (!query) { showIdleState(); return; }
   emptyState.classList.add("hidden");
+  discoverArea.classList.add("hidden"); discoverArea.innerHTML = "";
   const seq = ++searchSeq; setStatus("Searching…"); renderSearchSkeleton();
   if (searchFetch) searchFetch.abort();
   searchFetch = new AbortController();
@@ -1775,6 +2031,14 @@ async function handleCardClick(e) {
   const id = Number(card.dataset.id), mt = card.dataset.mediaType; if (!id||!mt) return;
   const posterImg = card.querySelector(".media-card__img");
   setHeroPoster(posterImg);
+  // A Recently-watched card carries where it left off. Push that entry and
+  // let the router replay it, so resuming takes the same path as opening
+  // the link directly and Back still lands where it should.
+  if (card.dataset.resumeHash) {
+    history.pushState(null, "", card.dataset.resumeHash);
+    await handleHashRoute();
+    return;
+  }
   pushDetailHash(mt, id); setView("detail");
   await loadDetailFor(mt, id, posterImg ? posterImg.src : null);
 }
@@ -1792,13 +2056,17 @@ async function loadDetailFor(mt, id, posterUrl) {
     const rb = $("retryDetailBtn2"); if (rb) rb.onclick = () => loadDetailFor(mt, id);
   }
 }
-resultsGrid.addEventListener("click", handleCardClick);
-resultsGrid.addEventListener("keydown", e => {
-  if (e.key==="Enter"||e.key===" ") {
-    if (e.target.closest(".media-card__ext-btn")) { e.preventDefault(); e.target.click(); return; }
-    const c = e.target.closest(".media-card"); if (c) { e.preventDefault(); handleCardClick({target:c}); }
-  }
-});
+function wireCardContainer(el) {
+  el.addEventListener("click", handleCardClick);
+  el.addEventListener("keydown", e => {
+    if (e.key==="Enter"||e.key===" ") {
+      if (e.target.closest(".media-card__ext-btn")) { e.preventDefault(); e.target.click(); return; }
+      const c = e.target.closest(".media-card"); if (c) { e.preventDefault(); handleCardClick({target:c}); }
+    }
+  });
+}
+wireCardContainer(resultsGrid);
+wireCardContainer(discoverArea);
 
 /* ═══════════════════════════════════════════════════════
    NAVIGATION
@@ -2027,10 +2295,10 @@ searchForm.addEventListener("submit", e => { e.preventDefault(); doSearch(search
 searchInput.addEventListener("input", () => {
   clearTimeout(searchDebounce); const q=searchInput.value.trim();
   clearBtn.classList.toggle("hidden",!q);
-  if (!q) { resultsGrid.innerHTML=""; emptyState.classList.remove("hidden"); setStatus(""); return; }
+  if (!q) { showIdleState(); return; }
   searchDebounce = setTimeout(()=>doSearch(q), 220);
 });
-clearBtn.addEventListener("click", () => { searchInput.value=""; clearBtn.classList.add("hidden"); resultsGrid.innerHTML=""; emptyState.classList.remove("hidden"); setStatus(""); searchInput.focus(); });
+clearBtn.addEventListener("click", () => { searchInput.value=""; clearBtn.classList.add("hidden"); showIdleState(); searchInput.focus(); });
 
 /* ═══════════════════════════════════════════════════════
    INIT
@@ -2042,8 +2310,11 @@ try {
 
 (async () => {
   await initSources();
+  await initHistory();
   updateSourceMenuButton();
   handleHashRoute();
+  renderDiscover();
+  loadTrending();
 })();
 initSwipeBack(document, () => {
   if (!settingsSheet.classList.contains("hidden")) return; // let the sheet's own backdrop/close handle that

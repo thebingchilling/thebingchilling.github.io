@@ -269,6 +269,10 @@
   BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item");
   BQChrome.initTheme();
 
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+  }
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
@@ -460,6 +464,37 @@
 
   let ratesUSD = null;
 
+  /* ═══════════════════════════════════════════════════════════════════
+     Last-known-good rates. Both providers being unreachable used to leave
+     the whole tool dead ("Rates unavailable") — no conversion, no PPP, no
+     currency list — which is exactly the situation you are in on a plane
+     or on hotel wifi, i.e. the situation a travel currency converter is
+     for. A successful table is stamped and kept, so a failed refresh
+     degrades to slightly stale numbers, clearly labelled, instead of
+     nothing at all. Rates are not stored for accuracy, only for
+     availability — the age is always shown.
+     ═══════════════════════════════════════════════════════════════════ */
+  const RATES_CACHE_KEY = "bq_currency_rates";
+  function cacheRates(r) {
+    try { localStorage.setItem(RATES_CACHE_KEY, JSON.stringify({ ...r, cachedAt: Date.now() })); } catch (e) {}
+  }
+  function loadCachedRates() {
+    try {
+      const c = JSON.parse(localStorage.getItem(RATES_CACHE_KEY) || "null");
+      if (c && c.rates && typeof c.rates === "object" && c.rates.USD) return c;
+    } catch (e) {}
+    return null;
+  }
+  function describeAge(ts) {
+    if (!ts) return "earlier";
+    const mins = Math.round((Date.now() - ts) / 60000);
+    if (mins < 60) return mins <= 1 ? "just now" : mins + " minutes ago";
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs === 1 ? "an hour ago" : hrs + " hours ago";
+    const days = Math.round(hrs / 24);
+    return days === 1 ? "yesterday" : days + " days ago";
+  }
+
   const mainSelect = $("mainSelect"), curASelect = $("curASelect");
   const amountAInput = $("amountA"), amountSymbol = $("amountSymbol");
   const conversionInfo = $("conversionInfo"), ratesStatus = $("ratesStatus");
@@ -521,6 +556,7 @@
     try {
       const r = await fetchRatesUSD();
       ratesUSD = r.rates;
+      cacheRates(r);
       populateCurrencySelects(Object.keys(ratesUSD));
       if (!selectionsInitialized) {
         restoreSelections();
@@ -533,6 +569,25 @@
       ratesStatus.textContent = "Rates via " + r.source + (r.date ? " · " + r.date : "");
       onPairChanged();
     } catch (err) {
+      // Both providers are unreachable. Fall back to the last table that
+      // did load, if there is one, rather than showing nothing.
+      const cached = loadCachedRates();
+      if (cached) {
+        ratesUSD = cached.rates;
+        populateCurrencySelects(Object.keys(ratesUSD));
+        if (!selectionsInitialized) { restoreSelections(); selectionsInitialized = true; }
+        else {
+          const codes = Object.keys(ratesUSD);
+          if (codes.indexOf(prevMain) !== -1) mainSelect.value = prevMain;
+          if (codes.indexOf(prevA) !== -1) curASelect.value = prevA;
+        }
+        ratesStatus.textContent = "Offline — using rates saved " + describeAge(cached.cachedAt)
+          + (cached.source ? " via " + cached.source : "");
+        showRatesError("Couldn't refresh rates (" + ((err && err.message) || String(err))
+          + "). Showing the last rates that loaded — they may be out of date.");
+        onPairChanged();
+        return;
+      }
       conversionInfo.innerHTML = '<p class="caveat-text">Rates unavailable.</p>';
       showRatesError((err && err.message) || String(err));
     }

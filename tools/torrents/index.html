@@ -549,6 +549,10 @@
 
   BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item");
   BQChrome.initTheme();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+  }
 })();
 </script>
 </body>
