@@ -1,12 +1,16 @@
 # Builds extension/ into a signed .crx.
 #
-# The signing key lives in the CRX_PRIVATE_KEY secret and never in the
-# repository, because it is the extension's identity: its SHA-256 is the
-# extension ID, and whoever holds it can sign something Chrome will accept
-# as an update to an already-installed copy. Without the secret set this
-# workflow still builds and still uploads the .zip — it just says what is
-# missing rather than quietly minting a fresh key, which would produce a
-# different ID every run and an extension nobody could update.
+# Every CRX is signed, and the key it is signed with is the extension's
+# identity — the ID Chrome files it under is the SHA-256 of the matching
+# public key. This extension is not distributed and is not updated in
+# place, so it does not need that identity to be stable: the run generates
+# a key, signs with it, and destroys it. Each build is therefore a fresh
+# extension ID, which matters only if you wanted an installed copy to
+# accept a later build as an update to itself. It will not.
+#
+# If that ever becomes wanted, put a PEM in the CRX_PRIVATE_KEY secret and
+# this uses it instead, with no other change: same ID on every build, and
+# the key never in the repository.
 
 name: Package extension
 
@@ -75,24 +79,30 @@ jobs:
         env:
           CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
         run: |
-          if [ -z "$CRX_PRIVATE_KEY" ]; then
-            echo "::warning::CRX_PRIVATE_KEY is not set — built the .zip only, no .crx."
-            echo "To enable signing, generate a key and add it as a repository secret:"
-            echo "  openssl genrsa 4096 | gh secret set CRX_PRIVATE_KEY"
-            echo "Keep a copy somewhere safe: losing it means a new extension ID."
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          # 077 before the key exists, not after: a private key that is
+          # briefly world-readable was briefly world-readable.
+          umask 077
+
+          if [ -n "$CRX_PRIVATE_KEY" ]; then
+            printf '%s\n' "$CRX_PRIVATE_KEY" > key.pem
+            echo "stable=true" >> "$GITHUB_OUTPUT"
+            echo "Signing with the CRX_PRIVATE_KEY secret."
+          else
+            openssl genrsa 4096 2>/dev/null > key.pem
+            echo "stable=false" >> "$GITHUB_OUTPUT"
+            echo "No CRX_PRIVATE_KEY secret; generated a key for this run."
           fi
 
-          umask 077
-          printf '%s\n' "$CRX_PRIVATE_KEY" > key.pem
           node .github/scripts/pack-crx.mjs \
             "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip" \
             key.pem \
             "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.crx" \
             | tee crx.log
+
+          # The key is never an artifact and never outlives the job. A
+          # generated one has nothing worth keeping; a secret one is
+          # already kept somewhere it belongs.
           shred -u key.pem
-          echo "signed=true" >> "$GITHUB_OUTPUT"
           sed -n 's/^extension id: /id=/p' crx.log >> "$GITHUB_OUTPUT"
 
       - name: Summarise
@@ -100,12 +110,16 @@ jobs:
           {
             echo "### Bingqilin Popup Blocker ${{ steps.meta.outputs.version }}"
             echo
-            if [ "${{ steps.crx.outputs.signed }}" = "true" ]; then
-              echo "Signed \`.crx\` built. Extension ID: \`${{ steps.crx.outputs.id }}\`"
-              echo
-              echo "If that ID ever changes, the signing key changed with it."
+            echo "Extension ID: \`${{ steps.crx.outputs.id }}\`"
+            echo
+            if [ "${{ steps.crx.outputs.stable }}" = "true" ]; then
+              echo "Signed with the \`CRX_PRIVATE_KEY\` secret, so that ID is stable"
+              echo "across builds. If it changes, the key changed with it."
             else
-              echo "Unsigned. \`.zip\` only — set \`CRX_PRIVATE_KEY\` to get a \`.crx\`."
+              echo "Signed with a key generated for this run and then destroyed, so"
+              echo "the next build gets a different ID. Chrome will treat it as a"
+              echo "separate extension rather than an update to this one — remove"
+              echo "the old copy when you install a new build."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 

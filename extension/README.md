@@ -60,18 +60,23 @@ when you push a tag like `ext-v1.0.0` (the tag has to match the version in
 `manifest.json`, or the run fails rather than shipping a mislabelled
 build). The artifact lands on the run either way.
 
-Signing needs a key, once:
+Every CRX is signed, and the key decides the extension's ID — it is the
+first 16 bytes of the SHA-256 of the matching public key. The run
+generates a key, signs with it, and destroys it, so **each build gets a
+different ID.** That only costs you something if you wanted an installed
+copy to accept a later build as an update to itself; it will not, so
+remove the old copy before installing a new one. The ID of each build is
+in its run summary.
+
+To make it stable instead, put a PEM in the `CRX_PRIVATE_KEY` secret and
+the workflow uses that with no other change:
 
 ```sh
 openssl genrsa 4096 | gh secret set CRX_PRIVATE_KEY
 ```
 
-**Keep a copy somewhere safe.** The extension's ID is the first 16 bytes
-of the SHA-256 of the matching public key, so that one key *is* the
-extension's identity — lose it and the rebuild is a different extension to
-Chrome, not an update to this one. The workflow prints the ID in its run
-summary; if it ever changes, the key changed with it. Without the secret
-the workflow still builds, and uploads the `.zip` alone.
+Keep a copy somewhere outside the repo if you do — losing it puts you back
+to a new ID per build.
 
 The packer is `.github/scripts/pack-crx.mjs` — about sixty lines against
 `node:crypto` and nothing else. The repo has no `package.json`, and the
