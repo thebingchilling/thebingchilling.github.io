@@ -114,6 +114,39 @@
       color: var(--text);
     }
 
+    /* ── Episode filter ──
+       Only appears on seasons long enough to need it: on a six-episode
+       season it would be noise, and on a two-hundred-episode one there is
+       otherwise no way to reach episode 147 but to scroll. ── */
+    .ep-filter {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 32px;
+      padding: 0 0.6rem;
+      border-radius: var(--shape-full);
+      background: var(--surface-raised);
+      box-shadow: var(--el1);
+    }
+    .ep-filter__icon { font-size: 16px; color: var(--text-faint); }
+    .ep-filter__input {
+      width: 8.5rem;
+      border: none;
+      background: none;
+      color: var(--text);
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .ep-filter__input::-webkit-search-cancel-button { -webkit-appearance: none; }
+    .ep-filter:focus-within { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+    .ep-filter__input::placeholder { color: var(--text-faint); }
+    .ep-empty { margin: 0.5rem 0 0; color: var(--text-muted); }
+
+    /* The overlay's action button, for when a source won't load. */
+    .player-overlay__text + .btn { margin-top: 0.75rem; }
+
     /* Specials sit at the end of the season chips and are set apart from
        the numbered run — dashed rather than solid, so the row reads as
        "seasons 1-5, and then the extras" at a glance. */
@@ -687,6 +720,7 @@
         <div id="playerOverlay" class="player-overlay" role="status" aria-live="polite">
           <span class="material-icons" aria-hidden="true" id="playerOverlayIcon">smart_display</span>
           <span id="playerOverlayText" class="player-overlay__text">Loading player…</span>
+          <button id="playerOverlayBtn" class="btn btn--sm hidden" type="button"></button>
         </div>
         <iframe id="playerFrame" src="" loading="lazy" allowfullscreen webkitallowfullscreen mozallowfullscreen
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write"
@@ -1231,13 +1265,46 @@ const playerOverlay    = $("playerOverlay");
 const playerOverlayText = $("playerOverlayText");
 const playerOverlayIcon = $("playerOverlayIcon");
 
+const playerOverlayBtn = $("playerOverlayBtn");
+function hideOverlayAction() {
+  playerOverlayBtn.classList.add("hidden");
+  playerOverlayBtn.onclick = null;
+}
 function setPlayerOverlayLoading(text) {
   playerOverlay.classList.remove("hidden");
   playerOverlayIcon.textContent = "smart_display";
   playerOverlayText.textContent = text || "Loading player…";
+  hideOverlayAction();
 }
 function setPlayerOverlayReady() {
   playerOverlay.classList.add("hidden");
+  hideOverlayAction();
+}
+/* Shown when an embed never reports that it loaded. Sources go down, get
+   blocked, or serve a page that never fires load — and the overlay used to
+   simply disappear after 8 seconds, leaving a black rectangle and no
+   explanation. Offering the next source turns a dead end into one tap. */
+function setPlayerOverlayStuck() {
+  playerOverlay.classList.remove("hidden");
+  playerOverlayIcon.textContent = "error_outline";
+  const more = SOURCES.length > 1;
+  playerOverlayText.textContent = more
+    ? "This source isn't responding."
+    : "This source isn't responding. Add another in Settings to have something to fall back on.";
+  if (!more) { hideOverlayAction(); return; }
+  playerOverlayBtn.textContent = "Try another source";
+  playerOverlayBtn.classList.remove("hidden");
+  playerOverlayBtn.onclick = cycleSource;
+}
+/* Advances to the next configured source and reloads whatever is playing.
+   Routed through loadPlayer(), like the source menu, so the overlay and
+   the load timeout re-arm for the new document. */
+function cycleSource() {
+  if (SOURCES.length < 2) return;
+  setActiveSource((activeSourceIdx + 1) % SOURCES.length);
+  updateSourceMenuButton();
+  BQChrome.snackbar(`Switched to "${SOURCES[activeSourceIdx].name}".`);
+  reloadCurrentPlayerIfActive();
 }
 
 /* ── Player fullscreen ──
@@ -1529,9 +1596,11 @@ function loadPlayer({ mediaType, id, season, episode, label, rolledEpData = null
     const frame = swapPlayerFrame(url, `Video player — ${label || ""}`);
     if (url) {
       frame.addEventListener("load", setPlayerOverlayReady, { once: true });
-      // Give up waiting after 8s, but only if this is still the frame on
-      // screen — a newer load has its own timer and its own overlay.
-      setTimeout(() => { if (playerFrame === frame) setPlayerOverlayReady(); }, 8000);
+      // If load hasn't fired by then the embed is not coming — say so and
+      // offer the next source, rather than hiding the overlay over a black
+      // rectangle. Only acts if this is still the frame on screen; a newer
+      // load has its own timer.
+      setTimeout(() => { if (playerFrame === frame) setPlayerOverlayStuck(); }, 8000);
     }
   }
   if (!url) setPlayerOverlayLoading(lastPlayerUrlError || "Couldn't load a player for this title.");
@@ -1919,6 +1988,11 @@ function renderTV(tv) {
         <div id="seasonChips" class="chip-grid">${chipsHtml}${!seasons.length?`<p class="overview">No season data.</p>`:""}</div>
         <div class="episodes-header">
           <div class="detail-section-label" id="epsHeading">Episodes</div>
+          <div class="ep-filter hidden" id="epFilterWrap">
+            <span class="material-icons ep-filter__icon" aria-hidden="true">search</span>
+            <input id="epFilter" class="ep-filter__input" type="search" autocomplete="off"
+              placeholder="Find an episode…" aria-label="Filter episodes by number or name" />
+          </div>
         </div>
         <div id="episodeGrid" class="grid--episodes"></div>
       </div>
@@ -1954,6 +2028,10 @@ async function switchToSeason(tvId, seasonNum) {
 async function loadSeason(tvId, seasonNum) {
   const epGrid = $("episodeGrid"); const heading = $("epsHeading");
   if (!epGrid) return;
+  // A query left over from the previous season would silently hide most of
+  // the new one, so the filter starts clean on every switch.
+  const fw = $("epFilterWrap"); if (fw) fw.classList.add("hidden");
+  const fi = $("epFilter"); if (fi) fi.value = "";
   if (heading) heading.textContent = seasonHeading(seasonNum);
   if (loadedSeasons[tvId]?.[seasonNum]) { renderEpisodeGrid(tvId, seasonNum, loadedSeasons[tvId][seasonNum]); return; }
   epGrid.innerHTML = `<p class="overview">Loading…</p>`;
@@ -2017,6 +2095,39 @@ function renderEpisodeGrid(tvId, seasonNum, eps) {
     frag.appendChild(card);
   });
   epGrid.innerHTML=""; epGrid.appendChild(frag);
+  initEpisodeFilter(eps.length);
+}
+
+/* Filters the rendered cards in place rather than re-rendering: the grid is
+   already built, and matching on the card's own text means the episode name
+   is searchable without threading the episode list through again. */
+const EP_FILTER_MIN = 12;
+function initEpisodeFilter(count) {
+  const wrap = $("epFilterWrap"), input = $("epFilter"), grid = $("episodeGrid");
+  if (!wrap || !input || !grid) return;
+  // Worth having on a season long enough to scroll; noise on a short one.
+  if (count < EP_FILTER_MIN) { wrap.classList.add("hidden"); input.value = ""; return; }
+  wrap.classList.remove("hidden");
+  input.value = "";
+
+  const apply = () => {
+    const q = input.value.trim().toLowerCase();
+    let shown = 0;
+    grid.querySelectorAll(".ep-card").forEach((card) => {
+      // A bare number matches the episode number exactly, so "3" finds
+      // episode 3 rather than every episode with a 3 in its title.
+      const epNum = card.dataset.ep || "";
+      const hit = !q || (/^\d+$/.test(q) ? epNum === String(Number(q)) : card.textContent.toLowerCase().includes(q));
+      card.classList.toggle("hidden", !hit);
+      if (hit) shown++;
+    });
+    let empty = grid.querySelector(".ep-empty");
+    if (!shown) {
+      if (!empty) { empty = document.createElement("p"); empty.className = "overview ep-empty"; grid.appendChild(empty); }
+      empty.textContent = `No episode matches "${input.value.trim()}".`;
+    } else if (empty) { empty.remove(); }
+  };
+  input.oninput = apply;
 }
 
 /* ═══════════════════════════════════════════════════════
