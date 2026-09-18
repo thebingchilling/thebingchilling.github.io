@@ -24,8 +24,45 @@ websites for a blocker meant to touch one.
 
 Closing rather than preventing is also what keeps this invisible to the
 source. A source that refuses to play under a sandbox is detecting that
-`window.open` failed — here it does not fail. The embed gets a real window
-back and nothing looks wrong to it; the window is taken away afterwards.
+`window.open` failed — here it does not fail.
+
+## The decoy
+
+Closing is always late. The way to have nothing to close is for
+`window.open` never to open anything — but return something anyway.
+`content/no-popup.js` replaces it, inside the embed's own frame, with a
+function handing back an object that behaves like a window and is not one:
+truthy, `closed === false`, and `document.write` / `location =` / `focus()`
+all accepted and discarded. Nothing is created, so there is no flash.
+
+`closed` staying false is the load-bearing part. Popup scripts are written
+
+    var w = window.open(url, "_blank");
+    if (!w || w.closed) { /* fall back to redirecting your tab */ }
+
+so a decoy that reports itself closed just pushes them to the tab-under.
+
+### Where it runs, and how it keeps up
+
+Inside the source origins — never a hardcoded list. **Sources get renewed,
+and a list baked into an extension is wrong by the next rotation.** So:
+
+1. `content/keepalive.js` reads the configured sources from the player's
+   own `bq_sources` storage and reports **only their origins** over the
+   port. The URL templates and everything else stay on the page.
+2. Chrome will not grant a host at runtime without a user gesture, so new
+   origins wait behind **one click on the toolbar icon**. The badge shows
+   how many are waiting. There is no popup or options page — the click on
+   the icon *is* the gesture.
+3. An origin that drops out of the list needs no gesture to lose its
+   grant, so it is revoked on sight and stops being injected.
+
+Rotate your sources, reload the player, click once. Nothing to reinstall
+and no domain written into the extension, the manifest or this repository.
+
+`optional_host_permissions` is declared broadly so that any origin *can*
+be requested, but nothing is granted at install and the prompt at click
+time names only the sites your own sources point at.
 
 ### Keeping the flash short
 
@@ -152,7 +189,8 @@ works everywhere, which is why that is still listed first above.
 
 - `manifest.json` — MV3; `webNavigation` + `storage`, one host permission
 - `background.js` — the three rules
-- `content/keepalive.js` — keeps the worker resident while the player is open
+- `content/keepalive.js` — keeps the worker resident, reports source origins
+- `content/no-popup.js` — the decoy window, injected into granted sources
 - `lib/scope.js` — the path allow-list that defines "the player"
 - `../.github/workflows/package-extension.yml` — build and release
 - `../.github/scripts/pack-crx.mjs` — the CRX3 writer

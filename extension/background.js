@@ -25,7 +25,7 @@
    before its path is ever considered. /tools/ fails on the path.
    ═══════════════════════════════════════════════════════════════════════ */
 
-import { isPlayerUrl } from "./lib/scope.js";
+import { isPlayerUrl, PLAYER_HOST } from "./lib/scope.js";
 
 const TOP_FRAME = 0;
 
@@ -79,6 +79,9 @@ chrome.runtime.onConnect.addListener((port) => {
   const tab = port.sender?.tab;
   if (!tab || tab.id === undefined || !isPlayerUrl(tab.url)) return;
   remember(tab.id, tab.url);
+  port.onMessage.addListener((msg) => {
+    if (msg?.type === "sources" && Array.isArray(msg.origins)) setWantedOrigins(msg.origins);
+  });
   port.onDisconnect.addListener(() => forget(tab.id));
 });
 
@@ -193,3 +196,143 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => forget(tabId));
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Stubbing window.open inside the sources
+
+   Closing a popup is always late: Chrome makes the tab, it takes focus and
+   paints, and only then does it go away. The way to have nothing to close
+   is for window.open never to open anything — which means running inside
+   the embed's frame, which means permission for the embed's origin.
+
+   Those origins are not known here and must not be. They are read from the
+   configured sources on the player page and arrive over the port, so a
+   renewed source is picked up by reloading the player rather than by
+   shipping a new extension. Nothing about them is written to the manifest.
+
+   Chrome will not grant a host at runtime without a user gesture, so new
+   origins wait behind one click on the toolbar icon. The badge says when
+   there is something to click for. Origins that drop out of the list need
+   no gesture to drop out of the grant, and are revoked on sight.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const STUB_SCRIPT_ID = "source-popup-stub";
+const WANTED_KEY = "wantedOrigins";
+
+/* Origins the configured sources point at, as chrome match patterns. */
+let wantedOrigins = [];
+
+const asPattern = (origin) => `${origin}/*`;
+
+chrome.storage.local.get(WANTED_KEY).then((got) => {
+  if (Array.isArray(got[WANTED_KEY]) && !wantedOrigins.length) {
+    wantedOrigins = got[WANTED_KEY];
+    refreshBadge();
+  }
+}).catch(() => { /* nothing stored yet */ });
+
+async function grantedOrigins() {
+  const { origins = [] } = await chrome.permissions.getAll();
+  return origins;
+}
+
+/* Patterns Chrome reports back are not always spelled the way they were
+   asked for, so compare on the origin rather than the string. */
+function originOf(pattern) {
+  try { return new URL(pattern.replace(/\*$/, "")).origin; } catch { return pattern; }
+}
+
+async function splitOrigins() {
+  const granted = new Set((await grantedOrigins()).map(originOf));
+  return {
+    missing: wantedOrigins.filter((o) => !granted.has(o)),
+    stale: [...granted].filter(
+      (o) => o !== `https://${PLAYER_HOST}` && !wantedOrigins.includes(o),
+    ),
+  };
+}
+
+async function refreshBadge() {
+  try {
+    const { missing } = await splitOrigins();
+    await chrome.action.setBadgeText({ text: missing.length ? String(missing.length) : "" });
+    await chrome.action.setBadgeBackgroundColor({ color: "#7e4b22" });
+    await chrome.action.setTitle({
+      title: missing.length
+        ? `Bingqilin Popup Blocker — click to allow ${missing.length} new source${missing.length > 1 ? "s" : ""}`
+        : "Bingqilin Popup Blocker",
+    });
+  } catch { /* action unavailable */ }
+}
+
+/* Re-register against exactly what is granted right now. Called after a
+   grant, after a revoke, and at startup, so the registered set never
+   outlives the permission behind it. */
+async function syncStub() {
+  const granted = (await grantedOrigins())
+    .map(originOf)
+    .filter((o) => o !== `https://${PLAYER_HOST}` && wantedOrigins.includes(o));
+
+  try {
+    await chrome.scripting.unregisterContentScripts({ ids: [STUB_SCRIPT_ID] });
+  } catch { /* was not registered */ }
+
+  if (!granted.length) return;
+
+  try {
+    await chrome.scripting.registerContentScripts([{
+      id: STUB_SCRIPT_ID,
+      js: ["content/no-popup.js"],
+      matches: granted.map(asPattern),
+      allFrames: true,
+      matchOriginAsFallback: true,   // about:blank frames the embed makes
+      runAt: "document_start",
+      world: "MAIN",
+      persistAcrossSessions: true,
+    }]);
+  } catch (e) {
+    console.warn("could not register the popup stub:", e?.message);
+  }
+}
+
+/* Sources reported by a player tab. */
+async function setWantedOrigins(origins) {
+  const next = [...new Set(origins)].sort();
+  if (next.join(" ") === wantedOrigins.join(" ")) return;
+  wantedOrigins = next;
+  await chrome.storage.local.set({ [WANTED_KEY]: wantedOrigins });
+
+  /* A source that is gone needs no permission. Dropping it does not need
+     a gesture, so it happens without asking. */
+  const { stale } = await splitOrigins();
+  if (stale.length) {
+    try { await chrome.permissions.remove({ origins: stale.map(asPattern) }); } catch { /* keep going */ }
+  }
+
+  await syncStub();
+  await refreshBadge();
+}
+
+/* One click, in the gesture Chrome requires. wantedOrigins is already in
+   memory, so nothing is awaited before the request and the gesture holds. */
+chrome.action.onClicked.addListener(() => {
+  /* Requested against the full wanted set: Chrome only prompts for what is
+     not already granted, and asking inside the click is what keeps the
+     gesture valid. Nothing is awaited first, because an await here would
+     spend the gesture and the request would be refused. */
+  if (!wantedOrigins.length) {
+    chrome.action.setTitle({ title: "Open the Bingqilin player once so it can read your sources" });
+    return;
+  }
+  chrome.permissions.request({ origins: wantedOrigins.map(asPattern) })
+    .then(async (granted) => {
+      if (granted) await syncStub();
+      await refreshBadge();
+    })
+    .catch(() => { /* dismissed */ });
+});
+
+chrome.permissions.onAdded.addListener(() => { syncStub(); refreshBadge(); });
+chrome.permissions.onRemoved.addListener(() => { syncStub(); refreshBadge(); });
+chrome.runtime.onStartup.addListener(() => { syncStub(); refreshBadge(); });
+chrome.runtime.onInstalled.addListener(() => { syncStub(); refreshBadge(); });

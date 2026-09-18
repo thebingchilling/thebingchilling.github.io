@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bingqilin Popup Blocker",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Closes the popups and tab-unders that the Bingqilin player's video embeds open. Runs on the player only — never on the tools pages or anywhere else.",
   "minimum_chrome_version": "102",
 
@@ -14,9 +14,14 @@
 
   "background": { "service_worker": "background.js", "type": "module" },
 
-  "permissions": ["webNavigation", "storage"],
+  "permissions": ["webNavigation", "storage", "scripting"],
 
   "host_permissions": ["https://thebingchilling.github.io/*"],
+
+  "_comment_optional": "Granted per source origin at runtime, on one click. Nothing is granted at install, and no source domain is written here — they are read from the player's own configuration and change whenever you rotate them.",
+  "optional_host_permissions": ["*://*/*"],
+
+  "action": { "default_title": "Bingqilin Popup Blocker" },
 
   "content_scripts": [
     {
