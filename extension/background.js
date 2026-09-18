@@ -217,6 +217,7 @@ chrome.tabs.onRemoved.addListener((tabId) => forget(tabId));
    ═══════════════════════════════════════════════════════════════════════ */
 
 const STUB_SCRIPT_ID = "source-popup-stub";
+const GATE_SCRIPT_ID = "source-popup-gate";
 const WANTED_KEY = "wantedOrigins";
 
 /* Origins the configured sources point at, as chrome match patterns. */
@@ -274,26 +275,51 @@ async function syncStub() {
     .filter((o) => o !== `https://${PLAYER_HOST}` && wantedOrigins.includes(o));
 
   try {
-    await chrome.scripting.unregisterContentScripts({ ids: [STUB_SCRIPT_ID] });
+    await chrome.scripting.unregisterContentScripts({ ids: [STUB_SCRIPT_ID, GATE_SCRIPT_ID] });
   } catch { /* was not registered */ }
 
   if (!granted.length) return;
 
+  const matches = granted.map(asPattern);
+  const common = {
+    matches,
+    allFrames: true,
+    matchOriginAsFallback: true,   // about:blank frames the embed makes
+    runAt: "document_start",
+    persistAcrossSessions: true,
+  };
+
   try {
-    await chrome.scripting.registerContentScripts([{
-      id: STUB_SCRIPT_ID,
-      js: ["content/no-popup.js"],
-      matches: granted.map(asPattern),
-      allFrames: true,
-      matchOriginAsFallback: true,   // about:blank frames the embed makes
-      runAt: "document_start",
-      world: "MAIN",
-      persistAcrossSessions: true,
-    }]);
+    await chrome.scripting.registerContentScripts([
+      { ...common, id: STUB_SCRIPT_ID, js: ["content/no-popup.js"], world: "MAIN" },
+      { ...common, id: GATE_SCRIPT_ID, js: ["content/no-popup-gate.js"], world: "ISOLATED" },
+    ]);
   } catch (e) {
     console.warn("could not register the popup stub:", e?.message);
   }
 }
+
+/* ── Is this frame inside the player? ──────────────────────────────────
+   Asked by every frame the decoy went into. Only the worker can tell:
+   the frame is cross-origin to the tab above it, and sender.tab.url is
+   readable here because the player's own host is a granted permission.
+
+   A frame in any other tab gets the decoy taken straight back out, so one
+   of these source domains embedded somewhere else behaves as though this
+   extension were not installed. */
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (msg?.type !== "gate") return false;
+  const { tab, frameId } = sender;
+  if (!tab || tab.id === undefined || frameId === undefined) return false;
+  if (isPlayerUrl(tab.url)) return false;   // the player: leave the decoy in
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id, frameIds: [frameId] },
+    world: "MAIN",
+    func: () => { try { window.__bqRestoreOpen?.(); } catch { /* gone */ } },
+  }).catch(() => { /* frame already gone */ });
+  return false;
+});
 
 /* Sources reported by a player tab. */
 async function setWantedOrigins(origins) {

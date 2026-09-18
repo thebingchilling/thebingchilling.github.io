@@ -83,6 +83,28 @@
 
   try {
     const open = window.open;
+
+    /* Kept so the worker can undo this. The decoy goes in immediately —
+       waiting to find out whether this frame is inside a player tab would
+       be a race the embed could win — and is taken out again a moment
+       later if it turns out not to be. content/no-popup-gate.js asks; the
+       worker answers by running restore below in this frame.
+
+       Undoing is done from the extension rather than by listening for an
+       event, because an event the page can see is an event the page can
+       fire. */
+    Object.defineProperty(window, "__bqRestoreOpen", {
+      configurable: true,
+      enumerable: false,
+      value: function () {
+        try {
+          Object.defineProperty(window, "open", {
+            configurable: true, writable: true, value: open,
+          });
+        } catch { /* already gone */ }
+      },
+    });
+
     Object.defineProperty(window, "open", {
       configurable: true,
       writable: true,

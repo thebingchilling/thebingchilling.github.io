@@ -57,6 +57,22 @@ and a list baked into an extension is wrong by the next rotation.** So:
 3. An origin that drops out of the list needs no gesture to lose its
    grant, so it is revoked on sight and stops being injected.
 
+### Only inside the player
+
+Being granted a source origin is not the same as acting on it. The decoy
+has to be in place before the embed's own scripts run, and at that moment
+the frame cannot tell what tab it is in — it is cross-origin to everything
+above it. So it goes in first and asks afterwards:
+`content/no-popup-gate.js` asks the worker, which can see the tab's URL,
+and the worker reaches back into the frame and undoes the decoy if that
+tab is not the player.
+
+So one of your source domains embedded on somebody else's site, or opened
+in a tab of its own, behaves exactly as it would with this extension
+uninstalled. The undo is done from the extension rather than by listening
+for an event, because an event the page can see is an event the page can
+fire.
+
 Rotate your sources, reload the player, click once. Nothing to reinstall
 and no domain written into the extension, the manifest or this repository.
 
@@ -191,6 +207,7 @@ works everywhere, which is why that is still listed first above.
 - `background.js` — the three rules
 - `content/keepalive.js` — keeps the worker resident, reports source origins
 - `content/no-popup.js` — the decoy window, injected into granted sources
+- `content/no-popup-gate.js` — undoes it outside a player tab
 - `lib/scope.js` — the path allow-list that defines "the player"
 - `../.github/workflows/package-extension.yml` — build and release
 - `../.github/scripts/pack-crx.mjs` — the CRX3 writer
