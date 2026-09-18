@@ -401,21 +401,37 @@ window.BQChrome = (function () {
   const INSTALL_DISMISSED = "bq_install_dismissed";
   let deferredInstall = null;
 
-  function initInstallPrompt() {
-    if (!("onbeforeinstallprompt" in window)) return; // Safari, Firefox — nothing to offer
-    let dismissed = false;
-    try { dismissed = localStorage.getItem(INSTALL_DISMISSED) === "1"; } catch (e) {}
-    if (dismissed) return;
+  function installDismissed() {
+    try { return localStorage.getItem(INSTALL_DISMISSED) === "1"; } catch (e) { return false; }
+  }
 
+  /* Attached while this file is still parsing, rather than from
+     initAppChrome()'s DOMContentLoaded hook like everything else here.
+     beforeinstallprompt fires as soon as the browser's own installability
+     checks pass, and on a repeat visit — manifest already parsed, service
+     worker already warm — that can land before DOMContentLoaded does. It
+     is a one-shot event, so a listener added afterwards simply never hears
+     it and the chip never appears, no matter how installable the site is.
+     Listen first; render once there's a <body> to render into. */
+  function watchForInstallPrompt() {
+    if (!("onbeforeinstallprompt" in window)) return; // Safari, Firefox — nothing to offer
     window.addEventListener("beforeinstallprompt", (e) => {
+      // Only take the event off the browser's hands if we're actually going
+      // to offer something. After a dismissal we deliberately leave it
+      // alone: calling preventDefault() and then showing no chip would
+      // suppress the browser's own install affordance and put nothing in
+      // its place, which is worse than never having asked.
+      if (installDismissed()) return;
       // Keep the browser's own mini-infobar from appearing as well.
       e.preventDefault();
       deferredInstall = e;
-      showInstallChip();
+      if (document.body) showInstallChip();
+      else document.addEventListener("DOMContentLoaded", showInstallChip, { once: true });
     });
     // Nothing left to offer once it's installed.
     window.addEventListener("appinstalled", () => { deferredInstall = null; removeInstallChip(); });
   }
+  watchForInstallPrompt();
 
   function removeInstallChip() {
     const el = $("bqInstallChip");
@@ -473,13 +489,14 @@ window.BQChrome = (function () {
     render();
   }
 
-  // Both are opt-out-by-absence: a page without a <body> yet just gets
-  // them on DOMContentLoaded.
+  // Opt-out-by-absence: a page without a <body> yet just gets it on
+  // DOMContentLoaded. The install prompt is not in here — see
+  // watchForInstallPrompt() for why it has to bind earlier than this.
   function initAppChrome() {
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => { initInstallPrompt(); initOfflineBanner(); }, { once: true });
+      document.addEventListener("DOMContentLoaded", initOfflineBanner, { once: true });
     } else {
-      initInstallPrompt(); initOfflineBanner();
+      initOfflineBanner();
     }
   }
   initAppChrome();

@@ -5,7 +5,7 @@
 // vendored fonts under /shared/fonts/). TMDB requests, video-source
 // iframes, and streaming payloads are never intercepted — those must
 // always hit the network live.
-const CACHE_VERSION = "bq-shell-v15";
+const CACHE_VERSION = "bq-shell-v16";
 const SHELL_URLS = [
   "/", "/index.html", "/live", "/live.html", "/tools/", "/tools/index.html",
   "/tools/authenticator/", "/tools/currency/", "/tools/pdf/",
@@ -17,7 +17,17 @@ const SHELL_URLS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(SHELL_URLS)).catch(() => {})
+    caches.open(CACHE_VERSION).then((cache) =>
+      // Per URL, deliberately not cache.addAll(). addAll is all-or-nothing:
+      // a single entry that 404s — a renamed tool, or an extensionless path
+      // like /live that a given host does not resolve — rejects the whole
+      // batch and leaves the cache completely EMPTY. The .catch() then
+      // swallows that, so the failure is invisible while costing the app
+      // its entire offline fallback. That matters beyond offline use: the
+      // stricter Chromium builds fetch start_url with the network cut off
+      // and refuse to install anything that fails to answer.
+      Promise.allSettled(SHELL_URLS.map((url) => cache.add(url)))
+    ).catch(() => {})
   );
   self.skipWaiting();
 });
@@ -49,13 +59,32 @@ self.addEventListener("fetch", (event) => {
     caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy)).catch(() => {});
   };
 
+  const offlineDoc = () => new Response(
+    '<!doctype html><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    "<title>Bingqilin \u2014 offline</title>" +
+    '<body style="font-family:system-ui,sans-serif;margin:0;padding:2rem;' +
+    'display:grid;place-content:center;min-height:100vh;text-align:center">' +
+    "<h1>You\u2019re offline</h1><p>Reconnect and reload to keep going.</p>",
+    { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
+  );
+
   // Navigations: network-first so content stays fresh, falling back to the
   // cached shell when offline instead of a browser error page.
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
         .then((res) => { putInCache(req, res); return res; })
-        .catch(() => caches.match(req).then((cached) => cached || caches.match("/index.html")))
+        // ignoreSearch so the manifest's start_url, and any ?utm=... link
+        // someone followed in, still match the cached document for that
+        // path instead of missing over a query string.
+        .catch(() => caches.match(req, { ignoreSearch: true }))
+        .then((cached) => cached || caches.match("/index.html"))
+        // respondWith(undefined) is a network error — the browser's own
+        // "no internet" page, and to an installability check a navigation
+        // that simply failed. With an empty cache (see install) that was
+        // the outcome, so always hand back a real 200 instead.
+        .then((res) => res || offlineDoc())
     );
     return;
   }
