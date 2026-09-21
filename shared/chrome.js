@@ -550,9 +550,50 @@ window.BQChrome = (function () {
     return cleanMessage(err && err.message != null ? err.message : err, fallback, opts);
   }
 
+
+  /* ═══════════════ Untrusted values in markup ═══════════════
+     Six pages had each grown their own copy of this, character-for-
+     character identical apart from what they did with null: four rendered
+     the literal string "null" into the page. One copy, and null is empty.
+
+     The escape set covers both quoting styles plus the three characters
+     that can open a tag, so the result is safe in an attribute (quoted
+     either way) and as text. ── */
+  const HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+  }
+
+  /* Result links, thumbnails and profile URLs arrive from somewhere else
+     — SauceNAO's indexes, a torrent indexer's JSON — and go straight into
+     an href or a src. escapeHtml() stops them breaking out of the
+     attribute, which is the half everyone remembers, but it leaves
+     "javascript:…" perfectly intact: still one value, still quoted, and
+     still script the moment the link is followed. The reverse-image
+     search routes its clicks through window.open()/location.assign(),
+     where such a URL runs in this page's origin, against the same
+     localStorage the authenticator keeps its TOTP secrets in.
+
+     So check the scheme, not just the quoting. Anything that isn't a real
+     navigable link — a relative path, a data: or javascript: URL, a bare
+     string that never parsed — comes back as "", and callers render plain
+     text rather than a dead or dangerous anchor.
+
+     Absolute only, deliberately: resolving against document.baseURI would
+     turn an API's garbage into a confident same-origin link. ── */
+  const SAFE_URL_SCHEMES = new Set(["http:", "https:", "magnet:", "mailto:"]);
+  function safeUrl(raw) {
+    if (raw == null) return "";
+    const s = String(raw).trim();
+    if (!s) return "";
+    let parsed;
+    try { parsed = new URL(s); } catch (e) { return ""; }
+    return SAFE_URL_SCHEMES.has(parsed.protocol) ? parsed.href : "";
+  }
+
   return {
     initRipple, initTheme, syncThemeColorMeta,
     dialog, confirm: confirmDialog, snackbar, dismissSnackbar, initTabs,
-    cleanMessage, errorText
+    cleanMessage, errorText, escapeHtml, safeUrl
   };
 })();

@@ -394,14 +394,13 @@
 
   /* ═══════════════ UI wiring ═══════════════ */
   const $ = (id) => document.getElementById(id);
+  // One implementation each, in /shared/chrome.js — see the notes there.
+  const escapeHtml = BQChrome.escapeHtml;
+  const safeUrl = BQChrome.safeUrl;
   const queryInput = $("queryInput");
   const searchScope = $("searchScope");
   const sortSelect = $("sortSelect");
   const resultsArea = $("resultsArea");
-
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  }
 
   /* ═══════════════ Sorting ═══════════════ */
   function ratioOf(r) {
@@ -435,15 +434,22 @@
     meta.push(`<span class="result-card__stats">${stats.join("")}</span>`);
     if (r.added) meta.push(`<span><span class="material-icons" aria-hidden="true">event</span>${escapeHtml(String(r.added).slice(0, 10))}</span>`);
 
+    // Both of these come from whichever indexer the visitor configured,
+    // and escaping alone would leave a "javascript:" href intact — quoted,
+    // unbroken, and still script the moment it is followed. The scheme
+    // guard drops anything that is not a real link, and the result reads
+    // as an indexer that returned nothing usable.
+    const magnet = safeUrl(r.magnet);
+    const link = safeUrl(r.link);
     const actions = [];
-    if (r.magnet) {
-      actions.push(`<a class="btn btn--primary btn--sm" href="${escapeHtml(r.magnet)}"><span class="material-icons" aria-hidden="true">link</span>Open magnet</a>`);
-      actions.push(`<button class="btn btn--ghost btn--sm" data-copy="${escapeHtml(r.magnet)}" type="button"><span class="material-icons" aria-hidden="true">content_copy</span>Copy magnet</button>`);
+    if (magnet) {
+      actions.push(`<a class="btn btn--primary btn--sm" href="${escapeHtml(magnet)}"><span class="material-icons" aria-hidden="true">link</span>Open magnet</a>`);
+      actions.push(`<button class="btn btn--ghost btn--sm" data-copy="${escapeHtml(magnet)}" type="button"><span class="material-icons" aria-hidden="true">content_copy</span>Copy magnet</button>`);
     }
-    if (r.link) {
-      actions.push(`<a class="btn btn--ghost btn--sm" href="${escapeHtml(r.link)}" target="_blank" rel="noopener"><span class="material-icons" aria-hidden="true">download</span>.torrent link</a>`);
+    if (link) {
+      actions.push(`<a class="btn btn--ghost btn--sm" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"><span class="material-icons" aria-hidden="true">download</span>.torrent link</a>`);
     }
-    if (!r.magnet && !r.link) {
+    if (!magnet && !link) {
       actions.push(`<span class="muted-hint">No magnet or link found for this result.</span>`);
     }
 

@@ -337,6 +337,8 @@
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
+  // One implementation each, in /shared/chrome.js — see the notes there.
+  const escapeHtml = BQChrome.escapeHtml;
 
   BQChrome.initRipple(".icon-btn, .btn, .dropzone, .segmented__item, .account-card, .bottom-nav__item");
   BQChrome.initTheme();
@@ -637,10 +639,6 @@
       accountsList.appendChild(card);
     });
     tickCodes();
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
   async function copyCode(card, account) {

@@ -708,6 +708,10 @@
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
+// One implementation, in /shared/chrome.js — see the note there.
+const escapeHtml = BQChrome.escapeHtml;
+const escapeAttr = BQChrome.escapeHtml;
+const safeUrl = BQChrome.safeUrl;
 
 /* ═══════════════════════════════════════════════════════
    NATIVE APP SHELL: ripple feedback + service worker
@@ -930,7 +934,7 @@ function parseChannelsJSON(text, kind) {
     const url = c.url || c.stream || c.link || c.source || c.mjh_master || "";
     if (!url) continue; // skip entries with nothing playable
     const name = c.name || c.title || c.tvg_name || c["tvg-name"] || "Unknown channel";
-    const logo = c.logo || c.icon || c.tvg_logo || c["tvg-logo"] || "";
+    const logo = safeUrl(c.logo || c.icon || c.tvg_logo || c["tvg-logo"]);
     const chnoRaw = c.chno ?? c.number ?? c.channel ?? c.tvg_chno ?? c["tvg-chno"];
     const chnoStr = (chnoRaw !== undefined && chnoRaw !== null && chnoRaw !== "") ? String(chnoRaw) : "";
     const licenseUrl = c.licenseUrl || c.license_url || c.license || null;
@@ -1253,7 +1257,7 @@ function renderGrid() {
   const showSections = !state.query && pinnedCount > 0 && pinnedCount < list.length;
 
   grid.innerHTML = list.map((c, i) => {
-    const logo = c.attrs["tvg-logo"] || "";
+    const logo = safeUrl(c.attrs["tvg-logo"]);
     const chno = c.attrs["tvg-chno"];
     const icon = state.tab === "tv" ? "live_tv" : "radio";
     const isPinned = !!(pins && pins.has(c.id));
@@ -1357,8 +1361,6 @@ function tickGridEpg() {
 // A minute is finer than any progress bar this size can show, and cheap.
 setInterval(tickGridEpg, 60000);
 
-function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-function escapeAttr(s) { return escapeHtml(s); }
 
 /* ═══════════ Tabs & search ═══════════ */
 const kindTabs = BQChrome.initTabs($("kindTabs"), (tab) => setTab(tab.dataset.tab));
@@ -1804,7 +1806,7 @@ function updateEpgSearchButton() {
 function activeMediaEl() { return playingIsTv ? videoEl : audioEl; }
 function setMediaSessionForChannel(channel, isTv) {
   if (!("mediaSession" in navigator)) return;
-  const logo = channel.attrs["tvg-logo"] || "";
+  const logo = safeUrl(channel.attrs["tvg-logo"]);
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: channel.name,
@@ -1901,7 +1903,7 @@ function openPlayer(channel) {
   }
 
   if (!isTv) {
-    const logo = channel.attrs["tvg-logo"] || "";
+    const logo = safeUrl(channel.attrs["tvg-logo"]);
     const logoImg = $("radioLogo"), logoPh = $("radioArtPh");
     if (logo) { logoImg.src = logo; logoImg.classList.remove("hidden"); logoImg.onerror = () => { logoImg.classList.add("hidden"); logoPh.classList.remove("hidden"); }; logoPh.classList.add("hidden"); }
     else { logoImg.classList.add("hidden"); logoPh.classList.remove("hidden"); }
@@ -2029,7 +2031,7 @@ function showMiniPlayer(channel) {
   miniPlayerTitle.textContent = channel.name;
   miniPlayerMeta.textContent = playingIsTv ? "TV" : "Radio";
   miniPlayerArtPh.textContent = playingIsTv ? "live_tv" : "radio";
-  const logo = channel.attrs["tvg-logo"] || "";
+  const logo = safeUrl(channel.attrs["tvg-logo"]);
   if (logo) {
     miniPlayerArtImg.src = logo;
     miniPlayerArtImg.classList.remove("hidden");

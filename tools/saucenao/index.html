@@ -286,6 +286,9 @@
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
+  // One implementation each, in /shared/chrome.js — see the notes there.
+  const escapeHtml = BQChrome.escapeHtml;
+  const safeUrl = BQChrome.safeUrl;
 
   BQChrome.initRipple(".icon-btn, .btn, .segmented__item, .dropzone, .gallery-item__select, .gallery-item__download, .menu__item, .bottom-nav__item");
   BQChrome.initTheme();
@@ -499,7 +502,7 @@
       return { name: `@${d.twitter_user_handle}`, url: `https://twitter.com/${d.twitter_user_handle}` };
     }
     if (d.author_name && d.author_url) {
-      return { name: d.author_name, url: d.author_url };
+      return { name: d.author_name, url: safeUrl(d.author_url) };
     }
     if (d.pawoo_user_username) {
       return { name: d.pawoo_user_display_name || d.pawoo_user_username, url: `https://pawoo.net/@${d.pawoo_user_username}` };
@@ -537,12 +540,12 @@
   function normalizeResult(r) {
     const h = r && r.header, d = r && r.data;
     if (!h) return null;
-    const links = Array.isArray(d && d.ext_urls) ? d.ext_urls : [];
+    const links = (Array.isArray(d && d.ext_urls) ? d.ext_urls : []).map(safeUrl).filter(Boolean);
     const title = pickTitle(d);
     const creator = resolveCreator(d);
     return {
       similarity: parseFloat(h.similarity) || 0,
-      thumbnail: h.thumbnail || "",
+      thumbnail: safeUrl(h.thumbnail),
       title,
       creator,
       links
@@ -769,6 +772,13 @@
 
   function extractRedditImages(post) {
     const out = [];
+    // Every URL here comes out of Reddit's JSON and ends up in an <img
+    // src> and a download link, so it clears the scheme guard on the way
+    // in rather than at each of the places it is later used.
+    const push = (url, thumb) => {
+      const u = safeUrl(url);
+      if (u) out.push({ url: u, thumb: safeUrl(thumb) || u });
+    };
     if (post.is_gallery && post.gallery_data && Array.isArray(post.gallery_data.items) && post.media_metadata) {
       for (const item of post.gallery_data.items) {
         const meta = post.media_metadata[item.media_id];
@@ -776,7 +786,7 @@
         const src = meta.s || {};
         const full = decodeEntities(src.u || src.gif || src.mp4 || "");
         const thumb = decodeEntities((meta.p && meta.p[0] && meta.p[0].u) || full);
-        if (full) out.push({ url: full, thumb: thumb || full });
+        push(full, thumb);
       }
       if (out.length) return out;
     }
@@ -789,7 +799,7 @@
       } else {
         thumb = decodeEntities(thumb);
       }
-      out.push({ url: full, thumb: thumb || full });
+      push(full, thumb);
       return out;
     }
     if (post.preview && Array.isArray(post.preview.images) && post.preview.images.length) {
@@ -798,7 +808,7 @@
         const full = decodeEntities(img.source.url);
         const resIdx = img.resolutions && img.resolutions.length ? Math.min(2, img.resolutions.length - 1) : -1;
         const thumb = resIdx >= 0 ? decodeEntities(img.resolutions[resIdx].url) : full;
-        out.push({ url: full, thumb });
+        push(full, thumb);
       }
     }
     return out;
@@ -825,10 +835,6 @@
   }
 
   /* ═══════════════ Rendering helpers ═══════════════ */
-  function escapeHtml(str) {
-    return String(str == null ? "" : str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  }
-
   /* Shows what's currently selected/searched right inside the dropzone
      itself (just a thumbnail, no filename/URL text), instead of a
      separate large preview image above the results. */
@@ -952,7 +958,7 @@
       }).join("");
       return `
         <div class="sauce-card">
-          <img class="sauce-card__thumb" src="${escapeHtml(r.thumbnail)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'" />
+          ${r.thumbnail ? `<img class="sauce-card__thumb" src="${escapeHtml(r.thumbnail)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'" />` : ""}
           <div class="sauce-card__body">
             <div class="sauce-card__top">
               <span class="badge badge--${simClass(r.similarity)}">${r.similarity.toFixed(1)}%</span>
@@ -1024,6 +1030,12 @@
      see the a.btn[href] rule in ui.css, which is what was quietly
      disabling that. */
   function openExternal(href) {
+    // The anchors are built from URLs that already cleared safeUrl, but
+    // this is the sink that turns one into navigation — location.assign()
+    // on a "javascript:" URL runs it in this origin — so it re-checks
+    // rather than trusting its caller.
+    href = safeUrl(href);
+    if (!href) return;
     let opened = null;
     try { opened = window.open(href, "_blank"); } catch (e) {}
     if (!opened) { window.location.assign(href); return; }
