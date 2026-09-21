@@ -887,6 +887,7 @@
       <p class="sheet__hint">Paste a config here to import sources in bulk, or export your current ones to back up or share.</p>
       <div class="config-area">
         <textarea id="configTextarea" class="textarea config-textarea"
+          aria-label="Sources config, as text"
           placeholder="name: vid&#10;movie: https://example.com/embed/movie/{tmdb}&#10;tv: https://example.com/embed/tv/{tmdb}/{season}/{episode}"
           spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         <div class="config-actions">
@@ -1009,24 +1010,25 @@ function serialiseConfig(sourceList) {
 /* ═══════════════════════════════════════════════════════
    STORAGE
    ─────────────────────────────────────────────────────
-   Prefers the Claude artifact key-value store (window.storage) when
-   present so sources config syncs across sessions there; falls back to
-   localStorage so it still works once this file is downloaded and
-   self-hosted as a real app. (Same pattern as live.html's PinStore.)
+   localStorage, wrapped so a browser that refuses it (private mode, or
+   site data blocked outright) degrades to "nothing is saved" rather than
+   throwing on first access. (Same pattern as live.html's PinStore.)
+
+   The methods stay async. They no longer need to be — an earlier version
+   of this file also targeted the Claude artifact key-value store, whose
+   API was promise-based — but every caller already awaits them, and
+   making them synchronous is a change to those call sites, not to this.
 ═══════════════════════════════════════════════════════ */
 const Store = (() => {
-  const hasWS = typeof window !== "undefined" && window.storage && typeof window.storage.get === "function";
   const hasLS = (() => {
     try { const k = "__bq_test__"; localStorage.setItem(k, "1"); localStorage.removeItem(k); return true; }
     catch (e) { return false; }
   })();
   async function get(key) {
-    if (hasWS) { try { const r = await window.storage.get(key); return r ? r.value : null; } catch (e) { return null; } }
     if (hasLS) { try { return localStorage.getItem(key); } catch (e) { return null; } }
     return null;
   }
   async function set(key, value) {
-    if (hasWS) { try { await window.storage.set(key, value); return true; } catch (e) { return false; } }
     if (hasLS) { try { localStorage.setItem(key, value); return true; } catch (e) { return false; } }
     return false;
   }
@@ -1525,10 +1527,14 @@ function buildPlayerUrl({ mediaType, tmdbId, season = 1, episode = 1 }) {
   const src = SOURCES[Math.max(0, Math.min(activeSourceIdx, SOURCES.length - 1))];
   const tpl = mediaType === "movie" ? src.movie_url : (src.tv_url || src.movie_url);
   if (!tpl) { lastPlayerUrlError = `"${src.name}" has no ${mediaType === "movie" ? "movie" : "TV"} URL configured.`; return ""; }
+  // Global: String.replace with a string pattern swaps the first match
+  // only, so a template that names a placeholder twice — say an id in the
+  // path and again in a query parameter — kept the second one as the
+  // literal text "{tmdb}".
   const url = tpl
-    .replace("{tmdb}",    encodeURIComponent(tmdbId))
-    .replace("{season}",  encodeURIComponent(season))
-    .replace("{episode}", encodeURIComponent(episode));
+    .replace(/\{tmdb\}/g,    encodeURIComponent(tmdbId))
+    .replace(/\{season\}/g,  encodeURIComponent(season))
+    .replace(/\{episode\}/g, encodeURIComponent(episode));
   if (!url.startsWith("https://")) {
     lastPlayerUrlError = "Blocked: the player source URL must be HTTPS.";
     console.warn("Blocked non-HTTPS player URL");
@@ -2482,16 +2488,15 @@ settingsClose.addEventListener("click", closeSettings);
 /* ── Theme toggle ── */
 // "system" = no data-theme attribute = the prefers-color-scheme media query
 // alone decides (zero JS, zero flash). A tiny synchronous script in <head>
-// already applied a saved choice before first paint; resolvePref below
-// reconciles that against the async Store (needed for the artifact-storage
-// backend). onChange also drives the Settings sheet's segmented control,
-// which BQChrome doesn't know about.
+// already applied a saved choice before first paint; this reads the same
+// key back through Store so the Settings sheet starts in the right state.
+// (It used to read localStorage directly and then reconcile that against
+// Store, because Store could be backed by something else. It can't, so
+// the two reads were the same read.) onChange also drives the Settings
+// sheet's segmented control, which BQChrome doesn't know about.
 const bqTheme = BQChrome.initTheme({
   resolvePref: async () => {
-    let pref = "system";
-    try { pref = localStorage.getItem("bq_theme") || "system"; } catch (e) {}
-    try { const stored = await Store.get("bq_theme"); if (stored) pref = stored; } catch (e) {}
-    return pref;
+    try { return (await Store.get("bq_theme")) || "system"; } catch (e) { return "system"; }
   },
   onChange: (pref) => {
     Store.set("bq_theme", pref);

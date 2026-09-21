@@ -22,6 +22,7 @@
   <meta name="apple-mobile-web-app-title" content="WARP" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="color-scheme" content="light dark" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
@@ -197,7 +198,7 @@
 
       <div class="card">
         <div class="section-title"><h2><span class="material-icons" aria-hidden="true">description</span>Configuration</h2></div>
-        <textarea class="config-output" id="configOutput" readonly spellcheck="false"></textarea>
+        <textarea class="config-output" id="configOutput" readonly spellcheck="false" aria-label="Generated WireGuard configuration"></textarea>
         <div class="btn-row">
           <button type="button" class="btn btn--ghost" id="copyBtn"><span class="material-icons" aria-hidden="true">content_copy</span>Copy</button>
           <button type="button" class="btn btn--ghost" id="downloadBtn"><span class="material-icons" aria-hidden="true">download</span>Download</button>

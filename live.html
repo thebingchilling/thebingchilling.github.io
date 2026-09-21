@@ -670,6 +670,7 @@
       </p>
       <div class="config-area">
         <textarea id="configTextarea" class="textarea config-textarea"
+          aria-label="Playlist config, as text"
           placeholder="tv: https://example.com/tv.m3u8&#10;radio: https://example.com/radio.json&#10;epg: https://example.com/epg.xml"
           spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         <div class="config-actions">
@@ -778,31 +779,29 @@ let searchDebounce = null;
 let config = { tv: [], radio: [], epg: "" };
 
 /* ═══════════ Local storage (pins + imported playlist config) ═══════════
-   Prefers the Claude artifact key-value store (window.storage) when present
-   so data syncs across sessions there; falls back to localStorage so it
-   still works once this file is downloaded and self-hosted as a real app. */
+   localStorage, wrapped so a browser that refuses it (private mode, or
+   site data blocked outright) degrades to "nothing is saved" rather than
+   throwing on first access.
+
+   The methods stay async. They no longer need to be — an earlier version
+   of this file also targeted the Claude artifact key-value store, whose
+   API was promise-based — but every caller already awaits them, and
+   making them synchronous is a change to those call sites, not to this. */
 const PinStore = (() => {
-  const hasWS = typeof window !== "undefined" && window.storage && typeof window.storage.get === "function";
   const hasLS = (() => {
     try { const k = "__pin_test__"; localStorage.setItem(k, "1"); localStorage.removeItem(k); return true; }
     catch (e) { return false; }
   })();
 
   async function get(key) {
-    if (hasWS) {
-      try { const r = await window.storage.get(key); return r ? r.value : null; }
-      catch (e) { return null; } // key not found yet, or storage unavailable
-    }
     if (hasLS) { try { return localStorage.getItem(key); } catch (e) { return null; } }
     return null;
   }
   async function set(key, value) {
-    if (hasWS) { try { await window.storage.set(key, value); return true; } catch (e) { return false; } }
     if (hasLS) { try { localStorage.setItem(key, value); return true; } catch (e) { return false; } }
     return false;
   }
   async function del(key) {
-    if (hasWS) { try { await window.storage.delete(key); return true; } catch (e) { return false; } }
     if (hasLS) { try { localStorage.removeItem(key); return true; } catch (e) { return false; } }
     return false;
   }
@@ -814,11 +813,10 @@ const PinStore = (() => {
    full rationale. onChange also drives the Settings sheet's segmented
    control, which BQChrome doesn't know about. */
 const bqTheme = BQChrome.initTheme({
+  // One read: PinStore is localStorage, so reading the key directly and
+  // then reconciling that against PinStore was the same read twice.
   resolvePref: async () => {
-    let pref = "system";
-    try { pref = localStorage.getItem("bq_theme") || "system"; } catch (e) {}
-    try { const stored = await PinStore.get("bq_theme"); if (stored) pref = stored; } catch (e) {}
-    return pref;
+    try { return (await PinStore.get("bq_theme")) || "system"; } catch (e) { return "system"; }
   },
   onChange: (pref) => {
     PinStore.set("bq_theme", pref);

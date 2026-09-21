@@ -72,10 +72,12 @@ jobs:
       # release nobody can reason about afterwards, so refuse it here.
       - name: Tag must match the manifest
         if: startsWith(github.ref, 'refs/tags/ext-v')
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
           tag="${GITHUB_REF_NAME#ext-v}"
-          if [ "$tag" != "${{ steps.meta.outputs.version }}" ]; then
-            echo "::error::tag ext-v$tag does not match manifest version ${{ steps.meta.outputs.version }}"
+          if [ "$tag" != "$VERSION" ]; then
+            echo "::error::tag ext-v$tag does not match manifest version $VERSION"
             exit 1
           fi
 
@@ -85,18 +87,24 @@ jobs:
       # README.md is left out: it documents the repo's layout and build,
       # which is nothing a shipped extension needs, and keeping it in meant
       # editing the docs invalidated every built artifact.
+      # VERSION comes in through the environment rather than being expanded
+      # into the script text: ${{ }} interpolation pastes its value straight
+      # into the shell, and this one is read out of a file in the repo.
       - name: Zip the extension
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
           cd extension
-          zip -qrX "$GITHUB_WORKSPACE/bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip" . \
+          zip -qrX "$GITHUB_WORKSPACE/bingqilin-popup-blocker-$VERSION.zip" . \
             -x '.*' -x 'README.md'
           cd -
-          unzip -Z1 "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip"
+          unzip -Z1 "bingqilin-popup-blocker-$VERSION.zip"
 
       - name: Sign into a .crx
         id: crx
         env:
           CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
           # 077 before the key exists, not after: a private key that is
           # briefly world-readable was briefly world-readable.
@@ -113,9 +121,9 @@ jobs:
           fi
 
           node .github/scripts/pack-crx.mjs \
-            "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.zip" \
+            "bingqilin-popup-blocker-$VERSION.zip" \
             key.pem \
-            "bingqilin-popup-blocker-${{ steps.meta.outputs.version }}.crx" \
+            "bingqilin-popup-blocker-$VERSION.crx" \
             | tee crx.log
 
           # The key is never an artifact and never outlives the job. A
@@ -125,13 +133,17 @@ jobs:
           sed -n 's/^extension id: /id=/p' crx.log >> "$GITHUB_OUTPUT"
 
       - name: Summarise
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          CRX_ID: ${{ steps.crx.outputs.id }}
+          CRX_STABLE: ${{ steps.crx.outputs.stable }}
         run: |
           {
-            echo "### Bingqilin Popup Blocker ${{ steps.meta.outputs.version }}"
+            echo "### Bingqilin Popup Blocker $VERSION"
             echo
-            echo "Extension ID: \`${{ steps.crx.outputs.id }}\`"
+            echo "Extension ID: \`$CRX_ID\`"
             echo
-            if [ "${{ steps.crx.outputs.stable }}" = "true" ]; then
+            if [ "$CRX_STABLE" = "true" ]; then
               echo "Signed with the \`CRX_PRIVATE_KEY\` secret, so that ID is stable"
               echo "across builds. If it changes, the key changed with it."
             else

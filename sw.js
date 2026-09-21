@@ -5,7 +5,7 @@
 // vendored fonts under /shared/fonts/). TMDB requests, video-source
 // iframes, and streaming payloads are never intercepted — those must
 // always hit the network live.
-const CACHE_VERSION = "bq-shell-v15";
+const CACHE_VERSION = "bq-shell-v16";
 const SHELL_URLS = [
   "/", "/index.html", "/live", "/live.html", "/tools/", "/tools/index.html",
   "/tools/authenticator/", "/tools/currency/", "/tools/pdf/",
@@ -15,9 +15,18 @@ const SHELL_URLS = [
   "/shared/chrome.js", "/shared/theme-init.js",
 ];
 
+// cache.addAll() is all-or-nothing: one URL that 404s rejects the whole
+// promise, and the .catch() that kept a bad deploy from breaking install
+// silently threw away every other entry with it — no offline shell at
+// all, and nothing anywhere to say so. Precaching each URL on its own
+// means a typo costs that one file instead of the lot.
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(SHELL_URLS)).catch(() => {})
+    caches.open(CACHE_VERSION).then((cache) =>
+      Promise.all(SHELL_URLS.map((url) =>
+        cache.add(new Request(url, { cache: "reload" })).catch(() => {})
+      ))
+    ).catch(() => {})
   );
   self.skipWaiting();
 });
