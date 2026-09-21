@@ -24,8 +24,11 @@
   <link rel="stylesheet" href="/shared/tokens.css" />
   <link rel="stylesheet" href="/shared/chrome.css" />
   <link rel="stylesheet" href="/shared/ui.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.16.3/shaka-player.compiled.js"></script>
+  <!-- Vendored, not from a CDN — see /shared/vendor/README.md. Deferred
+       because neither engine is touched until a channel is actually
+       played, and they were blocking first paint on over a megabyte. -->
+  <script src="/shared/vendor/hls.min.js" defer></script>
+  <script src="/shared/vendor/shaka-player.compiled.js" defer></script>
   <style>
     /* Page-specific only. Colour, type, shape and motion come from
        /shared/tokens.css; the app shell from /shared/chrome.css;
@@ -1514,7 +1517,7 @@ async function loadDrmStream(channel, mediaEl, { onReady, onFail } = {}) {
     if (onFail) onFail("DRM playback needs this page to be served over https:// (or http://localhost) — it won't work opened directly from a file, or over plain http:// on a remote host.");
     return;
   }
-  if (!window.shaka) { if (onFail) onFail("DRM playback library (Shaka Player) failed to load — check your internet connection and that cdnjs.cloudflare.com isn't blocked."); return; }
+  if (!window.shaka) { if (onFail) onFail("The DRM playback engine (Shaka Player) didn't load. Reload the page — if it keeps happening, something is blocking scripts on this site."); return; }
   shaka.polyfill.installAll();
 
   if (!shaka.Player.isBrowserSupported()) {
