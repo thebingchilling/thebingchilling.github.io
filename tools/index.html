@@ -28,6 +28,12 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <!-- The icon font is font-display: block (a ligature font that
+       swaps in shows the literal glyph names first), so every icon
+       on the page waits on this one file. Start it with the CSS
+       rather than after it. crossorigin is required even
+       same-origin: fonts are always fetched in CORS mode. -->
+  <link rel="preload" href="/shared/fonts/MaterialIcons-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <script src="/shared/theme-init.js"></script>
   <link rel="stylesheet" href="/shared/tokens.css" />
   <link rel="stylesheet" href="/shared/chrome.css" />
