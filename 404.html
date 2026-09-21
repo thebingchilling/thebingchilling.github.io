@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Page not found · Bingqilin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="That page doesn't exist on Bingqilin." />
+  <!-- A 404 is not a page anyone should land on from a search result. -->
+  <meta name="robots" content="noindex, follow" />
+  <meta name="theme-color" id="themeColorMeta" content="#f7ebdd" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Bingqilin" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+  <script src="/shared/theme-init.js"></script>
+  <link rel="stylesheet" href="/shared/tokens.css" />
+  <link rel="stylesheet" href="/shared/chrome.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
+</head>
+<body>
+<div class="app">
+  <header class="top-bar">
+    <div class="top-bar__brand">
+      <span class="top-bar__name">🍦 Bingqilin</span>
+    </div>
+    <div class="top-bar__actions">
+      <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
+        <span class="material-icons" aria-hidden="true" id="themeToggleIcon">brightness_auto</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="empty-state">
+      <span class="material-icons empty-state__icon" aria-hidden="true">explore_off</span>
+      <h1 class="empty-state__title">Page not found</h1>
+      <p class="empty-state__sub">
+        There's nothing at <code id="missingPath">this address</code>.
+        It may have moved, or the link may be wrong.
+      </p>
+      <div class="empty-state__action">
+        <a class="btn btn--primary" href="/">
+          <span class="material-icons" aria-hidden="true">video_library</span>Go to Media
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <div class="bottom-dock" id="bottomDock">
+    <nav class="bottom-nav" aria-label="Primary">
+      <a class="bottom-nav__item" href="/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">video_library</span></span>
+        <span class="bottom-nav__label">Media</span>
+      </a>
+      <a class="bottom-nav__item" href="/live">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">live_tv</span></span>
+        <span class="bottom-nav__label">Live</span>
+      </a>
+      <a class="bottom-nav__item" href="/tools/">
+        <span class="bottom-nav__icon-wrap"><span class="material-icons" aria-hidden="true">construction</span></span>
+        <span class="bottom-nav__label">Tools</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<script src="/shared/chrome.js"></script>
+<script>
+(function () {
+  "use strict";
+  BQChrome.initRipple(".icon-btn, .btn, .bottom-nav__item");
+  BQChrome.initTheme();
+
+  // GitHub Pages serves this file for any unmatched path without changing
+  // the URL, so the address bar still holds what was actually asked for.
+  // Naming it beats "this address" — textContent, because it is attacker-
+  // chosen text on a page anyone can be linked to.
+  var path = location.pathname + location.search;
+  if (path && path !== "/") {
+    var el = document.getElementById("missingPath");
+    if (el) el.textContent = path.length > 120 ? path.slice(0, 120) + "…" : path;
+  }
+})();
+</script>
+</body>
+</html>

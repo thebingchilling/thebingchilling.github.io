@@ -1,0 +1,11 @@
+# Bingqilin — a static site on GitHub Pages.
+User-agent: *
+Allow: /
+
+# Vendored engines and font files are not content; crawling them wastes
+# everyone's bandwidth and they never appear in a result worth having.
+Disallow: /shared/vendor/
+Disallow: /shared/fonts/
+Disallow: /downloads/
+
+Sitemap: https://thebingchilling.github.io/sitemap.xml
