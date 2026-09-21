@@ -198,12 +198,13 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
 chrome.tabs.onRemoved.addListener((tabId) => forget(tabId));
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Stubbing window.open inside the sources
+   Taking the openers away inside the sources
 
    Closing a popup is always late: Chrome makes the tab, it takes focus and
    paints, and only then does it go away. The way to have nothing to close
-   is for window.open never to open anything — which means running inside
-   the embed's frame, which means permission for the embed's origin.
+   is for the embed's ways of opening a tab to stop opening one — window.open
+   and target="_blank" alike — which means running inside the embed's frame,
+   which means permission for the embed's origin.
 
    Those origins are not known here and must not be. They are read from the
    configured sources on the player page and arrive over the port, so a
@@ -316,7 +317,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id, frameIds: [frameId] },
     world: "MAIN",
-    func: () => { try { window.__bqRestoreOpen?.(); } catch { /* gone */ } },
+    func: () => { try { window.__bqRestore?.(); } catch { /* gone */ } },
   }).catch(() => { /* frame already gone */ });
   return false;
 });

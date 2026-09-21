@@ -1,10 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   Hand the embed a window that isn't one.
+   Hand the embed a window that isn't one, and take away the two ways of
+   opening one that never ask window.open at all.
 
    Registered at runtime against the origins of whatever sources are
    configured — never a hardcoded list, and never a site the user has not
-   granted. It runs in the MAIN world of those frames, because the thing
-   it replaces is the page's own window.open.
+   granted. It runs in the MAIN world of those frames, because the things
+   it replaces are the page's own.
 
    Why a decoy rather than a refusal: a source that will not play under a
    sandbox is detecting that window.open *failed*. Returning null, throwing,
@@ -81,39 +82,128 @@
     return proxy;
   };
 
+  /* Everything this frame changed, and how to change it back. The decoy
+     goes in immediately — waiting to find out whether this frame is inside
+     a player tab would be a race the embed could win — and is taken out
+     again a moment later if it turns out not to be.
+     content/no-popup-gate.js asks; the worker answers by running
+     window.__bqRestore in this frame.
+
+     Undoing is done from the extension rather than by listening for an
+     event, because an event the page can see is an event the page can
+     fire. */
+  const undo = [];
+
+  /* Keep the replacements looking native: a script that prints one should
+     not see a giveaway body. */
+  const mask = (replacement, original) => {
+    try { replacement.toString = () => original.toString(); } catch { /* non-fatal */ }
+    return replacement;
+  };
+
+  /* ── The decoy ───────────────────────────────────────────────────── */
   try {
     const open = window.open;
-
-    /* Kept so the worker can undo this. The decoy goes in immediately —
-       waiting to find out whether this frame is inside a player tab would
-       be a race the embed could win — and is taken out again a moment
-       later if it turns out not to be. content/no-popup-gate.js asks; the
-       worker answers by running restore below in this frame.
-
-       Undoing is done from the extension rather than by listening for an
-       event, because an event the page can see is an event the page can
-       fire. */
-    Object.defineProperty(window, "__bqRestoreOpen", {
-      configurable: true,
-      enumerable: false,
-      value: function () {
-        try {
-          Object.defineProperty(window, "open", {
-            configurable: true, writable: true, value: open,
-          });
-        } catch { /* already gone */ }
-      },
-    });
 
     Object.defineProperty(window, "open", {
       configurable: true,
       writable: true,
-      value: function () { return makeWindow(); },
+      value: mask(function () { return makeWindow(); }, open),
     });
-    /* Keep it looking native: a script that prints window.open should not
-       see a giveaway body. */
-    try {
-      window.open.toString = () => open.toString();
-    } catch { /* non-fatal */ }
+
+    undo.push(() => {
+      Object.defineProperty(window, "open", {
+        configurable: true, writable: true, value: open,
+      });
+    });
   } catch { /* locked down; leave the page as it is */ }
+
+  /* ── Targets that open a tab without asking ──────────────────────────
+     window.open is only half of it, and on these embeds it is the smaller
+     half. The overlay stretched across the video is an <a target="_blank">,
+     and a real click on it is a real click: Chrome opens the tab natively,
+     there is no open() call to hand a decoy to, and the only thing left is
+     to close the tab afterwards — which is the flash.
+
+     _top and _parent are the same trick pointed the other way. They send
+     the tab the player is in to the ad, and because a click drove it the
+     navigation carries no `client_redirect`, so the worker's tab-under
+     rule does not fire on it either.
+
+     None of these is a navigation this frame is ever entitled to make: it
+     is a video embed, and a video embed has no business opening tabs or
+     replacing the one it is in. So the default is cancelled. It is
+     cancelled in the capture phase and without stopping propagation, so
+     the embed's own click handlers still run — a click on the overlay
+     still reaches the player underneath it, and only the navigation is
+     lost. ═════════════════════════════════════════════════════════════ */
+  try {
+    const HIJACK = new Set(["_blank", "_top", "_parent"]);
+
+    /* An element with no target of its own inherits <base target>, which
+       is its own way of turning every plain link into a popup. */
+    const targetOf = (el) => {
+      const own = el.getAttribute("target");
+      const value = own || document.querySelector("base[target]")?.getAttribute("target");
+      return value ? value.trim().toLowerCase() : "";
+    };
+
+    const hijacks = (el) => HIJACK.has(targetOf(el));
+
+    const onClick = (event) => {
+      for (const node of event.composedPath()) {
+        const tag = node.tagName;
+        if (tag !== "A" && tag !== "AREA") continue;
+        if (hijacks(node)) event.preventDefault();
+        return;
+      }
+    };
+
+    const onSubmit = (event) => {
+      const form = event.target;
+      if (form?.tagName === "FORM" && hijacks(form)) event.preventDefault();
+    };
+
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("submit", onSubmit, true);
+    undo.push(() => {
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("submit", onSubmit, true);
+    });
+
+    /* An anchor that was never put in the document dispatches its click to
+       nobody, so the listener above never sees it — and Chrome opens the
+       tab all the same. Building one and clicking it is the usual way to
+       do this from script, so the element's own click() is the only place
+       it can be caught. A connected anchor is left to the listener, which
+       cancels the navigation without swallowing the event. */
+    const anchorClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = mask(function () {
+      if (!this.isConnected && hijacks(this)) return;
+      return anchorClick.apply(this, arguments);
+    }, anchorClick);
+    undo.push(() => { HTMLAnchorElement.prototype.click = anchorClick; });
+
+    /* form.submit() fires no submit event at all, so the listener cannot
+       see that one either. Nothing else is listening for it by definition,
+       which makes returning early safe here. */
+    const formSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = mask(function () {
+      if (hijacks(this)) return;
+      return formSubmit.apply(this, arguments);
+    }, formSubmit);
+    undo.push(() => { HTMLFormElement.prototype.submit = formSubmit; });
+  } catch { /* locked down; leave the page as it is */ }
+
+  try {
+    Object.defineProperty(window, "__bqRestore", {
+      configurable: true,
+      enumerable: false,
+      value: function () {
+        while (undo.length) {
+          try { undo.pop()(); } catch { /* already gone */ }
+        }
+      },
+    });
+  } catch { /* nothing can undo it now; it stays in */ }
 })();

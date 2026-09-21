@@ -1,8 +1,9 @@
 # Bingqilin Popup Blocker
 
-A Chrome extension that closes the popups the player's video embeds open.
-It has no options, no toolbar button and no settings — it is either
-installed or it is not.
+A Chrome extension that stops the popups and tab-unders the player's video
+embeds open. Granted a source's origin — one click — it prevents them
+inside that source's frame, so nothing is ever created and there is no
+flash. Everywhere else it falls back to closing them after the fact.
 
 ## What it covers
 
@@ -14,17 +15,20 @@ Three things, all of them only when the tab is on the player:
 | `window.open()` with no URL, filled in afterwards with `document.write()` | `tabs.onCreated`, matching blank targets on the opener |
 | Tab-under — the embed sends *your* tab to the ad and leaves the video in a popup behind it | `webNavigation.onCommitted`, which sends the tab back to the page it was just on |
 
-The popup is closed, not prevented — so it is created, takes focus, paints
-and is then removed, which you may see as a flash. Nothing driven from the
-service worker can be earlier: by the time Chrome reports a tab was
-created, it was created. Refusing one *before* it exists takes either an
-iframe sandbox (deliberately not used here) or a content script in every
-frame of every site, which would mean read-and-change access to all
-websites for a blocker meant to touch one.
+These three are the **fallback**, and they *close* rather than prevent — so
+the tab is created, takes focus, paints and is then removed, which you see
+as a flash. Nothing driven from the service worker can be earlier: by the
+time Chrome reports a tab was created, it was created.
 
-Closing rather than preventing is also what keeps this invisible to the
-source. A source that refuses to play under a sandbox is detecting that
-`window.open` failed — here it does not fail.
+Getting rid of the flash means stopping the tab from being asked for at
+all, which can only be done inside the embed's own frame — so it needs
+permission for the embed's origin, which is the one click described below.
+Where that grant exists, the next section takes over and these three rules
+see nothing to do. Where it does not, they are all there is, and ads flash.
+
+Never *refusing* is also what keeps this invisible to the source. A source
+that will not play under a sandbox is detecting that `window.open` failed —
+here it does not fail.
 
 ## The decoy
 
@@ -41,6 +45,35 @@ all accepted and discarded. Nothing is created, so there is no flash.
     if (!w || w.closed) { /* fall back to redirecting your tab */ }
 
 so a decoy that reports itself closed just pushes them to the tab-under.
+
+### The targets, which never ask `window.open` at all
+
+`window.open` is the smaller half. The overlay stretched across the video
+is an `<a target="_blank">`, and a click on it is a *real* click: Chrome
+opens the tab natively, there is no `open()` call to hand a decoy to, and
+closing it afterwards is the flash. `target="_top"` and `_parent` are the
+same trick pointed the other way — they send the tab the player is in to
+the ad, and because a click drove it the navigation carries no
+`client_redirect`, so the tab-under rule does not fire on it either.
+
+None of these is a navigation the embed is entitled to make: it is a video
+player in an iframe, and it has no business opening tabs or replacing the
+one it is in. So `content/no-popup.js` cancels them, in the **capture phase
+and without stopping propagation** — the embed's own handlers still run, a
+click on the overlay still reaches the player underneath it, and only the
+navigation is lost.
+
+Three paths, because two of them never reach a listener:
+
+| Path | Why it needs its own catch |
+| --- | --- |
+| A click on an `<a>`/`<area>` in the document | The capture listener cancels the default |
+| An `<a>` built in script and clicked without ever being inserted | It dispatches to nobody, so no listener sees it — its `click()` is the only place to catch it |
+| `form.submit()` | Fires no `submit` event at all |
+
+`<base target="_blank">`, which turns every plain link in the frame into a
+popup, is resolved too. Links with no target, or `target="_self"`, are left
+exactly as they were.
 
 ### Where it runs, and how it keeps up
 
@@ -206,8 +239,9 @@ works everywhere, which is why that is still listed first above.
 - `manifest.json` — MV3; `webNavigation` + `storage`, one host permission
 - `background.js` — the three rules
 - `content/keepalive.js` — keeps the worker resident, reports source origins
-- `content/no-popup.js` — the decoy window, injected into granted sources
-- `content/no-popup-gate.js` — undoes it outside a player tab
+- `content/no-popup.js` — the decoy window and the target cancelling,
+  injected into granted sources
+- `content/no-popup-gate.js` — undoes both outside a player tab
 - `lib/scope.js` — the path allow-list that defines "the player"
 - `../.github/workflows/package-extension.yml` — build and release
 - `../.github/scripts/pack-crx.mjs` — the CRX3 writer

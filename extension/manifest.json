@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bingqilin Popup Blocker",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Closes the popups and tab-unders that the Bingqilin player's video embeds open. Runs on the player only — never on the tools pages or anywhere else.",
   "minimum_chrome_version": "102",
 

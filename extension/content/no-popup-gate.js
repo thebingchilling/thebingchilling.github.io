@@ -18,7 +18,7 @@
 (() => {
   try {
     /* No reply is expected. The worker either leaves this frame alone or
-       reaches back into it to restore window.open. */
+       reaches back into it and puts everything the decoy changed back. */
     chrome.runtime.sendMessage({ type: "gate" }, () => {
       /* Reading lastError stops "no receiving end" being logged when the
          worker has gone away mid-question. */
