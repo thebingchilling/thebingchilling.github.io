@@ -388,66 +388,6 @@ window.BQChrome = (function () {
     return { select: (tab) => select(tab, false) };
   }
 
-  /* ── Install prompt ─────────────────────────────────────────────────
-     Every page here ships a manifest, a service worker and icons, and the
-     whole shell is built to be installed — but nothing ever offered. The
-     browser's own affordance is buried in a menu most people never open,
-     and on Chrome it only appears at all if a page handles
-     beforeinstallprompt, which none of them did.
-
-     So: catch the event, hold it, and show a quiet chip the person can
-     ignore. Dismissing it is remembered, because being asked twice to
-     install something is how an app earns a reputation for nagging. ── */
-  const INSTALL_DISMISSED = "bq_install_dismissed";
-  let deferredInstall = null;
-
-  function initInstallPrompt() {
-    if (!("onbeforeinstallprompt" in window)) return; // Safari, Firefox — nothing to offer
-    let dismissed = false;
-    try { dismissed = localStorage.getItem(INSTALL_DISMISSED) === "1"; } catch (e) {}
-    if (dismissed) return;
-
-    window.addEventListener("beforeinstallprompt", (e) => {
-      // Keep the browser's own mini-infobar from appearing as well.
-      e.preventDefault();
-      deferredInstall = e;
-      showInstallChip();
-    });
-    // Nothing left to offer once it's installed.
-    window.addEventListener("appinstalled", () => { deferredInstall = null; removeInstallChip(); });
-  }
-
-  function removeInstallChip() {
-    const el = $("bqInstallChip");
-    if (el) el.remove();
-  }
-
-  function showInstallChip() {
-    if ($("bqInstallChip") || !deferredInstall) return;
-    const bar = document.createElement("div");
-    bar.id = "bqInstallChip";
-    bar.className = "install-chip";
-    bar.innerHTML =
-      '<span class="material-icons" aria-hidden="true">install_mobile</span>' +
-      '<span class="install-chip__text">Install Bingqilin</span>' +
-      '<button type="button" class="install-chip__btn" data-act="install">Install</button>' +
-      '<button type="button" class="install-chip__close icon-btn icon-btn--sm" aria-label="Not now">' +
-        '<span class="material-icons" aria-hidden="true">close</span></button>';
-    bar.querySelector('[data-act="install"]').addEventListener("click", async () => {
-      const prompt = deferredInstall;
-      if (!prompt) { removeInstallChip(); return; }
-      deferredInstall = null;
-      removeInstallChip();
-      try { await prompt.prompt(); } catch (e) {}
-    });
-    bar.querySelector(".install-chip__close").addEventListener("click", () => {
-      try { localStorage.setItem(INSTALL_DISMISSED, "1"); } catch (e) {}
-      deferredInstall = null;
-      removeInstallChip();
-    });
-    document.body.appendChild(bar);
-  }
-
   /* ── Offline indicator ──────────────────────────────────────────────
      Several pages need the network to do anything — TMDB, the playlists,
      the rate providers, the CORS proxies — and offline they each failed
@@ -473,13 +413,13 @@ window.BQChrome = (function () {
     render();
   }
 
-  // Both are opt-out-by-absence: a page without a <body> yet just gets
-  // them on DOMContentLoaded.
+  // Opt-out-by-absence: a page without a <body> yet just gets it on
+  // DOMContentLoaded.
   function initAppChrome() {
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => { initInstallPrompt(); initOfflineBanner(); }, { once: true });
+      document.addEventListener("DOMContentLoaded", initOfflineBanner, { once: true });
     } else {
-      initInstallPrompt(); initOfflineBanner();
+      initOfflineBanner();
     }
   }
   initAppChrome();
