@@ -8,14 +8,19 @@
    Only the shell itself lives here.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Vendored (not the Google Fonts CDN) — Google Sans is the site's only
-   font, used for body and display text alike; Material Icons is the icon
-   font behind every .material-icons span. The files live in
+/* Vendored (not the Google Fonts CDN) — Google Sans Flex is the site's
+   only font, used for body and display text alike; Material Icons is the
+   icon font behind every .material-icons span. The files live in
    shared/fonts/; the paths below are relative to this stylesheet, so they
-   resolve the same whichever page depth includes it. */
-@font-face { font-family: 'Google Sans'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/GoogleSans-Regular.woff2') format('woff2'); }
-@font-face { font-family: 'Google Sans'; font-style: normal; font-weight: 500; font-display: swap; src: url('fonts/GoogleSans-Medium.woff2') format('woff2'); }
-@font-face { font-family: 'Google Sans'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/GoogleSans-SemiBold.woff2') format('woff2'); }
+   resolve the same whichever page depth includes it.
+
+   Google Sans Flex is one variable file, cut from the Google Fonts API
+   with Roundness pinned at 100 (the rounded Google Sans) and optical size
+   pinned at its default of 18, which has the same metrics — x-height, cap
+   height, advances, line box — as the static Google Sans it replaced, so
+   nothing reflows. Weight stays live across 400–700, which covers every
+   weight the site sets (400, 500, 600). Latin subset, like the old files. */
+@font-face { font-family: 'Google Sans Flex'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('fonts/GoogleSansFlex-Rounded.woff2') format('woff2'); }
 /* font-display: block, not swap — a ligature font that swaps in shows the
    literal glyph names ("video_library") first. */
 @font-face { font-family: 'Material Icons'; font-style: normal; font-weight: 400; font-display: block; src: url('fonts/MaterialIcons-Regular.woff2') format('woff2'); }

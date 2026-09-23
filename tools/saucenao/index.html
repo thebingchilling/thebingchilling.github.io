@@ -958,7 +958,7 @@
       return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><g transform="translate(3,3) scale(0.417)"><path d="${BRAND_PATHS[meta.brand]}" fill="#fffaf6"/></g></svg>`;
     }
     const fontSize = meta.l.length > 1 ? 6.5 : 8.5;
-    return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><text x="8" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="'Google Sans', sans-serif" font-size="${fontSize}" font-weight="700" fill="#fffaf6">${escapeHtml(meta.l)}</text></svg>`;
+    return `<svg class="sauce-card__favicon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="${meta.bg}"/><text x="8" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="'Google Sans Flex', sans-serif" font-size="${fontSize}" font-weight="700" fill="#fffaf6">${escapeHtml(meta.l)}</text></svg>`;
   }
 
   function renderResults(results) {

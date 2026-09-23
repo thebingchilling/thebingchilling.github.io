@@ -16,10 +16,10 @@
   color-scheme: light dark;
 
   /* ── Typeface ───────────────────────────────────────────────────────
-     Google Sans is the site's only font — body and display alike. The
-     @font-face rules that load it live in chrome.css (they need to sit
-     next to the /shared/fonts/ files they reference). */
-  --font-sans: 'Google Sans', system-ui, sans-serif;
+     Google Sans Flex, rounded, is the site's only font — body and display
+     alike. The @font-face rule that loads it lives in chrome.css (it
+     needs to sit next to the /shared/fonts/ file it references). */
+  --font-sans: 'Google Sans Flex', system-ui, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* ── Type scale ─────────────────────────────────────────────────────
@@ -57,7 +57,7 @@
 
   /* Tracking is left at the typeface's own metrics everywhere except the
      display sizes, which need tightening, and the all-caps eyebrow
-     labels, which need opening up. Google Sans is already spaced for UI
+     labels, which need opening up. Google Sans Flex is already spaced for UI
      at these sizes; M3's nominal tracking made it look loose. */
   --track-title-large:    -0.01em;
   --track-title-medium:   0;
