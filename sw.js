@@ -5,14 +5,14 @@
 // vendored fonts under /shared/fonts/). TMDB requests, video-source
 // iframes, and streaming payloads are never intercepted — those must
 // always hit the network live.
-const CACHE_VERSION = "bq-shell-v16";
+const CACHE_VERSION = "bq-shell-v17";
 const SHELL_URLS = [
   "/", "/index.html", "/live", "/live.html", "/tools/", "/tools/index.html",
   "/tools/authenticator/", "/tools/currency/", "/tools/pdf/",
   "/tools/saucenao/", "/tools/torrents/", "/tools/typerip/", "/tools/warp/",
   "/manifest.webmanifest",
   "/shared/tokens.css", "/shared/chrome.css", "/shared/ui.css",
-  "/shared/chrome.js", "/shared/theme-init.js",
+  "/shared/chrome.js", "/shared/theme-init.js", "/shared/feed.js",
 ];
 
 // cache.addAll() is all-or-nothing: one URL that 404s rejects the whole

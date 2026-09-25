@@ -458,6 +458,98 @@
 
     .skel-card { aspect-ratio: 1/1; border-radius: var(--shape-m); }
     .empty-state__import-btn { margin-top: 0.9rem; }
+
+    /* ── Settings: playlist list + add/edit form (same look as the
+       Movies page's source list) ── */
+    .playlist-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .playlist-list--empty {
+      padding: 0.9rem;
+      border: 1px dashed var(--md-outline);
+      border-radius: var(--shape-m);
+      background: var(--bg2);
+      text-align: center;
+    }
+    .playlist-list--empty p {
+      margin: 0;
+      font: var(--type-body-medium);
+      letter-spacing: var(--track-body-medium);
+      line-height: var(--leading-prose);
+      color: var(--text-muted);
+    }
+    .playlist-list--empty strong { color: var(--text); }
+    .playlist-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 48px;
+      padding: 0.4rem 0.5rem 0.4rem 0.7rem;
+      border: 1px solid var(--md-outline-variant);
+      border-radius: var(--shape-m);
+      background: var(--surface-raised);
+      box-shadow: var(--el1);
+    }
+    .playlist-row__kind {
+      flex-shrink: 0;
+      padding: 0.1rem 0.5rem;
+      border-radius: var(--shape-full);
+      background: var(--md-secondary-container);
+      color: var(--md-on-secondary-container);
+      font: var(--type-label-medium);
+      letter-spacing: var(--track-label-medium);
+    }
+    .playlist-row__url {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font: var(--type-body-medium);
+      color: var(--text);
+    }
+    .playlist-row__actions { display: flex; gap: 0.1rem; flex-shrink: 0; }
+    .playlist-row__btn--danger:hover { color: var(--md-error); }
+    .playlist-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border: 1px solid var(--md-outline-variant);
+      border-radius: var(--shape-l);
+      background: var(--surface2);
+    }
+    .playlist-form__title {
+      margin: 0 0 0.1rem;
+      font: var(--type-title-small);
+      letter-spacing: var(--track-title-small);
+      color: var(--text);
+    }
+    .playlist-form input[type=text] {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 0.7rem;
+      border: 1px solid var(--md-outline-variant);
+      border-radius: var(--shape-m);
+      background: var(--surface-raised);
+      box-shadow: var(--el1);
+      color: var(--text);
+      font: var(--type-field);
+      outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    .playlist-form input[type=text]:focus { border-color: var(--md-primary); box-shadow: var(--el2), inset 0 0 0 1px var(--md-primary); }
+    .playlist-form__label {
+      display: block;
+      margin-bottom: 0.1rem;
+      font: var(--type-label-medium);
+      letter-spacing: var(--track-label-medium);
+      color: var(--text-muted);
+    }
+    .playlist-form__hint {
+      font: var(--type-body-small);
+      letter-spacing: var(--track-body-small);
+      color: var(--text-faint);
+    }
+    .playlist-form__actions { display: flex; gap: 0.4rem; justify-content: flex-end; margin-top: 0.15rem; }
     /* ── Guide search ── */
     .search-bar--inline { margin: 0 0 0.75rem; }
     .epg-results { display: flex; flex-direction: column; gap: 0.4rem; max-height: min(50vh, 380px); overflow: auto; -webkit-overflow-scrolling: touch; }
@@ -495,7 +587,7 @@
       <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Theme: System (tap to change)" title="Theme">
         <span class="material-icons" aria-hidden="true" id="themeToggleIcon">brightness_auto</span>
       </button>
-      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Import channels &amp; guide" title="Import channels &amp; guide">
+      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Channels &amp; guide" title="Channels &amp; guide">
         <span class="material-icons" aria-hidden="true">settings</span>
       </button>
     </div>
@@ -533,7 +625,7 @@
         <p class="empty-state__title" id="emptyStateTitle">No channels found</p>
         <p class="empty-state__sub" id="emptyStateSub">Try a different search term</p>
         <button id="emptyStateImportBtn" class="btn btn--primary empty-state__import-btn hidden" type="button">
-          <span class="material-icons" aria-hidden="true">add</span>Import channels
+          <span class="material-icons" aria-hidden="true">add</span>Add channels
         </button>
       </div>
     </section>
@@ -634,11 +726,11 @@
   </div>
 </div>
 
-<!-- Settings sheet: import your own TV/Radio playlists (M3U8 or JSON) + EPG -->
-<div id="settingsSheet" class="scrim scrim--bottom hidden" role="dialog" aria-modal="true" aria-label="Import channels and guide" aria-hidden="true">
+<!-- Settings sheet: add your own TV/Radio playlists (M3U8 or JSON) + EPG -->
+<div id="settingsSheet" class="scrim scrim--bottom hidden" role="dialog" aria-modal="true" aria-label="Channels and guide" aria-hidden="true">
   <div class="sheet">
     <div class="sheet__header">
-      <h2 class="sheet__title">Import channels</h2>
+      <h2 class="sheet__title">Channels</h2>
       <button id="settingsClose" class="icon-btn" type="button" aria-label="Close">
         <span class="material-icons" aria-hidden="true">close</span>
       </button>
@@ -662,25 +754,36 @@
     </div>
 
     <div class="sheet__section">
-      <div class="sheet__section-label">Playlist URLs</div>
-      <p class="sheet__hint">
-        Paste your playlist URLs below, one per line as <code>key: value</code>.
-        Keys: <code>tv</code>, <code>radio</code>, <code>epg</code> (the TV guide data). Add more than
-        one <code>tv:</code> or <code>radio:</code> line to combine several playlists into one list.
-      </p>
-      <div class="config-area">
-        <textarea id="configTextarea" class="textarea config-textarea"
-          aria-label="Playlist config, as text"
-          placeholder="tv: https://example.com/tv.m3u8&#10;radio: https://example.com/radio.json&#10;epg: https://example.com/epg.xml"
-          spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
-        <div class="config-actions">
-          <span id="configFeedback" class="config-feedback" role="status" aria-live="polite"></span>
-          <button id="configImportBtn" class="btn btn--primary btn--sm" type="button">
-            <span class="material-icons" aria-hidden="true">download</span>Import &amp; load
+      <div class="sheet__section-label">Playlists</div>
+      <div id="playlistList" class="playlist-list"></div>
+      <span id="playlistFeedback" class="config-feedback" role="status" aria-live="polite"></span>
+      <button id="addPlaylistBtn" class="btn btn--ghost btn--sm sheet__add-btn" type="button">
+        <span class="material-icons" aria-hidden="true">add</span>Add playlist
+      </button>
+      <button id="resetPlaylistsBtn" class="btn btn--ghost btn--sm sheet__add-btn hidden" type="button">
+        <span class="material-icons" aria-hidden="true">restart_alt</span>Reset
+      </button>
+      <div id="playlistForm" class="playlist-form hidden">
+        <p class="playlist-form__title" id="playlistFormTitle">Add playlist</p>
+        <div class="segmented" id="playlistKind" role="radiogroup" aria-label="Type">
+          <button class="segmented__item segmented__item--active" data-kind="tv" type="button" role="radio" aria-checked="true">
+            <span class="material-icons" aria-hidden="true">tv</span>TV
           </button>
-          <button id="configExportBtn" class="btn btn--ghost btn--sm" type="button">
-            <span class="material-icons" aria-hidden="true">upload</span>Export
+          <button class="segmented__item" data-kind="radio" type="button" role="radio" aria-checked="false">
+            <span class="material-icons" aria-hidden="true">radio</span>Radio
           </button>
+          <button class="segmented__item" data-kind="epg" type="button" role="radio" aria-checked="false">
+            <span class="material-icons" aria-hidden="true">calendar_month</span>Guide
+          </button>
+        </div>
+        <div>
+          <label class="playlist-form__label" for="playlistUrl">URL</label>
+          <input type="text" id="playlistUrl" placeholder="https://example.com/playlist.m3u8" autocomplete="off" spellcheck="false" autocapitalize="off" />
+          <span class="playlist-form__hint" id="playlistHint">M3U8 or JSON</span>
+        </div>
+        <div class="playlist-form__actions">
+          <button id="playlistCancel" class="btn btn--ghost btn--sm" type="button">Cancel</button>
+          <button id="playlistSave" class="btn btn--primary btn--sm" type="button">Save</button>
         </div>
       </div>
     </div>
@@ -727,6 +830,7 @@
 </div>
 
 <script src="/shared/chrome.js"></script>
+<script src="/shared/feed.js"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -766,7 +870,7 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
 }
 
-/* No channels ship with this app — the person imports their own TV/Radio
+/* No channels ship with this app — the person adds their own TV/Radio
    playlists (M3U8 or JSON, auto-detected) and optionally an XMLTV EPG url
    via the Settings sheet. See loadStoredConfig / parseChannelsAuto below. */
 
@@ -777,8 +881,12 @@ let searchDebounce = null;
 // merged into one list (see init()). epg stays a single URL: merging XMLTV
 // guide data from multiple feeds isn't something this app tries to do.
 let config = { tv: [], radio: [], epg: "" };
+// A managed device (see /shared/feed.js) takes `config` from the managed
+// data instead of from storage, and can't change it. What was added by
+// hand stays stored, untouched, for if it stops being managed.
+let managed = false;
 
-/* ═══════════ Local storage (pins + imported playlist config) ═══════════
+/* ═══════════ Local storage (pins + playlist config) ═══════════
    localStorage, wrapped so a browser that refuses it (private mode, or
    site data blocked outright) degrades to "nothing is saved" rather than
    throwing on first access.
@@ -1080,7 +1188,7 @@ function nowNextFor(channelId) {
 
 function fmtTime(d) { return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
 
-/* ═══════════ Import config (paste-in TV / Radio / EPG urls) ═══════════ */
+/* ═══════════ Playlist config (TV / Radio / EPG urls) ═══════════ */
 const CONFIG_KEY = "bq-live-config";
 
 async function loadStoredConfig() {
@@ -1098,31 +1206,6 @@ async function loadStoredConfig() {
   return cfg;
 }
 function saveStoredConfig(cfg) { return PinStore.set(CONFIG_KEY, JSON.stringify(cfg)); }
-
-// tv/radio accumulate — repeat the key on its own line to combine several
-// playlists (e.g. two "radio: ..." lines) into one merged channel list.
-function parseConfigText(text) {
-  const cfg = { tv: [], radio: [], epg: "" };
-  for (let line of String(text || "").split(/\r?\n/)) {
-    line = line.trim();
-    if (!line || line.startsWith("#")) continue;
-    const idx = line.indexOf(":");
-    if (idx === -1) continue;
-    const key = line.slice(0, idx).trim().toLowerCase();
-    const val = line.slice(idx + 1).trim();
-    if (!val) continue;
-    if (key === "tv" || key === "radio") cfg[key].push(val);
-    else if (key === "epg") cfg.epg = val;
-  }
-  return cfg;
-}
-function serialiseConfigText(cfg) {
-  const lines = [];
-  for (const url of cfg.tv || []) lines.push(`tv: ${url}`);
-  for (const url of cfg.radio || []) lines.push(`radio: ${url}`);
-  if (cfg.epg) lines.push(`epg: ${cfg.epg}`);
-  return lines.join("\n");
-}
 
 // Fetches every playlist URL for one kind in parallel and merges the
 // results into a single sorted, de-duplicated list. A broken URL among
@@ -1146,11 +1229,15 @@ async function loadChannelsMerged(urls, kind) {
   return { channels, tvgUrl, errors };
 }
 
-async function init() {
+// `managedData` skips the refresh when the caller already has fresh
+// managed data; null means "not managed".
+async function init(managedData) {
   state.loading = true; state.error = null;
   renderStatus(); renderGrid();
 
-  config = await loadStoredConfig();
+  if (managedData === undefined) managedData = BQFeed.active() ? await BQFeed.refresh() : null;
+  managed = !!managedData;
+  config = managed ? managedData.live : await loadStoredConfig();
   state.configured = !!(config.tv.length || config.radio.length);
 
   if (!state.configured) {
@@ -1206,7 +1293,7 @@ function renderStatus() {
   }
   if (!state.configured) {
     statusEl.className = "search-status";
-    statusEl.textContent = "No playlists imported yet";
+    statusEl.textContent = "No playlists added yet";
     return;
   }
   if (state.error) {
@@ -1250,7 +1337,7 @@ function renderGrid() {
   if (!state.configured) {
     grid.innerHTML = "";
     empty.classList.remove("hidden");
-    emptyTitle.textContent = "No channels imported";
+    emptyTitle.textContent = "No channels yet";
     emptySub.textContent = "Add your TV and radio playlist URLs (M3U8 or JSON) to get started";
     emptyImportBtn.classList.remove("hidden");
     return;
@@ -1401,26 +1488,170 @@ $("clearBtn").addEventListener("click", () => {
   state.query = ""; renderStatus(); renderGrid(); $("searchInput").focus();
 });
 
-/* ═══════════ Settings sheet: import channel playlists ═══════════ */
+/* ═══════════ Settings sheet: channel playlists ═══════════ */
 const settingsSheet = $("settingsSheet");
 const settingsBtn = $("settingsBtn");
 const settingsClose = $("settingsClose");
-const configTextarea = $("configTextarea");
-const configImportBtn = $("configImportBtn");
-const configExportBtn = $("configExportBtn");
-const configFeedback = $("configFeedback");
+const playlistListEl = $("playlistList");
+const playlistFeedback = $("playlistFeedback");
+const addPlaylistBtn = $("addPlaylistBtn");
+const resetPlaylistsBtn = $("resetPlaylistsBtn");
+const playlistForm = $("playlistForm");
+const playlistFormTitle = $("playlistFormTitle");
+const playlistUrl = $("playlistUrl");
+const playlistHint = $("playlistHint");
+const playlistCancel = $("playlistCancel");
+const playlistSave = $("playlistSave");
+const PLAYLIST_KIND_LABELS = { tv: "TV", radio: "Radio", epg: "Guide" };
+let playlistKind = "tv";
+let editingPlaylist = null; // { kind, index } while the form edits an existing entry
 
-function setConfigFeedback(msg, ok) {
-  configFeedback.textContent = msg;
-  configFeedback.className = "config-feedback" + (ok === true ? " config-feedback--ok" : ok === false ? " config-feedback--err" : "");
+function setPlaylistFeedback(msg, ok) {
+  playlistFeedback.textContent = msg;
+  playlistFeedback.className = "config-feedback" + (ok === true ? " config-feedback--ok" : ok === false ? " config-feedback--err" : "");
 }
+
+function setPlaylistKind(kind) {
+  playlistKind = kind;
+  document.querySelectorAll("#playlistKind .segmented__item").forEach(btn => {
+    const on = btn.dataset.kind === kind;
+    btn.classList.toggle("segmented__item--active", on);
+    btn.setAttribute("aria-checked", String(on));
+  });
+  playlistUrl.placeholder = kind === "epg" ? "https://example.com/guide.xml" : "https://example.com/playlist.m3u8";
+  playlistHint.textContent = kind === "epg" ? "XMLTV guide data. There is one guide, so this replaces any other." : "M3U8 or JSON";
+}
+document.querySelectorAll("#playlistKind .segmented__item").forEach(btn => {
+  btn.addEventListener("click", () => setPlaylistKind(btn.dataset.kind));
+});
+
+function playlistEntries() {
+  const out = [];
+  for (const kind of ["tv", "radio"]) config[kind].forEach((url, index) => out.push({ kind, index, url }));
+  if (config.epg) out.push({ kind: "epg", index: 0, url: config.epg });
+  return out;
+}
+
+function openPlaylistForm(entry) {
+  editingPlaylist = entry ? { kind: entry.kind, index: entry.index } : null;
+  setPlaylistKind(entry ? entry.kind : "tv");
+  playlistUrl.value = entry ? entry.url : "";
+  playlistFormTitle.textContent = entry ? "Edit playlist" : "Add playlist";
+  playlistForm.classList.remove("hidden");
+  addPlaylistBtn.classList.add("hidden");
+  playlistUrl.focus();
+}
+function closePlaylistForm() {
+  editingPlaylist = null;
+  playlistUrl.value = "";
+  playlistForm.classList.add("hidden");
+  if (!managed) addPlaylistBtn.classList.remove("hidden");
+}
+
+function renderPlaylistList() {
+  resetPlaylistsBtn.classList.toggle("hidden", !managed);
+  if (managed) { playlistForm.classList.add("hidden"); addPlaylistBtn.classList.add("hidden"); }
+  else if (playlistForm.classList.contains("hidden")) addPlaylistBtn.classList.remove("hidden");
+
+  const entries = playlistEntries();
+  if (!entries.length) {
+    playlistListEl.innerHTML = managed
+      ? `<div class="playlist-list--empty"><p>No playlists yet.</p></div>`
+      : `<div class="playlist-list--empty"><p>No playlists yet.<br><strong>Add one below.</strong></p></div>`;
+    return;
+  }
+  playlistListEl.innerHTML = entries.map(e => `
+    <div class="playlist-row">
+      <span class="playlist-row__kind">${PLAYLIST_KIND_LABELS[e.kind]}</span>
+      <span class="playlist-row__url" title="${escapeAttr(e.url)}">${escapeHtml(e.url)}</span>
+      ${managed ? "" : `<div class="playlist-row__actions">
+        <button class="icon-btn icon-btn--sm" type="button" aria-label="Edit" data-action="edit" data-kind="${e.kind}" data-index="${e.index}"><span class="material-icons" aria-hidden="true">edit</span></button>
+        <button class="icon-btn icon-btn--sm playlist-row__btn--danger" type="button" aria-label="Delete" data-action="delete" data-kind="${e.kind}" data-index="${e.index}"><span class="material-icons" aria-hidden="true">delete_outline</span></button>
+      </div>`}
+    </div>`).join("");
+}
+
+// Saves `next` as the hand-added config and reloads every list from it.
+async function applyOwnConfig(next) {
+  await saveStoredConfig(next);
+  setPlaylistFeedback("Loading…", null);
+  await init(null);
+  renderPlaylistList();
+  if (state.error) {
+    setPlaylistFeedback(state.error, false);
+  } else {
+    const n = state.tv.length + state.radio.length;
+    setPlaylistFeedback(n ? `${n} channel${n === 1 ? "" : "s"} loaded.` : "", true);
+  }
+}
+
+playlistListEl.addEventListener("click", async e => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn || managed) return;
+  const kind = btn.dataset.kind, index = Number(btn.dataset.index);
+  const entry = playlistEntries().find(x => x.kind === kind && x.index === index);
+  if (!entry) return;
+  if (btn.dataset.action === "edit") { openPlaylistForm(entry); return; }
+  const next = { tv: config.tv.slice(), radio: config.radio.slice(), epg: config.epg };
+  if (kind === "epg") next.epg = ""; else next[kind].splice(index, 1);
+  await applyOwnConfig(next);
+  addPlaylistBtn.focus();
+});
+
+addPlaylistBtn.addEventListener("click", () => openPlaylistForm(null));
+playlistCancel.addEventListener("click", closePlaylistForm);
+playlistUrl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); playlistSave.click(); } });
+
+playlistSave.addEventListener("click", async () => {
+  if (playlistSave.disabled) return;
+  const url = playlistUrl.value.trim();
+  playlistSave.disabled = true;
+  let claimed = false;
+  try { claimed = await BQFeed.claim(url); }
+  finally { playlistSave.disabled = false; }
+  if (claimed) {
+    closePlaylistForm();
+    setPlaylistFeedback("", null);
+    await init(BQFeed.cached());
+    renderPlaylistList();
+    return;
+  }
+  if (!url) { playlistUrl.focus(); return; }
+
+  const next = { tv: config.tv.slice(), radio: config.radio.slice(), epg: config.epg };
+  const was = editingPlaylist;
+  if (was && was.kind === playlistKind && playlistKind !== "epg") {
+    next[playlistKind][was.index] = url;
+  } else {
+    if (was) { if (was.kind === "epg") next.epg = ""; else next[was.kind].splice(was.index, 1); }
+    if (playlistKind === "epg") next.epg = url; else next[playlistKind].push(url);
+  }
+  closePlaylistForm();
+  await applyOwnConfig(next);
+});
+
+resetPlaylistsBtn.addEventListener("click", async () => {
+  const ok = await BQChrome.confirm({
+    title: "Reset playlists?",
+    body: "These playlists will be removed from this device.",
+    confirmLabel: "Reset",
+    danger: true,
+  });
+  if (!ok) return;
+  BQFeed.clear();
+  setPlaylistFeedback("", null);
+  await init(null);
+  renderPlaylistList();
+  addPlaylistBtn.focus();
+});
 
 // BQChrome.dialog supplies Escape, the focus trap, focus restore, the
 // background scroll lock and dismiss-on-scrim-click.
 const settingsDialog = BQChrome.dialog(settingsSheet, { initialFocus: () => settingsClose });
 function openSettings() {
-  configTextarea.value = serialiseConfigText(config);
-  setConfigFeedback("", null);
+  closePlaylistForm();
+  setPlaylistFeedback("", null);
+  renderPlaylistList();
   settingsDialog.open();
 }
 function closeSettings() { settingsDialog.close(); }
@@ -1428,38 +1659,6 @@ settingsBtn.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
 
 $("emptyStateImportBtn").addEventListener("click", openSettings);
-
-configImportBtn.addEventListener("click", async () => {
-  const parsed = parseConfigText(configTextarea.value);
-  if (!parsed.tv.length && !parsed.radio.length) {
-    setConfigFeedback("Add at least a tv: or radio: playlist url.", false);
-    return;
-  }
-  configImportBtn.disabled = true;
-  setConfigFeedback("Loading…", null);
-  await saveStoredConfig(parsed);
-  await init();
-  configImportBtn.disabled = false;
-  if (state.error) {
-    setConfigFeedback(state.error, false);
-  } else {
-    const n = state.tv.length + state.radio.length;
-    setConfigFeedback(`Imported — ${n} channel${n === 1 ? "" : "s"} loaded.`, true);
-  }
-});
-
-configExportBtn.addEventListener("click", async () => {
-  const text = serialiseConfigText(config);
-  if (!text) { setConfigFeedback("Nothing imported yet to export.", false); return; }
-  configTextarea.value = text;
-  try {
-    await navigator.clipboard.writeText(text);
-    setConfigFeedback("Copied to clipboard.", true);
-  } catch (e) {
-    configTextarea.select();
-    setConfigFeedback("Couldn't access the clipboard — text is selected, press Ctrl/Cmd+C to copy.", false);
-  }
-});
 
 /* ═══════════ Playback ═══════════ */
 const videoEl = $("videoEl");

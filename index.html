@@ -839,6 +839,9 @@
       <button id="addSourceBtn" class="btn btn--ghost btn--sm sheet__add-btn" type="button">
         <span class="material-icons" aria-hidden="true">add</span>Add source
       </button>
+      <button id="resetSourcesBtn" class="btn btn--ghost btn--sm sheet__add-btn hidden" type="button">
+        <span class="material-icons" aria-hidden="true">restart_alt</span>Reset
+      </button>
       <div id="sourceForm" class="source-form hidden">
         <p class="source-form__title" id="sourceFormTitle">Add source</p>
         <div>
@@ -881,31 +884,13 @@
       </div>
     </div>
 
-    <!-- Import / Export config -->
-    <div class="sheet__section">
-      <div class="sheet__section-label">Import / Export</div>
-      <p class="sheet__hint">Paste a config here to import sources in bulk, or export your current ones to back up or share.</p>
-      <div class="config-area">
-        <textarea id="configTextarea" class="textarea config-textarea"
-          aria-label="Sources config, as text"
-          placeholder="name: vid&#10;movie: https://example.com/embed/movie/{tmdb}&#10;tv: https://example.com/embed/tv/{tmdb}/{season}/{episode}"
-          spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
-        <div class="config-actions">
-          <span id="configFeedback" class="config-feedback" role="status" aria-live="polite"></span>
-          <button id="configImportBtn" class="btn btn--primary btn--sm" type="button">
-            <span class="material-icons" aria-hidden="true">download</span>Import
-          </button>
-          <button id="configExportBtn" class="btn btn--ghost btn--sm" type="button">
-            <span class="material-icons" aria-hidden="true">upload</span>Export
-          </button>
-        </div>
-      </div>
     </div>
     </div>
   </div>
 </div>
 
 <script src="/shared/chrome.js"></script>
+<script src="/shared/feed.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    NATIVE APP SHELL: ripple feedback + service worker
@@ -952,62 +937,6 @@ if ("serviceWorker" in navigator) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   CONFIG FORMAT
-   ─────────────────────────────────────────────────────
-   One source per block, blocks separated by blank lines.
-   Keys: name, movie, tv
-   Lines starting with # are comments and ignored.
-
-   Example:
-     name: vid
-     movie: https://video/v2/embed/movie/{tmdb}
-     tv: https://video/v2/embed/tv/{tmdb}/{season}/{episode}
-═══════════════════════════════════════════════════════ */
-
-/* ── Config parser ── */
-function parseConfig(text) {
-  const errors = [];
-  const sources = [];
-
-  // Split into blocks on blank lines
-  const blocks = text.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
-
-  blocks.forEach((block, bi) => {
-    const lines = block.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#"));
-    if (!lines.length) return;
-
-    const obj = {};
-    lines.forEach(line => {
-      const colon = line.indexOf(":");
-      if (colon < 1) return;
-      const key = line.slice(0, colon).trim().toLowerCase();
-      const val = line.slice(colon + 1).trim();
-      obj[key] = val;
-    });
-
-    if (!obj.name) { errors.push(`Block ${bi + 1}: missing "name"`); return; }
-    if (!obj.movie) { errors.push(`Block ${bi + 1} ("${obj.name}"): missing "movie" URL`); return; }
-
-    sources.push({
-      name:      obj.name,
-      movie_url: obj.movie,
-      tv_url:    obj.tv || null,
-    });
-  });
-
-  return { sources, errors };
-}
-
-/* ── Config serialiser ── */
-function serialiseConfig(sourceList) {
-  return sourceList.map(src => {
-    const lines = [`name: ${src.name}`, `movie: ${src.movie_url}`];
-    if (src.tv_url)  lines.push(`tv: ${src.tv_url}`);
-    return lines.join("\n");
-  }).join("\n\n");
-}
-
-/* ═══════════════════════════════════════════════════════
    STORAGE
    ─────────────────────────────────────────────────────
    localStorage, wrapped so a browser that refuses it (private mode, or
@@ -1040,17 +969,34 @@ const Store = (() => {
 ═══════════════════════════════════════════════════════ */
 let SOURCES = [];               // populated by initSources() before first paint
 let activeSourceIdx = 0;
-function sourcesSave(list) { Store.set("bq_sources", JSON.stringify(list)); }
-function setActiveSource(i) { activeSourceIdx = i; Store.set("bq_source_idx", String(i)); }
+// A managed device (see /shared/feed.js) follows the managed list exactly
+// and can't change it. What was added by hand stays stored, untouched, and
+// comes back if the device stops being managed.
+let managed = false;
+const sourceIdxKey = () => (managed ? "bq_managed_idx" : "bq_source_idx");
+function sourcesSave(list) { if (!managed) Store.set("bq_sources", JSON.stringify(list)); }
+function setActiveSource(i) { activeSourceIdx = i; Store.set(sourceIdxKey(), String(i)); }
 
-async function initSources() {
+async function ownSources() {
   try {
-    const raw = await Store.get("bq_sources");
-    const s = JSON.parse(raw);
-    if (Array.isArray(s) && s.length) SOURCES = s;
+    const s = JSON.parse(await Store.get("bq_sources"));
+    if (Array.isArray(s)) return s;
   } catch (e) { /* nothing saved yet, or corrupt data — start empty */ }
-  const idxRaw = await Store.get("bq_source_idx");
+  return [];
+}
+
+// `data` skips the refresh when the caller already has fresh managed data.
+async function initSources(data) {
+  if (data === undefined) data = BQFeed.active() ? await BQFeed.refresh() : null;
+  managed = !!data;
+  SOURCES = managed ? data.media : await ownSources();
+  const idxRaw = await Store.get(sourceIdxKey());
   activeSourceIdx = Math.min(Number(idxRaw || 0) || 0, Math.max(0, SOURCES.length - 1));
+}
+
+async function reapplySources(data) {
+  await initSources(data);
+  renderSourceList(); updateSourceMenuButton(); reloadCurrentPlayerIfActive();
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1373,10 +1319,7 @@ const sfMovieUrl       = $("sfMovieUrl");
 const sfTvUrl          = $("sfTvUrl");
 const sfCancel         = $("sfCancel");
 const sfSave           = $("sfSave");
-const configTextarea   = $("configTextarea");
-const configImportBtn  = $("configImportBtn");
-const configExportBtn  = $("configExportBtn");
-const configFeedback   = $("configFeedback");
+const resetSourcesBtn  = $("resetSourcesBtn");
 
 /* ═══════════════════════════════════════════════════════
    HELPERS
@@ -2345,13 +2288,14 @@ let editingSourceIdx = -1;
 
 function renderSourceList() {
   sourceListEl.innerHTML = "";
+  resetSourcesBtn.classList.toggle("hidden", !managed);
+  if (managed) { sourceForm.classList.add("hidden"); addSourceBtn.classList.add("hidden"); }
+  else if (sourceForm.classList.contains("hidden")) addSourceBtn.classList.remove("hidden");
 
   if (!SOURCES.length) {
-    sourceListEl.innerHTML = `
-      <div class="source-list--empty">
-        <p>No sources configured.<br>
-        <strong>Import a config below</strong> or add one manually.</p>
-      </div>`;
+    sourceListEl.innerHTML = managed
+      ? `<div class="source-list--empty"><p>No sources yet.</p></div>`
+      : `<div class="source-list--empty"><p>No sources configured.<br><strong>Add one below.</strong></p></div>`;
     return;
   }
 
@@ -2364,12 +2308,12 @@ function renderSourceList() {
     card.innerHTML = `
       <div class="source-card__check"><span class="material-icons" aria-hidden="true">check</span></div>
       <span class="source-card__name">${esc(src.name)}</span>
-      <div class="source-card__actions">
+      ${managed ? "" : `<div class="source-card__actions">
         <button class="icon-btn icon-btn--sm source-card__btn" type="button" aria-label="Move up" data-action="up" data-idx="${i}">${i===0?"":`<span class="material-icons" aria-hidden="true">arrow_upward</span>`}</button>
         <button class="icon-btn icon-btn--sm source-card__btn" type="button" aria-label="Move down" data-action="down" data-idx="${i}">${i===SOURCES.length-1?"":`<span class="material-icons" aria-hidden="true">arrow_downward</span>`}</button>
         <button class="icon-btn icon-btn--sm source-card__btn" type="button" aria-label="Edit" data-action="edit" data-idx="${i}"><span class="material-icons" aria-hidden="true">edit</span></button>
         <button class="icon-btn icon-btn--sm source-card__btn source-card__btn--danger" type="button" aria-label="Delete" data-action="delete" data-idx="${i}"><span class="material-icons" aria-hidden="true">delete_outline</span></button>
-      </div>`;
+      </div>`}`;
 
     card.addEventListener("click", e => {
       if (e.target.closest(".source-card__btn")) return;
@@ -2404,7 +2348,7 @@ settingsSheet.addEventListener("click", async e => {
     if (SOURCES.length<=1) {
       const ok = await BQChrome.confirm({
         title: "Delete the last source?",
-        body: "You will need to import or add a new one before anything can play.",
+        body: "You will need to add a new one before anything can play.",
         confirmLabel: "Delete",
         danger: true,
       });
@@ -2424,8 +2368,17 @@ settingsSheet.addEventListener("click", async e => {
 
 addSourceBtn.addEventListener("click", () => { editingSourceIdx=-1; sfName.value=""; sfMovieUrl.value=""; sfTvUrl.value=""; sourceFormTitle.textContent="Add source"; sourceForm.classList.remove("hidden"); addSourceBtn.classList.add("hidden"); sfName.focus(); });
 sfCancel.addEventListener("click", () => { sourceForm.classList.add("hidden"); addSourceBtn.classList.remove("hidden"); });
-sfSave.addEventListener("click", () => {
+sfSave.addEventListener("click", async () => {
   const name=sfName.value.trim(), movie_url=sfMovieUrl.value.trim(), tv_url=sfTvUrl.value.trim();
+  sfSave.disabled = true;
+  let claimed = false;
+  try { claimed = (await BQFeed.claim(movie_url)) || (await BQFeed.claim(tv_url)); }
+  finally { sfSave.disabled = false; }
+  if (claimed) {
+    sfName.value = ""; sfMovieUrl.value = ""; sfTvUrl.value = "";
+    await reapplySources(BQFeed.cached());
+    return;
+  }
   if (!name || !movie_url) { sfName.focus(); return; }
   const entry = { name, movie_url, tv_url: tv_url||null };
   if (editingSourceIdx>=0) SOURCES[editingSourceIdx]=entry;
@@ -2438,42 +2391,17 @@ sfSave.addEventListener("click", () => {
   sourceForm.classList.add("hidden"); addSourceBtn.classList.remove("hidden");
 });
 
-/* ── Config import/export ── */
-function setConfigFeedback(msg, ok) {
-  configFeedback.textContent = msg;
-  configFeedback.className = "config-feedback" + (ok ? " config-feedback--ok" : ok === false ? " config-feedback--err" : "");
-  if (msg) setTimeout(() => { configFeedback.textContent = ""; configFeedback.className = "config-feedback"; }, 4000);
-}
-
-configImportBtn.addEventListener("click", () => {
-  const text = configTextarea.value.trim();
-  if (!text) { setConfigFeedback("Paste a config first.", false); return; }
-  const { sources, errors } = parseConfig(text);
-  if (errors.length) { setConfigFeedback(errors[0], false); return; }
-  if (!sources.length) { setConfigFeedback("No valid sources found.", false); return; }
-  SOURCES = sources;
-  sourcesSave(SOURCES);
-  setActiveSource(0);
-  renderSourceList();
-  // An import swaps out every source, including whichever one was active,
-  // so the switcher and anything already playing both have to follow it.
-  updateSourceMenuButton();
-  reloadCurrentPlayerIfActive();
-  configTextarea.value = "";
-  setConfigFeedback(`Imported ${sources.length} source${sources.length > 1 ? "s" : ""}.`, true);
-});
-
-configExportBtn.addEventListener("click", async () => {
-  if (!SOURCES.length) { setConfigFeedback("No sources to export.", false); return; }
-  const text = serialiseConfig(SOURCES);
-  configTextarea.value = text;
-  try {
-    await navigator.clipboard.writeText(text);
-    setConfigFeedback("Copied to clipboard.", true);
-  } catch (e) {
-    configTextarea.select();
-    setConfigFeedback("Couldn't access the clipboard — text is selected, press Ctrl/Cmd+C to copy.", false);
-  }
+resetSourcesBtn.addEventListener("click", async () => {
+  const ok = await BQChrome.confirm({
+    title: "Reset sources?",
+    body: "These sources will be removed from this device.",
+    confirmLabel: "Reset",
+    danger: true,
+  });
+  if (!ok) return;
+  BQFeed.clear();
+  await reapplySources(null);
+  addSourceBtn.focus();
 });
 
 /* ── Settings open/close ──
