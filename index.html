@@ -128,10 +128,9 @@
       color: var(--text);
     }
 
-    /* ── Episode filter ──
-       Only appears on seasons long enough to need it: on a six-episode
-       season it would be noise, and on a two-hundred-episode one there is
-       otherwise no way to reach episode 147 but to scroll. ── */
+    /* ── Episode search ──
+       On every show, searching all of its seasons at once — see
+       initEpisodeFilter(). ── */
     .ep-filter {
       display: flex;
       align-items: center;
@@ -144,7 +143,7 @@
     }
     .ep-filter__icon { font-size: 16px; color: var(--text-faint); }
     .ep-filter__input {
-      width: 8.5rem;
+      width: 10rem;
       border: none;
       background: none;
       color: var(--text);
@@ -1946,7 +1945,7 @@ function renderTV(tv) {
   const specials   = (tv.seasons||[]).filter(s => s.season_number === 0);
   const seasons    = regular.concat(specials);
   const seasonNums = regular.map(s => s.season_number);
-  currentDetail    = { mediaType:"tv", id:tv.id, title:tv.name||tv.original_name||"", seasonNumbers:seasonNums };
+  currentDetail    = { mediaType:"tv", id:tv.id, title:tv.name||tv.original_name||"", seasonNumbers:seasonNums, allSeasonNumbers:seasons.map(s => s.season_number) };
   const title      = currentDetail.title || "TV Show";
   const year       = getYear(tv.first_air_date);
   const seasonsLabel = regular.length ? `${regular.length} season${regular.length>1?"s":""}` : "";
@@ -1988,7 +1987,7 @@ function renderTV(tv) {
           <div class="ep-filter hidden" id="epFilterWrap">
             <span class="material-icons ep-filter__icon" aria-hidden="true">search</span>
             <input id="epFilter" class="ep-filter__input" type="search" autocomplete="off"
-              placeholder="Find an episode…" aria-label="Filter episodes by number or name" />
+              placeholder="Search all episodes…" aria-label="Search all episodes by number or name" />
           </div>
         </div>
         <div id="episodeGrid" class="grid--episodes"></div>
@@ -2025,9 +2024,7 @@ async function switchToSeason(tvId, seasonNum) {
 async function loadSeason(tvId, seasonNum) {
   const epGrid = $("episodeGrid"); const heading = $("epsHeading");
   if (!epGrid) return;
-  // A query left over from the previous season would silently hide most of
-  // the new one, so the filter starts clean on every switch.
-  const fw = $("epFilterWrap"); if (fw) fw.classList.add("hidden");
+  // Picking a season ends any search: the grid goes back to that season.
   const fi = $("epFilter"); if (fi) fi.value = "";
   if (heading) heading.textContent = seasonHeading(seasonNum);
   if (loadedSeasons[tvId]?.[seasonNum]) { renderEpisodeGrid(tvId, seasonNum, loadedSeasons[tvId][seasonNum]); return; }
@@ -2048,81 +2045,145 @@ async function loadSeason(tvId, seasonNum) {
   renderEpisodeGrid(tvId, seasonNum, eps);
 }
 
+/* One episode card. withId: only the open season's cards carry the
+   ep-N id that returning from the player scrolls to — in cross-season
+   search results the same number turns up once per season. */
+function buildEpisodeCard(tvId, seasonNum, ep, titleSnapshot, today, withId = true) {
+  const aired     = hasAired(ep.air_date, today);
+  const { short, full, cut } = wordTrunc(ep.overview, 30);
+  const still = ep.still_path ? `https://image.tmdb.org/t/p/w780${ep.still_path}` : null;
+
+  const card = document.createElement("article");
+  card.className = ["ep-card", !aired?"ep-card--unaired":""].filter(Boolean).join(" ");
+  card.tabIndex = aired ? 0 : -1; if (withId) card.id = `ep-${ep.episode_number}`;
+  card.dataset.tvId = tvId; card.dataset.season = seasonNum; card.dataset.ep = ep.episode_number; card.dataset.aired = aired?"1":"0";
+  card.setAttribute("aria-label", `${seasonShort(seasonNum)} E${ep.episode_number}${ep.name?" — "+ep.name:""}${aired?"":" (not yet aired)"}`);
+  card.setAttribute("aria-disabled", aired?"false":"true");
+
+  const imgWrap = document.createElement("div"); imgWrap.className = "ep-card__img-wrap";
+  if (still) { const img=document.createElement("img"); img.className="ep-card__img"; img.src=still; img.alt=ep.name||""; img.loading="lazy"; imgWrap.appendChild(img); }
+  else { const ph=document.createElement("div"); ph.className="media-card__placeholder"; ph.innerHTML=`<span class="material-icons" aria-hidden="true">live_tv</span>`; imgWrap.appendChild(ph); }
+
+  let airLabel = "";
+  if (ep.air_date) { airLabel = aired ? ep.air_date : `Airs ${new Date(ep.air_date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}`; }
+
+  const body = document.createElement("div"); body.className="ep-card__body";
+  const titleEl = document.createElement("h4"); titleEl.className="ep-card__title"; titleEl.textContent=`${seasonShort(seasonNum)} · E${ep.episode_number}${ep.name?" — "+ep.name:""}`;
+  body.appendChild(titleEl);
+  if (airLabel) { const d=document.createElement("p"); d.className="ep-card__date"; d.textContent=airLabel; body.appendChild(d); }
+  if (!aired) { const b=document.createElement("span"); b.className="ep-card__unaired-badge"; b.innerHTML=`<span class="material-icons" aria-hidden="true">schedule</span>Not yet aired`; body.appendChild(b); }
+  const sumEl = document.createElement("p"); sumEl.className="ep-card__summary";
+  if (aired) {
+    const span=document.createElement("span"); span.className="ep-sum-text"; span.textContent=short; sumEl.appendChild(span);
+    if (cut) { const mb=document.createElement("button"); mb.className="ep-more-btn"; mb.type="button"; mb.setAttribute("aria-expanded","false"); mb.textContent="More"; mb.addEventListener("click",e=>{e.stopPropagation();const ex=mb.getAttribute("aria-expanded")==="true";span.textContent=ex?short:full;mb.textContent=ex?"More":"Less";mb.setAttribute("aria-expanded",String(!ex));}); sumEl.appendChild(mb); }
+  }
+  body.appendChild(sumEl); card.appendChild(imgWrap); card.appendChild(body);
+
+  if (aired) {
+    card.addEventListener("click", e => { if (e.target.closest(".ep-more-btn")) return; loadPlayer({ mediaType:"tv", id:Number(card.dataset.tvId), season:Number(card.dataset.season), episode:Number(card.dataset.ep), label:titleSnapshot }); });
+    card.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); card.click(); } });
+  }
+  return card;
+}
+
 function renderEpisodeGrid(tvId, seasonNum, eps) {
   const epGrid = $("episodeGrid"); if (!epGrid) return;
   const titleSnapshot = currentDetail.title;
   const today         = getToday();
   const frag          = document.createDocumentFragment();
-
-  eps.forEach(ep => {
-    const aired     = hasAired(ep.air_date, today);
-    const { short, full, cut } = wordTrunc(ep.overview, 30);
-    const still = ep.still_path ? `https://image.tmdb.org/t/p/w780${ep.still_path}` : null;
-
-    const card = document.createElement("article");
-    card.className = ["ep-card", !aired?"ep-card--unaired":""].filter(Boolean).join(" ");
-    card.tabIndex = aired ? 0 : -1; card.id = `ep-${ep.episode_number}`;
-    card.dataset.tvId = tvId; card.dataset.season = seasonNum; card.dataset.ep = ep.episode_number; card.dataset.aired = aired?"1":"0";
-    card.setAttribute("aria-label", `${seasonShort(seasonNum)} E${ep.episode_number}${ep.name?" — "+ep.name:""}${aired?"":" (not yet aired)"}`);
-    card.setAttribute("aria-disabled", aired?"false":"true");
-
-    const imgWrap = document.createElement("div"); imgWrap.className = "ep-card__img-wrap";
-    if (still) { const img=document.createElement("img"); img.className="ep-card__img"; img.src=still; img.alt=ep.name||""; img.loading="lazy"; imgWrap.appendChild(img); }
-    else { const ph=document.createElement("div"); ph.className="media-card__placeholder"; ph.innerHTML=`<span class="material-icons" aria-hidden="true">live_tv</span>`; imgWrap.appendChild(ph); }
-
-    let airLabel = "";
-    if (ep.air_date) { airLabel = aired ? ep.air_date : `Airs ${new Date(ep.air_date+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}`; }
-
-    const body = document.createElement("div"); body.className="ep-card__body";
-    const titleEl = document.createElement("h4"); titleEl.className="ep-card__title"; titleEl.textContent=`${seasonShort(seasonNum)} · E${ep.episode_number}${ep.name?" — "+ep.name:""}`;
-    body.appendChild(titleEl);
-    if (airLabel) { const d=document.createElement("p"); d.className="ep-card__date"; d.textContent=airLabel; body.appendChild(d); }
-    if (!aired) { const b=document.createElement("span"); b.className="ep-card__unaired-badge"; b.innerHTML=`<span class="material-icons" aria-hidden="true">schedule</span>Not yet aired`; body.appendChild(b); }
-    const sumEl = document.createElement("p"); sumEl.className="ep-card__summary";
-    if (aired) {
-      const span=document.createElement("span"); span.className="ep-sum-text"; span.textContent=short; sumEl.appendChild(span);
-      if (cut) { const mb=document.createElement("button"); mb.className="ep-more-btn"; mb.type="button"; mb.setAttribute("aria-expanded","false"); mb.textContent="More"; mb.addEventListener("click",e=>{e.stopPropagation();const ex=mb.getAttribute("aria-expanded")==="true";span.textContent=ex?short:full;mb.textContent=ex?"More":"Less";mb.setAttribute("aria-expanded",String(!ex));}); sumEl.appendChild(mb); }
-    }
-    body.appendChild(sumEl); card.appendChild(imgWrap); card.appendChild(body);
-
-    if (aired) {
-      card.addEventListener("click", e => { if (e.target.closest(".ep-more-btn")) return; loadPlayer({ mediaType:"tv", id:Number(card.dataset.tvId), season:Number(card.dataset.season), episode:Number(card.dataset.ep), label:titleSnapshot }); });
-      card.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); card.click(); } });
-    }
-    frag.appendChild(card);
-  });
+  eps.forEach(ep => frag.appendChild(buildEpisodeCard(tvId, seasonNum, ep, titleSnapshot, today)));
   epGrid.innerHTML=""; epGrid.appendChild(frag);
-  initEpisodeFilter(eps.length);
+  initEpisodeFilter(tvId);
 }
 
-/* Filters the rendered cards in place rather than re-rendering: the grid is
-   already built, and matching on the card's own text means the episode name
-   is searchable without threading the episode list through again. */
-const EP_FILTER_MIN = 12;
-function initEpisodeFilter(count) {
-  const wrap = $("epFilterWrap"), input = $("epFilter"), grid = $("episodeGrid");
+/* ── Episode search ──
+   Searches every season of the show, not just the open one. Typing loads
+   whichever seasons haven't been opened yet — in one or two requests, via
+   TMDB's append_to_response (20 seasons a request) — and lists the hits
+   from all of them. Clearing it puts the open season back.
+
+   "7" is episode 7 of every season; "s3e7", "s3 e7" and "3x07" are that
+   one episode; anything else matches the episode's name or summary. */
+const EP_SEARCH_MAX = 100;
+const allSeasonsLoading = {};
+function loadAllSeasons(tvId, seasonNums) {
+  const missing = seasonNums.filter(n => !loadedSeasons[tvId]?.[n]);
+  if (!missing.length) return Promise.resolve();
+  if (allSeasonsLoading[tvId]) return allSeasonsLoading[tvId];
+  const chunks = [];
+  for (let i = 0; i < missing.length; i += 20) chunks.push(missing.slice(i, i + 20));
+  const p = Promise.all(chunks.map(async chunk => {
+    const data = await tmdbFetch(`/tv/${tvId}`, { language: "en-US", append_to_response: chunk.map(n => `season/${n}`).join(",") });
+    if (!loadedSeasons[tvId]) loadedSeasons[tvId] = {};
+    chunk.forEach(n => { const sd = data[`season/${n}`]; if (sd && !loadedSeasons[tvId][n]) loadedSeasons[tvId][n] = sd.episodes || []; });
+  })).finally(() => { delete allSeasonsLoading[tvId]; });
+  allSeasonsLoading[tvId] = p;
+  return p;
+}
+
+function parseEpisodeQuery(raw) {
+  const q = raw.trim().toLowerCase();
+  let m;
+  if ((m = /^s\s*(\d+)\s*[ ._-]?\s*e\s*(\d+)$/.exec(q)) || (m = /^(\d+)\s*x\s*(\d+)$/.exec(q)))
+    return { season: Number(m[1]), episode: Number(m[2]) };
+  if (/^\d+$/.test(q)) return { episode: Number(q) };
+  return { text: q };
+}
+
+function initEpisodeFilter(tvId) {
+  const wrap = $("epFilterWrap"), input = $("epFilter"), grid = $("episodeGrid"), heading = $("epsHeading");
   if (!wrap || !input || !grid) return;
-  // Worth having on a season long enough to scroll; noise on a short one.
-  if (count < EP_FILTER_MIN) { wrap.classList.add("hidden"); input.value = ""; return; }
   wrap.classList.remove("hidden");
   input.value = "";
+  const seasonNums = currentDetail.allSeasonNumbers || [];
+  let searching = false;
 
-  const apply = () => {
-    const q = input.value.trim().toLowerCase();
-    let shown = 0;
-    grid.querySelectorAll(".ep-card").forEach((card) => {
-      // A bare number matches the episode number exactly, so "3" finds
-      // episode 3 rather than every episode with a 3 in its title.
-      const epNum = card.dataset.ep || "";
-      const hit = !q || (/^\d+$/.test(q) ? epNum === String(Number(q)) : card.textContent.toLowerCase().includes(q));
-      card.classList.toggle("hidden", !hit);
-      if (hit) shown++;
-    });
-    let empty = grid.querySelector(".ep-empty");
-    if (!shown) {
-      if (!empty) { empty = document.createElement("p"); empty.className = "overview ep-empty"; grid.appendChild(empty); }
-      empty.textContent = `No episode matches "${input.value.trim()}".`;
-    } else if (empty) { empty.remove(); }
+  const showSeason = () => {
+    searching = false;
+    if (heading) heading.textContent = seasonHeading(currentSeason);
+    const eps = loadedSeasons[tvId]?.[currentSeason];
+    if (eps) renderEpisodeGrid(tvId, currentSeason, eps);
+  };
+
+  const apply = async () => {
+    const raw = input.value;
+    if (!raw.trim()) { if (searching) showSeason(); return; }
+    searching = true;
+    if (heading) heading.textContent = "Search results";
+    const needsLoad = seasonNums.some(n => !loadedSeasons[tvId]?.[n]);
+    let loadFailed = false;
+    if (needsLoad) {
+      grid.innerHTML = `<p class="overview ep-empty">Searching every season…</p>`;
+      try { await loadAllSeasons(tvId, seasonNums); }
+      catch (e) { loadFailed = true; /* search whatever did load */ }
+      // Stale: the query moved on, or this show's detail was replaced.
+      if (input.value !== raw || !input.isConnected || currentDetail.id !== tvId) return;
+    }
+    const q = parseEpisodeQuery(raw);
+    const hits = [];
+    seasonNums.forEach(sn => (loadedSeasons[tvId]?.[sn] || []).forEach(ep => {
+      const ok = q.text != null
+        ? `${ep.name || ""} ${ep.overview || ""}`.toLowerCase().includes(q.text)
+        : ep.episode_number === q.episode && (q.season == null || sn === q.season);
+      if (ok) hits.push([sn, ep]);
+    }));
+    const today = getToday(), frag = document.createDocumentFragment();
+    hits.slice(0, EP_SEARCH_MAX).forEach(([sn, ep]) =>
+      frag.appendChild(buildEpisodeCard(tvId, sn, ep, currentDetail.title, today, sn === currentSeason)));
+    grid.innerHTML = "";
+    if (!hits.length) {
+      const p = document.createElement("p"); p.className = "overview ep-empty";
+      p.textContent = loadFailed
+        ? `No match in the seasons that loaded — couldn't reach TMDB for the rest.`
+        : `No episode matches "${raw.trim()}".`;
+      grid.appendChild(p); return;
+    }
+    grid.appendChild(frag);
+    if (hits.length > EP_SEARCH_MAX) {
+      const p = document.createElement("p"); p.className = "overview ep-empty";
+      p.textContent = `Showing the first ${EP_SEARCH_MAX} of ${hits.length} — narrow the search to see the rest.`;
+      grid.appendChild(p);
+    }
   };
   input.oninput = apply;
 }
