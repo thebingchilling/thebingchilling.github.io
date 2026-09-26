@@ -21,26 +21,35 @@
   const PLAYER_PATHS = new Set(["/", "/index", "/index.html", "/live", "/live.html"]);
   if (!PLAYER_PATHS.has(location.pathname)) return;
 
-  /* Where index.html's Store keeps them. It prefers window.storage when
-     that exists, but that is the Claude artifact host — on the real site
-     there is no such object and this is plain localStorage. */
+  /* Where the player keeps them. A device set up from the managed link
+     plays from bq_managed ({ origin, key, data: { media: [...] } }, see
+     /shared/feed.js) and ignores bq_sources entirely, so that one wins
+     whenever it is there; bq_sources is the hand-added list. Both are
+     plain localStorage on the real site. */
   const SOURCES_KEY = "bq_sources";
+  const MANAGED_KEY = "bq_managed";
+
+  function readJson(key) {
+    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+  }
+
+  /* The list the player is actually using, by the same rule it uses. */
+  function currentSources() {
+    const managed = readJson(MANAGED_KEY);
+    if (managed && typeof managed.origin === "string" && typeof managed.key === "string") {
+      return Array.isArray(managed.data?.media) ? managed.data.media : [];
+    }
+    const own = readJson(SOURCES_KEY);
+    return Array.isArray(own) ? own : [];
+  }
 
   /* A source URL is a template ("https://host/embed/movie/{tmdb}"), and
      the braces sit in the path, so it parses as a URL like any other.
      Only the origin is wanted; the path is none of the extension's
      business and is not sent anywhere. */
   function readSourceOrigins() {
-    let raw = null;
-    try { raw = localStorage.getItem(SOURCES_KEY); } catch { return []; }
-    if (!raw) return [];
-
-    let list;
-    try { list = JSON.parse(raw); } catch { return []; }
-    if (!Array.isArray(list)) return [];
-
     const origins = new Set();
-    for (const src of list) {
+    for (const src of currentSources()) {
       for (const field of ["movie_url", "tv_url"]) {
         const value = src?.[field];
         if (typeof value !== "string" || !value) continue;
@@ -88,7 +97,7 @@
 
   /* Sources edited in another tab. */
   window.addEventListener("storage", (e) => {
-    if (!e.key || e.key === SOURCES_KEY) send();
+    if (!e.key || e.key === SOURCES_KEY || e.key === MANAGED_KEY) send();
   });
 
   /* Traffic on the port resets the idle timer, and the same tick catches

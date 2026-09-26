@@ -80,9 +80,11 @@ exactly as they were.
 Inside the source origins — never a hardcoded list. **Sources get renewed,
 and a list baked into an extension is wrong by the next rotation.** So:
 
-1. `content/keepalive.js` reads the configured sources from the player's
-   own `bq_sources` storage and reports **only their origins** over the
-   port. The URL templates and everything else stay on the page.
+1. `content/keepalive.js` reads the sources the player is actually using
+   — the managed list in `bq_managed` when the device was set up from the
+   managed link, otherwise the hand-added `bq_sources` — and reports
+   **only their origins** over the port. The URL templates and everything
+   else stay on the page.
 2. Chrome will not grant a host at runtime without a user gesture, so new
    origins wait behind **one click on the toolbar icon**. The badge shows
    how many are waiting. There is no popup or options page — the click on
