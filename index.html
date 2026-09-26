@@ -196,25 +196,20 @@
     /* Secondary to Play, and far enough from it not to read as a pair. */
     .movie-panel__scene { align-self: center; margin-top: 0.55rem; }
 
-    .scene-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: min(55vh, 420px); overflow: auto; -webkit-overflow-scrolling: touch; }
+    /* A scroll box clips at its padding edge, which was cutting each row's
+       shadow off at the sides and on the first and last rows. The padding
+       gives the shadow room inside the box; the matching negative margin
+       keeps the rows lined up with the dialog's header as before. */
+    .scene-list {
+      display: flex; flex-direction: column; gap: 0.5rem;
+      max-height: min(55vh, 420px); overflow: auto; -webkit-overflow-scrolling: touch;
+      padding: 4px 6px 8px; margin: -4px -6px -8px;
+    }
     .scene-row {
-      position: relative;
-      padding: 0.65rem 0.8rem 0.65rem 0.95rem;
+      padding: 0.65rem 0.8rem;
       border-radius: var(--shape-m);
       background: var(--surface-raised);
       box-shadow: var(--el1);
-    }
-    /* A hairline in the accent down the leading edge — enough to give each
-       release a start and let the eye run down the list, without the
-       heavier treatment a full card border would bring. */
-    .scene-row::before {
-      content: "";
-      position: absolute;
-      left: 0; top: 0.55rem; bottom: 0.55rem;
-      width: 3px;
-      border-radius: var(--shape-full);
-      background: var(--md-primary);
-      opacity: 0.55;
     }
     .scene-row__name {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -223,14 +218,18 @@
       color: var(--text);
       word-break: break-all;
     }
-    /* The group after the final dash is the one part of a scene name that
-       isn't describing the file, so it reads as a byline rather than more
-       of the same string. */
-    /* nowrap so the group never splits across lines: break-all is needed
-       for the dotted name, which has nowhere natural to break, but it was
-       cutting "RiSEHD" into "Ri / SEHD" — the one part of the string a
-       reader is scanning for. */
-    .scene-row__group { color: var(--md-primary); font-weight: 600; white-space: nowrap; }
+    /* The film's own title and year, tagged where the release name has
+       them exactly — so a row for this film reads apart from one for a
+       sequel or a namesake that the search also turned up. clone keeps
+       the tag's rounded ends when a long title wraps. */
+    .scene-row__title {
+      padding: 0.05rem 0.35rem;
+      border-radius: var(--shape-xs);
+      background: var(--md-secondary-container);
+      color: var(--md-on-secondary-container);
+      -webkit-box-decoration-break: clone;
+      box-decoration-break: clone;
+    }
     .scene-row__meta {
       display: flex;
       flex-wrap: wrap;
@@ -1123,7 +1122,24 @@ function fmtSceneDate(raw) {
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
-function renderSceneList(results) {
+/* How long a prefix of a release name is this film's title and year, or 0.
+   Scene names drop punctuation and join words with dots, so the title is
+   matched word by word with any run of separators between. The year may
+   be one off — TMDB dates a film by its first release anywhere, and the
+   scene name often by its release where it was ripped — but it has to be
+   there: title alone would tag "The.Matrix.Reloaded" as "The Matrix". */
+function sceneTitleSpan(release, title, year) {
+  const words = String(title || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, " and ").replace(/['\u2019]/g, "").split(/[^A-Za-z0-9]+/).filter(Boolean);
+  const y = Number(year);
+  if (!words.length || !y) return 0;
+  const sep = "[._\\s-]+";
+  const re = new RegExp(`^${words.join(sep)}${sep}\\(?(\\d{4})\\)?(?=[._\\s-]|$)`, "i");
+  const m = re.exec(release);
+  return m && Math.abs(Number(m[1]) - y) <= 1 ? m[0].length : 0;
+}
+
+function renderSceneList(results, title, year) {
   const body = document.getElementById("sceneDialogBody");
   body.innerHTML = "";
   // Newest first: when a film has both an early low-quality release and a
@@ -1134,18 +1150,11 @@ function renderSceneList(results) {
 
     const name = document.createElement("div"); name.className = "scene-row__name";
     const full = r.release || "(unnamed release)";
-    // Split the trailing "-GROUP" off so it can carry the accent. Matched
-    // conservatively: a real group is a short token with no dots in it, so
-    // a name that just happens to contain a dash keeps its whole string.
-    // The exclusions are hyphenated source tags — a name ending WEB-DL or
-    // BLU-RAY would otherwise have "DL" or "RAY" accented as if it were
-    // the group.
-    const m = /^(.*-)([A-Za-z0-9_]{2,20})$/.exec(full);
-    const NOT_A_GROUP = /^(dl|ray|rip|ts|tc|cam|scr|dvd|hd|sd|uhd|hdr)$/i;
-    if (m && !NOT_A_GROUP.test(m[2])) {
-      name.appendChild(document.createTextNode(m[1]));
-      const g = document.createElement("span"); g.className = "scene-row__group"; g.textContent = m[2];
-      name.appendChild(g);
+    const cut = r.release ? sceneTitleSpan(full, title, year) : 0;
+    if (cut) {
+      const t = document.createElement("span"); t.className = "scene-row__title"; t.textContent = full.slice(0, cut);
+      name.appendChild(t);
+      name.appendChild(document.createTextNode(full.slice(cut)));
     } else {
       name.textContent = full;
     }
@@ -1197,7 +1206,7 @@ async function openSceneReleases(title, year) {
       sub.textContent = [title, year].filter(Boolean).join(" · ");
       return;
     }
-    renderSceneList(results);
+    renderSceneList(results, title, year);
     sub.textContent = `${results.length} release${results.length === 1 ? "" : "s"} · ${[title, year].filter(Boolean).join(" · ")}`;
   } catch (err) {
     body.innerHTML = "";
