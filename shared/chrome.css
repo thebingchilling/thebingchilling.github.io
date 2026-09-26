@@ -125,6 +125,10 @@
   transition: transform var(--t), opacity var(--t);
 }
 .bottom-dock--hidden { transform: translateY(100%); opacity: 0; pointer-events: none; }
+/* The nav stays up on every view; fullscreen is the one thing that takes
+   it away. A fullscreened element already paints over it, so this is for
+   the browsers that let the page underneath show through at the edges. */
+:root:has(:fullscreen) .bottom-dock { visibility: hidden; }
 
 .bottom-nav {
   display: flex;

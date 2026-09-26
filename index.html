@@ -68,9 +68,6 @@
       ::view-transition-old(root), ::view-transition-new(root), ::view-transition-group(hero-poster) { animation: none !important; }
     }
 
-    /* Search is the only view that shows the bottom nav — reserve room so
-       its content never sits under the fixed bar. */
-    #viewSearch { padding-bottom: var(--content-bottom); }
     /* playerTitle can be a full movie or show name — let it wrap rather
        than truncating to one ellipsized line that hides most of it. */
     #playerTitle { white-space: normal; overflow: visible; text-overflow: clip; }
@@ -771,8 +768,9 @@
   </main>
 
   <!-- Bottom navigation (M3 NavigationBar) — the app's primary destinations,
-       shown only over the root Search screen; Detail/Player push over it
-       full-screen, like a native app's tab bar hiding on pushed screens.
+       on every screen: Search, Detail and Player all keep it (only
+       fullscreen covers it). Media stays the active tab throughout, and
+       tapping it from Detail or Player goes back to Search.
        Wrapped in .bottom-dock (matching live.html's structure, even though
        this app has no mini-player) so the two pages share a view-transition
        name — see the @view-transition rule below. -->
@@ -1314,7 +1312,6 @@ const shareBtnLabel    = $("shareBtnLabel");
 const shareDetailBtn      = $("shareDetailBtn");
 const shareDetailBtnLabel = $("shareDetailBtnLabel");
 const settingsBtn      = $("settingsBtn");
-const bottomDock        = $("bottomDock");
 const navSearchBtn      = $("navSearchBtn");
 const settingsSheet    = $("settingsSheet");
 const settingsClose    = $("settingsClose");
@@ -1371,10 +1368,6 @@ function setView(name) {
     viewSearch.classList.toggle("view--active", name === "search");
     viewDetail.classList.toggle("view--active", name === "detail");
     viewPlayer.classList.toggle("view--active", name === "player");
-    // Bottom nav is the root-level tab bar — Detail/Player push over it
-    // full-screen, like a native app's tab bar hiding on pushed screens.
-    bottomDock.classList.toggle("bottom-dock--hidden", name !== "search");
-    navSearchBtn.classList.toggle("bottom-nav__item--active", name === "search");
   };
   // View Transitions API: gives Search↔Detail↔Player the fade-through motion
   // a native screen navigation has, instead of an instant display:none swap.

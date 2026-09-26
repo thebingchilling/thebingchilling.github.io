@@ -63,10 +63,8 @@
       ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
     }
 
-    .view { padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
-    /* Browse is the only view that shows the bottom nav — reserve room so
-       its content never sits under the fixed bar. */
-    #viewBrowse { padding-bottom: var(--content-bottom); }
+    /* The bottom nav stays up on every view, so each reserves room for it. */
+    .view { padding-bottom: var(--content-bottom); }
     /* Extra room when the mini-player is stacked above the nav too. */
     body.has-mini-player #viewBrowse { padding-bottom: calc(var(--content-bottom) + 3.4rem); }
     /* playerTitle can be a full channel name — let it wrap rather than
@@ -2084,9 +2082,6 @@ function openPlayer(channel) {
   switchView(() => {
     $("viewBrowse").classList.remove("view--active");
     $("viewPlayer").classList.add("view--active");
-    // Bottom nav is the root-level tab bar — Player pushes over it
-    // full-screen, like a native app's tab bar hiding on pushed screens.
-    bottomDock.classList.add("bottom-dock--hidden");
   });
   $("backFromPlayerLabel").textContent = isTv ? "TV" : "Radio";
   $("pipBtn").classList.toggle("hidden", !isTv || !document.pictureInPictureEnabled);
@@ -2213,7 +2208,6 @@ function startChannelPlayback(channel, isRetry) {
   audioEl.addEventListener(evt, () => { if (currentPlayerChannel && !playingIsTv) scheduleReconnect(currentPlayerChannel); });
 });
 
-const bottomDock = $("bottomDock");
 const navBrowseBtn = $("navBrowseBtn");
 navBrowseBtn.addEventListener("click", () => {
   if ($("viewBrowse").classList.contains("view--active")) return;
@@ -2275,7 +2269,6 @@ miniPlayer.addEventListener("click", () => {
   switchView(() => {
     $("viewBrowse").classList.remove("view--active");
     $("viewPlayer").classList.add("view--active");
-    bottomDock.classList.add("bottom-dock--hidden");
   });
   clearInterval(epgPanelInterval);
   updateEpgPanel();
@@ -2318,7 +2311,6 @@ function exitPlayerView() {
   switchView(() => {
     $("viewPlayer").classList.remove("view--active");
     $("viewBrowse").classList.add("view--active");
-    bottomDock.classList.remove("bottom-dock--hidden");
   });
   clearInterval(epgPanelInterval);
   if (keepPlaying) showMiniPlayer(currentPlayerChannel);
