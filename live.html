@@ -1602,6 +1602,16 @@ addPlaylistBtn.addEventListener("click", () => openPlaylistForm(null));
 playlistCancel.addEventListener("click", closePlaylistForm);
 playlistUrl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); playlistSave.click(); } });
 
+async function onSourcesClaimed() {
+  closePlaylistForm();
+  setPlaylistFeedback("", null);
+  await init(BQFeed.cached());
+  renderPlaylistList();
+  BQChrome.snackbar("Sources updated.");
+}
+// The link works pasted straight in, without pressing Save.
+BQFeed.watch(playlistUrl, onSourcesClaimed);
+
 playlistSave.addEventListener("click", async () => {
   if (playlistSave.disabled) return;
   const url = playlistUrl.value.trim();
@@ -1609,13 +1619,7 @@ playlistSave.addEventListener("click", async () => {
   let claimed = false;
   try { claimed = await BQFeed.claim(url); }
   finally { playlistSave.disabled = false; }
-  if (claimed) {
-    closePlaylistForm();
-    setPlaylistFeedback("", null);
-    await init(BQFeed.cached());
-    renderPlaylistList();
-    return;
-  }
+  if (claimed) { await onSourcesClaimed(); return; }
   if (!url) { playlistUrl.focus(); return; }
 
   const next = { tv: config.tv.slice(), radio: config.radio.slice(), epg: config.epg };

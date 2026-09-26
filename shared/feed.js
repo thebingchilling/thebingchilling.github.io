@@ -103,8 +103,23 @@ window.BQFeed = (function () {
     }
   }
 
+  /* Claims on paste, so the link doesn't wait on Save. Only for the
+     add-source fields each page passes in — nowhere else. The paste goes
+     through as normal either way: these fields do nothing with a value
+     until Save, so there is nothing to hold it back from, and a link that
+     turns out not to be one is just what was pasted. */
+  function watch(input, onClaimed) {
+    let pending = false;
+    input.addEventListener("paste", (e) => {
+      const text = e.clipboardData ? e.clipboardData.getData("text") : "";
+      if (pending || !text.includes("#")) return;
+      pending = true;
+      claim(text).then((ok) => { if (ok) onClaimed(); }).finally(() => { pending = false; });
+    });
+  }
+
   function active() { return !!read(); }
   function cached() { const v = read(); return v && v.data ? normalise(v.data) : null; }
 
-  return { claim, refresh, active, cached, clear };
+  return { claim, watch, refresh, active, cached, clear };
 })();
